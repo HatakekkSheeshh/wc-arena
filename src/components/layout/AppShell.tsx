@@ -19,6 +19,7 @@ const navItems = [
   { label: 'Leagues', to: '/leagues' },
   { label: 'Activity', to: '/activity' },
   { label: 'Rewards', to: '/rewards' },
+  { label: 'Admin', to: '/admin' },
 ];
 
 export default function AppShell({ children, themeControls, fullHeight = false }: AppShellProps) {

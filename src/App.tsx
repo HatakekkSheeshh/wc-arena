@@ -10,6 +10,8 @@ import Register from './Register';
 import Onboarding from './Onboarding';
 import Fixtures from './Fixtures';
 import Activity from './pages/Activity';
+import AdminAudit from './pages/AdminAudit';
+import AdminDashboard from './pages/AdminDashboard';
 import Badges from './pages/Badges';
 import LeagueDetail from './pages/LeagueDetail';
 import Leagues from './pages/Leagues';
@@ -94,6 +96,8 @@ export default function App() {
         <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />
         <Route path="/activity" element={<Activity themeControls={themeControls} />} />
         <Route path="/rewards" element={<Rewards themeControls={themeControls} />} />
+        <Route path="/admin" element={<AdminDashboard themeControls={themeControls} />} />
+        <Route path="/admin/audit" element={<AdminAudit themeControls={themeControls} />} />
         <Route path="/matches/:matchId" element={<MatchDetail themeControls={themeControls} />} />
         <Route path="/predictions/:predictionId" element={<PredictionBreakdown themeControls={themeControls} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

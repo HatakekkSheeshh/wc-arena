@@ -1,4 +1,5 @@
 export * from './mockActivity';
+export * from './mockAdmin';
 export * from './mockBadges';
 export * from './mockLeaderboard';
 export * from './mockLeagues';

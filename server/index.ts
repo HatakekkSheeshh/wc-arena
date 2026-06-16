@@ -1,4 +1,5 @@
 import express from 'express';
+import { adminRouter } from './routes/admin';
 import { activityRouter } from './routes/activity';
 import { badgesRouter } from './routes/badges';
 import { leaderboardRouter } from './routes/leaderboard';
@@ -27,6 +28,7 @@ app.use('/api', leaguesRouter);
 app.use('/api', activityRouter);
 app.use('/api', prizePoolRouter);
 app.use('/api', rewardsRouter);
+app.use('/api', adminRouter);
 
 app.listen(port, () => {
   console.log(`Predict 2026 API listening on http://127.0.0.1:${port}`);

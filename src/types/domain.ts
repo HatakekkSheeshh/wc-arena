@@ -167,3 +167,39 @@ export type RewardTrustNote = {
   title: string;
   description: string;
 };
+
+export type AdminAuditAction =
+  | 'admin_login'
+  | 'match_result_imported'
+  | 'prediction_revision_recorded'
+  | 'score_recalculation_preview'
+  | 'suspicious_user_review'
+  | 'reward_review_queued';
+
+export type AdminAuditLog = {
+  id: string;
+  actorId: string;
+  action: AdminAuditAction;
+  entityType: 'match' | 'prediction' | 'leaderboard' | 'user' | 'reward' | 'system';
+  entityId: string;
+  description: string;
+  severity: 'info' | 'warning' | 'critical';
+  createdAt: string;
+};
+
+export type SuspiciousUserSignal = {
+  id: string;
+  userId: string;
+  label: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  status: 'watch' | 'review' | 'cleared';
+  createdAt: string;
+};
+
+export type AdminChecklistItem = {
+  id: string;
+  label: string;
+  description: string;
+  status: 'ready' | 'planned' | 'blocked';
+};

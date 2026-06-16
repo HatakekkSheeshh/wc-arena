@@ -1,4 +1,4 @@
-import type { ActivityItem, Badge, EligibilityCheck, LeaderboardEntry, League, Match, Prediction, PrizeTier, RewardItem, RewardTrustNote, Team, User } from '../src/types/domain';
+import type { ActivityItem, AdminAuditLog, Badge, EligibilityCheck, LeaderboardEntry, League, Match, Prediction, PrizeTier, RewardItem, RewardTrustNote, SuspiciousUserSignal, Team, User } from '../src/types/domain';
 
 export type PrizePoolSummary = {
   totalAmount: number;
@@ -22,6 +22,8 @@ export type PredictDb = {
   eligibilityChecks: EligibilityCheck[];
   rewards: RewardItem[];
   rewardTrustNotes: RewardTrustNote[];
+  adminAuditLogs: AdminAuditLog[];
+  suspiciousUserSignals: SuspiciousUserSignal[];
 };
 
 export type ApiErrorCode = 'not_found' | 'validation_error' | 'locked' | 'server_error';

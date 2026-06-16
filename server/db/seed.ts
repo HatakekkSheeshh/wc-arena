@@ -1,4 +1,5 @@
 import { mockActivity } from '../../src/data/mockActivity';
+import { mockAdminAuditLogs, mockSuspiciousUserSignals } from '../../src/data/mockAdmin';
 import { mockBadges } from '../../src/data/mockBadges';
 import { mockLeaderboard } from '../../src/data/mockLeaderboard';
 import { mockLeagues } from '../../src/data/mockLeagues';
@@ -25,5 +26,7 @@ export function createSeedDb(): PredictDb {
     eligibilityChecks: structuredClone(mockEligibilityChecks),
     rewards: structuredClone(mockRewards),
     rewardTrustNotes: structuredClone(mockRewardTrustNotes),
+    adminAuditLogs: structuredClone(mockAdminAuditLogs),
+    suspiciousUserSignals: structuredClone(mockSuspiciousUserSignals),
   };
 }
