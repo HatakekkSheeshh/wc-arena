@@ -17,6 +17,7 @@ import MatchDetail from './pages/MatchDetail';
 import MyPredictions from './pages/MyPredictions';
 import PredictionBreakdown from './pages/PredictionBreakdown';
 import Profile from './pages/Profile';
+import Rewards from './pages/Rewards';
 
 export type ThemeControls = {
   isVintage: boolean;
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
         <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />
         <Route path="/activity" element={<Activity themeControls={themeControls} />} />
+        <Route path="/rewards" element={<Rewards themeControls={themeControls} />} />
         <Route path="/matches/:matchId" element={<MatchDetail themeControls={themeControls} />} />
         <Route path="/predictions/:predictionId" element={<PredictionBreakdown themeControls={themeControls} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

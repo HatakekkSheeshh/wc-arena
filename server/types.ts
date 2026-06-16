@@ -1,4 +1,4 @@
-import type { ActivityItem, Badge, LeaderboardEntry, League, Match, Prediction, PrizeTier, Team, User } from '../src/types/domain';
+import type { ActivityItem, Badge, EligibilityCheck, LeaderboardEntry, League, Match, Prediction, PrizeTier, RewardItem, RewardTrustNote, Team, User } from '../src/types/domain';
 
 export type PrizePoolSummary = {
   totalAmount: number;
@@ -19,6 +19,9 @@ export type PredictDb = {
   activity: ActivityItem[];
   prizePoolSummary: PrizePoolSummary;
   prizeTiers: PrizeTier[];
+  eligibilityChecks: EligibilityCheck[];
+  rewards: RewardItem[];
+  rewardTrustNotes: RewardTrustNote[];
 };
 
 export type ApiErrorCode = 'not_found' | 'validation_error' | 'locked' | 'server_error';

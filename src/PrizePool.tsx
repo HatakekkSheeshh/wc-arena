@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Users, Star, Gift, Settings, Wallet, ChevronDown, CheckCircle2, DollarSign, CreditCard, Clock, Mail, User, PenTool, BarChart2, Medal, Flame } from 'lucide-react';
+import { Trophy, Users, Star, Gift, Settings, UserCheck, ChevronDown, CheckCircle2, ShieldCheck, ClipboardCheck, Clock, Mail, User, PenTool, BarChart2, Medal, Flame } from 'lucide-react';
 
 export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void }) {
   const [showSettings, setShowSettings] = useState(false);
@@ -53,10 +53,10 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
               )}
             </div>
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <Wallet size={18} strokeWidth={2.5} />
+              <UserCheck size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
-                <span className="text-[10px] uppercase font-bold opacity-80">Wallet</span>
-                <span className="text-sm">$125.40</span>
+                <span className="text-[10px] uppercase font-bold opacity-80">Account</span>
+                <span className="text-sm">Rewards</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
             </button>
@@ -77,7 +77,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                 PRIZE POOL
              </h1>
              <p className="font-bold text-sm lg:text-lg text-main max-w-lg leading-snug">
-                See how the rewards are distributed and what you can win.
+                See sponsor-backed rewards, public eligibility rules, and how the free-to-play contest pool is distributed.
              </p>
           </div>
 
@@ -202,7 +202,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                          <div className="px-4 py-3 w-[140px] flex items-center justify-end font-black text-lg text-c3 bg-page">$50</div>
                        </div>
                        <div className="px-4 py-3 bg-muted text-xs uppercase font-bold text-center flex items-center justify-center gap-2">
-                          <span>✨</span> All amounts in USD. Prizes are guaranteed and distributed automatically.
+                          <span>★</span> Free entry. Sponsor/community-backed rewards are reviewed manually before approval.
                        </div>
                     </div>
                  </div>
@@ -221,19 +221,19 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                           <div className="flex items-center gap-2 font-black uppercase text-xs mb-2 border-b-2 border-c2 pb-2 text-c2">
                              <Gift size={18} /> WEEKLY REWARDS
                           </div>
-                          <span className="text-[11px] font-bold leading-snug text-main">Cash prizes for top performers every week. New winners each week!</span>
+                          <span className="text-[11px] font-bold leading-snug text-main">Sponsor-backed rewards for top weekly performers after eligibility review.</span>
                        </div>
                        <div className="bg-card border-2 border-c4 p-4 relative shadow-[2px_2px_0_var(--color-c4)] flex flex-col justify-center">
                           <div className="flex items-center gap-2 font-black uppercase text-xs mb-2 border-b-2 border-c4 pb-2 text-c4">
                              <Flame size={18} /> STREAK REWARDS
                           </div>
-                          <span className="text-[11px] font-bold leading-snug text-main">Earn bonus points and prizes for correct streaks and perfect rounds.</span>
+                          <span className="text-[11px] font-bold leading-snug text-main">Earn bonus points and qualify for recognition tracks through correct streaks.</span>
                        </div>
                        <div className="bg-card border-2 border-c3 p-4 relative shadow-[2px_2px_0_var(--color-c3)] flex flex-col justify-center">
                           <div className="flex items-center gap-2 font-black uppercase text-xs mb-2 border-b-2 border-c3 pb-2 text-c3">
                              <div className="bg-c3 w-5 h-5 rounded-full flex items-center justify-center shrink-0"><Star size={12} className="fill-inv text-inv" /></div> BONUS CHALLENGES
                           </div>
-                          <span className="text-[11px] font-bold leading-snug text-main">Special challenges and events with extra cash rewards.</span>
+                          <span className="text-[11px] font-bold leading-snug text-main">Special sponsor and community challenges with published eligibility rules.</span>
                        </div>
                     </div>
                  </div>
@@ -257,11 +257,11 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                        </div>
                        <div className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-c4 mt-0.5 shrink-0" strokeWidth={3}/>
-                          <span>Climb the leaderboard to unlock bigger prizes.</span>
+                          <span>Climb the leaderboard to qualify for published reward tiers.</span>
                        </div>
                        <div className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-c5 mt-0.5 shrink-0" strokeWidth={3}/>
-                          <span>Compete weekly for bonus rewards.</span>
+                          <span>Compete weekly in a free-entry skill contest.</span>
                        </div>
                     </div>
                  </div>
@@ -271,20 +271,20 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                     <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main">PAYOUT INFO</div>
                     <div className="p-4 flex flex-col gap-3 font-bold text-xs bg-page">
                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 flex items-center justify-center bg-c1 border-2 border-main rounded-full shrink-0 text-main shadow-[2px_2px_0_var(--color-main)]"><DollarSign size={14} strokeWidth={3}/></div>
-                          <span>All cash prizes are paid in USD.</span>
+                          <div className="w-6 h-6 flex items-center justify-center bg-c1 border-2 border-main rounded-full shrink-0 text-main shadow-[2px_2px_0_var(--color-main)]"><ShieldCheck size={14} strokeWidth={3}/></div>
+                          <span>Reward amounts are displayed in USD for transparency.</span>
                        </div>
                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 flex items-center justify-center bg-c2 border-2 border-main rounded-full shrink-0 text-inv shadow-[2px_2px_0_var(--color-main)]"><CreditCard size={14} strokeWidth={3}/></div>
-                          <span>Payments are processed within 7 business days.</span>
+                          <div className="w-6 h-6 flex items-center justify-center bg-c2 border-2 border-main rounded-full shrink-0 text-inv shadow-[2px_2px_0_var(--color-main)]"><ClipboardCheck size={14} strokeWidth={3}/></div>
+                          <span>Potential winners go through manual eligibility review.</span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="w-6 h-6 flex items-center justify-center bg-c4 border-2 border-main rounded-full shrink-0 text-main shadow-[2px_2px_0_var(--color-main)]"><Clock size={14} strokeWidth={3}/></div>
-                          <span>Minimum payout threshold: $10.</span>
+                          <span>No deposits, entry fees, or stored wallet balance in this MVP.</span>
                        </div>
                        <div className="flex items-center gap-3">
                           <div className="w-6 h-6 flex items-center justify-center bg-c5 border-2 border-main rounded-full shrink-0 text-inv shadow-[2px_2px_0_var(--color-main)]"><Mail size={14} strokeWidth={3}/></div>
-                          <span>Winners will be notified via email.</span>
+                          <span>Approved winners are contacted by email for next steps.</span>
                        </div>
                     </div>
                  </div>
@@ -320,16 +320,16 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                  {/* RECENT TOP WINNERS */}
                  <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] mt-auto">
                     <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main flex justify-between items-center">
-                      <span>RECENT TOP WINNERS</span>
-                      <span className="text-[10px] opacity-80 cursor-pointer hover:underline">VIEW ALL</span>
+                      <span>REWARD TRACK EXAMPLES</span>
+                      <button onClick={() => onNavigate('rewards')} className="text-[10px] opacity-80 cursor-pointer hover:underline">VIEW REWARDS</button>
                     </div>
                     <div className="flex flex-col font-bold text-xs bg-page">
                        {[
-                         { rank: 1, name: 'GoalGuru', amount: '10,000', bg: 'bg-c1 text-main border-r-2 border-main' },
-                         { rank: 2, name: 'NetBuster', amount: '5,000', bg: 'bg-c2 text-inv border-r-2 border-main' },
-                         { rank: 3, name: 'PitchWizard', amount: '2,500', bg: 'bg-c3 text-main border-r-2 border-main' },
-                         { rank: 4, name: 'ScoreMaster', amount: '1,000', bg: 'bg-c4 text-main border-r-2 border-main' },
-                         { rank: 5, name: 'TheOptimist', amount: '1,000', bg: 'bg-c5 text-inv border-r-2 border-main' },
+                         { rank: 1, name: 'Sponsor Grand Prize', amount: '$10,000', bg: 'bg-c1 text-main border-r-2 border-main' },
+                         { rank: 2, name: 'Runner-Up Review', amount: '$5,000', bg: 'bg-c2 text-inv border-r-2 border-main' },
+                         { rank: 3, name: 'Community Recognition', amount: 'Manual', bg: 'bg-c3 text-main border-r-2 border-main' },
+                         { rank: 4, name: 'Weekly Skill Track', amount: '$1,000', bg: 'bg-c4 text-main border-r-2 border-main' },
+                         { rank: 5, name: 'Eligibility Review', amount: 'Required', bg: 'bg-c5 text-inv border-r-2 border-main' },
                        ].map((winner, idx) => (
                          <div key={idx} className={`flex items-center border-[1px] border-b-line ${idx === 4 ? 'border-b-0' : ''}`}>
                             <div className={`w-8 py-2 flex justify-center items-center font-black ${winner.bg}`}>{winner.rank}</div>

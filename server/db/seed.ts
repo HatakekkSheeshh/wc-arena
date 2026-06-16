@@ -5,6 +5,7 @@ import { mockLeagues } from '../../src/data/mockLeagues';
 import { mockMatches } from '../../src/data/mockMatches';
 import { mockPredictions } from '../../src/data/mockPredictions';
 import { mockPrizePoolSummary, mockPrizeTiers } from '../../src/data/mockPrizePool';
+import { mockEligibilityChecks, mockRewards, mockRewardTrustNotes } from '../../src/data/mockRewards';
 import { mockTeams } from '../../src/data/mockTeams';
 import { mockUsers } from '../../src/data/mockUsers';
 import type { PredictDb } from '../types';
@@ -21,5 +22,8 @@ export function createSeedDb(): PredictDb {
     activity: structuredClone(mockActivity),
     prizePoolSummary: structuredClone(mockPrizePoolSummary),
     prizeTiers: structuredClone(mockPrizeTiers),
+    eligibilityChecks: structuredClone(mockEligibilityChecks),
+    rewards: structuredClone(mockRewards),
+    rewardTrustNotes: structuredClone(mockRewardTrustNotes),
   };
 }

@@ -136,3 +136,34 @@ export type ActivityItem = {
   leagueId?: string;
   href?: string;
 };
+
+export type RewardStatus = 'pending' | 'approved' | 'paid' | 'ineligible';
+export type EligibilityStatus = 'passed' | 'review' | 'blocked';
+
+export type EligibilityCheck = {
+  id: string;
+  label: string;
+  description: string;
+  status: EligibilityStatus;
+  href?: string;
+};
+
+export type RewardItem = {
+  id: string;
+  userId: string;
+  title: string;
+  period: string;
+  placement: string;
+  amount: number;
+  currency: string;
+  source: 'sponsor' | 'community' | 'manual';
+  status: RewardStatus;
+  updatedAt: string;
+  note: string;
+};
+
+export type RewardTrustNote = {
+  id: string;
+  title: string;
+  description: string;
+};

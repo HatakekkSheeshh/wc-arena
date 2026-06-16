@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Users, Crosshair, Clock, Settings, Wallet, ChevronDown, CheckCircle2, TrendingUp, Lock, BookOpen, PenTool, BarChart2, ChevronRight, Target } from 'lucide-react';
+import { Trophy, Users, Crosshair, Clock, Settings, UserCheck, ChevronDown, CheckCircle2, TrendingUp, Lock, BookOpen, PenTool, BarChart2, ChevronRight, Target } from 'lucide-react';
 
 export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void }) {
   const [showSettings, setShowSettings] = useState(false);
@@ -53,10 +53,10 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
               )}
             </div>
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <Wallet size={18} strokeWidth={2.5} />
+              <UserCheck size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
-                <span className="text-[10px] uppercase font-bold opacity-80">Wallet</span>
-                <span className="text-sm">$125.40</span>
+                <span className="text-[10px] uppercase font-bold opacity-80">Account</span>
+                <span className="text-sm">Rewards</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
             </button>
@@ -77,7 +77,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                 RULES
              </h1>
              <p className="font-bold text-sm lg:text-lg text-main max-w-lg leading-snug">
-                Learn how points are earned, how prizes are awarded, and how picks are locked.
+                Learn how points are earned, how free-entry rewards are reviewed, and how picks are locked.
              </p>
           </div>
 
@@ -308,7 +308,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                          <ul className="list-none space-y-3">
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">One account per player. Multiple accounts will be disqualified.</span>
+                             <span className="font-bold text-sm">One account per player. Multiple accounts will be disqualified from reward eligibility.</span>
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
@@ -324,7 +324,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">The organizers' decisions are final and binding.</span>
+                             <span className="font-bold text-sm">Rewards are sponsor/community backed, free to enter, and subject to published eligibility review.</span>
                            </li>
                          </ul>
                       </div>
@@ -420,7 +420,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                         <ChevronRight size={18} className="text-subtle group-hover:text-main"/>
                       </div>
                       <div className="flex justify-between items-center py-3 cursor-pointer hover:bg-muted font-bold text-xs sm:text-sm px-4 group">
-                        <span>How are prizes paid out?</span>
+                        <span>How does rewards eligibility work?</span>
                         <ChevronRight size={18} className="text-subtle group-hover:text-main"/>
                       </div>
                    </div>

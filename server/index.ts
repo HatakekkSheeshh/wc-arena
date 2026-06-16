@@ -7,6 +7,7 @@ import { matchesRouter } from './routes/matches';
 import { meRouter } from './routes/me';
 import { predictionsRouter } from './routes/predictions';
 import { prizePoolRouter } from './routes/prizePool';
+import { rewardsRouter } from './routes/rewards';
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 4000);
@@ -25,6 +26,7 @@ app.use('/api', badgesRouter);
 app.use('/api', leaguesRouter);
 app.use('/api', activityRouter);
 app.use('/api', prizePoolRouter);
+app.use('/api', rewardsRouter);
 
 app.listen(port, () => {
   console.log(`Predict 2026 API listening on http://127.0.0.1:${port}`);
