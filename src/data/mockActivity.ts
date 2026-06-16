@@ -1,0 +1,57 @@
+import type { ActivityItem } from '../types/domain';
+import { currentUserId } from './mockUsers';
+
+export const mockActivity: ActivityItem[] = [
+  {
+    id: 'activity-score-bra-esp',
+    type: 'score_calculated',
+    title: 'Exact score confirmed',
+    description: 'Brazil 2-1 Spain matched your prediction and added 3 points to your run.',
+    createdAt: '2026-06-12T20:05:00Z',
+    userId: currentUserId,
+    matchId: 'm-bra-esp',
+    predictionId: 'pred-bra-esp',
+    href: '/predictions/pred-bra-esp',
+  },
+  {
+    id: 'activity-badge-hot-streak',
+    type: 'badge_unlocked',
+    title: 'Badge unlocked: Hot Streak',
+    description: 'Three correct outcomes in a row unlocked a new streak badge.',
+    createdAt: '2026-06-13T17:05:00Z',
+    userId: currentUserId,
+    badgeId: 'hot-streak',
+    href: '/badges',
+  },
+  {
+    id: 'activity-lock-ger-mar',
+    type: 'prediction_locked',
+    title: 'Germany vs Morocco locked',
+    description: 'Your prediction is locked and waiting for the final result.',
+    createdAt: '2026-06-14T17:45:00Z',
+    userId: currentUserId,
+    matchId: 'm-ger-mar',
+    predictionId: 'pred-ger-mar',
+    href: '/matches/m-ger-mar',
+  },
+  {
+    id: 'activity-rank-change',
+    type: 'rank_changed',
+    title: 'Rank moved up',
+    description: 'Your exact score pushed you to rank #124 in the global arena.',
+    createdAt: '2026-06-14T18:10:00Z',
+    userId: currentUserId,
+    leagueId: 'league-global',
+    href: '/leagues/league-global',
+  },
+  {
+    id: 'activity-league-joined',
+    type: 'league_joined',
+    title: 'Joined Friday Football Crew',
+    description: 'You joined a private league with global scoring and symbolic rewards.',
+    createdAt: '2026-05-20T18:05:00Z',
+    userId: currentUserId,
+    leagueId: 'league-friends',
+    href: '/leagues/league-friends',
+  },
+];

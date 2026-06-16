@@ -9,9 +9,14 @@ import Login from './Login';
 import Register from './Register';
 import Onboarding from './Onboarding';
 import Fixtures from './Fixtures';
+import Activity from './pages/Activity';
+import Badges from './pages/Badges';
+import LeagueDetail from './pages/LeagueDetail';
+import Leagues from './pages/Leagues';
 import MatchDetail from './pages/MatchDetail';
 import MyPredictions from './pages/MyPredictions';
 import PredictionBreakdown from './pages/PredictionBreakdown';
+import Profile from './pages/Profile';
 
 export type ThemeControls = {
   isVintage: boolean;
@@ -82,6 +87,11 @@ export default function App() {
         <Route path="/leaderboard" element={<LegacyRoute Component={Leaderboard} themeControls={themeControls} />} />
         <Route path="/rules" element={<LegacyRoute Component={Rules} themeControls={themeControls} />} />
         <Route path="/prize-pool" element={<LegacyRoute Component={PrizePool} themeControls={themeControls} />} />
+        <Route path="/profile" element={<Profile themeControls={themeControls} />} />
+        <Route path="/badges" element={<Badges themeControls={themeControls} />} />
+        <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
+        <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />
+        <Route path="/activity" element={<Activity themeControls={themeControls} />} />
         <Route path="/matches/:matchId" element={<MatchDetail themeControls={themeControls} />} />
         <Route path="/predictions/:predictionId" element={<PredictionBreakdown themeControls={themeControls} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

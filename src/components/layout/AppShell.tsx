@@ -14,8 +14,10 @@ const navItems = [
   { label: 'My Picks', to: '/picks' },
   { label: 'My Predictions', to: '/my-predictions' },
   { label: 'Leaderboard', to: '/leaderboard' },
-  { label: 'Rules', to: '/rules' },
-  { label: 'Prize Pool', to: '/prize-pool' },
+  { label: 'Profile', to: '/profile' },
+  { label: 'Badges', to: '/badges' },
+  { label: 'Leagues', to: '/leagues' },
+  { label: 'Activity', to: '/activity' },
 ];
 
 export default function AppShell({ children, themeControls, fullHeight = false }: AppShellProps) {
@@ -54,11 +56,11 @@ export default function AppShell({ children, themeControls, fullHeight = false }
                 </div>
               )}
             </div>
-            <Link to="/login" className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
+            <Link to="/profile" className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex-col items-start leading-[1.1] hidden sm:flex">
                 <span className="text-[10px] uppercase font-bold opacity-80">Account</span>
-                <span className="text-sm">Sign in</span>
+                <span className="text-sm">Profile</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
             </Link>

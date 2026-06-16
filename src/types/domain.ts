@@ -122,3 +122,17 @@ export type League = {
   prizeMode: 'none' | 'symbolic' | 'sponsor' | 'manual';
   createdAt: string;
 };
+
+export type ActivityItem = {
+  id: string;
+  type: 'prediction_locked' | 'score_calculated' | 'badge_unlocked' | 'rank_changed' | 'league_joined';
+  title: string;
+  description: string;
+  createdAt: string;
+  userId?: string;
+  matchId?: string;
+  predictionId?: string;
+  badgeId?: string;
+  leagueId?: string;
+  href?: string;
+};
