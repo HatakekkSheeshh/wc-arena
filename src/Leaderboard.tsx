@@ -41,12 +41,10 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
         {/* Navigation */}
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
-          <div className="hidden lg:flex space-x-12 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:underline text-main" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('picks')}>MY PICKS</button>
-            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">LEADERBOARD</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+          <div className="hidden lg:flex items-center gap-3 font-black uppercase text-xs tracking-wide">
+            <button className="bg-page hover:bg-muted border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]" onClick={() => onNavigate('matches')}>Matches</button>
+            <button className="bg-page hover:bg-muted border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]" onClick={() => onNavigate('picks')}>Picks</button>
+            <button className="bg-c2 text-inv border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]">Rank</button>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">

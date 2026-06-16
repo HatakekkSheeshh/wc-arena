@@ -73,12 +73,11 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
         {/* Navigation */}
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-20 relative">
           <div className="text-2xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
-          <div className="hidden lg:flex space-x-12 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:underline text-main" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('picks')}>MY PICKS</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:underline text-main" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+          <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>MATCHES</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>RULES</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
