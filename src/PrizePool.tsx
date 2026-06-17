@@ -79,9 +79,6 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
              <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-2 text-main">
                 PRIZE POOL
              </h1>
-             <p className="font-bold text-sm lg:text-lg text-main max-w-lg leading-snug">
-                See sponsor-backed rewards, public eligibility rules, and how the free-to-play contest pool is distributed.
-             </p>
           </div>
 
           {/* Main White Wrapper for Content */}

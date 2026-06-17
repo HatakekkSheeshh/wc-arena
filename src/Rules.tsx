@@ -79,9 +79,6 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
              <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-2 text-main">
                 RULES
              </h1>
-             <p className="font-bold text-sm lg:text-lg text-main max-w-lg leading-snug">
-                Learn how points are earned, how free-entry rewards are reviewed, and how picks are locked.
-             </p>
           </div>
 
           {/* Main White Wrapper for Content */}

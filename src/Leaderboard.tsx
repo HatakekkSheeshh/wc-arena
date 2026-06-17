@@ -102,9 +102,6 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
                 LEADERBOARD
              </h1>
-             <p className="font-bold text-sm lg:text-base text-main">
-                Climb the rankings. Earn points. Win the prize pool.
-             </p>
           </div>
 
           {/* Main White Wrapper for Content */}
