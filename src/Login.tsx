@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { Trophy, BarChart2, Crown, DollarSign, Globe, Settings, Wallet, ChevronDown, Mail, Lock, Eye, CheckSquare, ChevronRight, UserPlus, ClipboardList, PenTool, Star } from 'lucide-react';
+import { Trophy, BarChart2, Crown, DollarSign, Globe, Wallet, ChevronDown, Mail, Lock, Eye, CheckSquare, ChevronRight, UserPlus, ClipboardList, PenTool, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export default function Login({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   return (
     <div className="h-[100dvh] bg-page p-3 sm:p-4 lg:p-6 flex flex-col font-sans relative">
@@ -17,48 +19,19 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
 
         {/* Navigation */}
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative shrink-0">
-          <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
+          <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>{t('common.product')}</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
-                <span className="text-[10px] uppercase font-bold opacity-80">Wallet</span>
+                <span className="text-[10px] uppercase font-bold opacity-80">{t('auth.wallet')}</span>
                 <span className="text-sm">$125.40</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
@@ -78,12 +51,12 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
              
              {/* Left Column Text */}
              <div className="flex-1 flex flex-col bg-card border-4 border-main p-6 lg:p-10 shadow-[8px_8px_0_0_var(--color-shadow)] relative z-10 mb-4 lg:mb-0">
-                <div className="text-c2 font-black uppercase tracking-widest text-sm mb-2">FIFA WORLD CUP 2026™</div>
+                <div className="text-c2 font-black uppercase tracking-widest text-sm mb-2">{t('auth.heroEyebrow')}</div>
                 <h1 className="text-6xl md:text-[5.5rem] font-black uppercase tracking-tighter leading-[0.85] mb-6 drop-shadow-[4px_4px_0_rgba(0,0,0,0.05)] text-main">
-                   JOIN THE<br/>PREDICTION
+                   {t('auth.loginTitleLine1')}<br/>{t('auth.loginTitleLine2')}
                 </h1>
                 <p className="font-bold text-lg max-w-[400px] leading-snug mb-10 text-main">
-                   Predict the exact scores of every match at the FIFA World Cup 2026™. Earn points, climb the leaderboard, and compete for a share of the <span className="text-c3 font-black">$25,000</span> prize pool.
+                   {t('auth.loginBody')}
                 </p>
 
                 {/* Features list */}
@@ -93,8 +66,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                       <Trophy size={24} strokeWidth={2.5}/>
                     </div>
                     <div className="flex flex-col mt-0.5">
-                       <span className="font-black uppercase text-sm leading-tight text-main">PREDICT EXACT SCORES</span>
-                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">Submit exact score predictions for every match.</span>
+                       <span className="font-black uppercase text-sm leading-tight text-main">{t('auth.features.predictTitle')}</span>
+                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">{t('auth.features.predictBody')}</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -102,8 +75,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                       <BarChart2 size={24} strokeWidth={2.5}/>
                     </div>
                     <div className="flex flex-col mt-0.5">
-                       <span className="font-black uppercase text-sm leading-tight text-main">EARN POINTS</span>
-                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">Get points for exact scores, correct outcomes, and streaks.</span>
+                       <span className="font-black uppercase text-sm leading-tight text-main">{t('auth.features.pointsTitle')}</span>
+                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">{t('auth.features.pointsBody')}</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -111,8 +84,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                       <Crown size={24} strokeWidth={2.5}/>
                     </div>
                     <div className="flex flex-col mt-0.5">
-                       <span className="font-black uppercase text-sm leading-tight text-main">WIN BIG</span>
-                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">Top players share the $25,000 prize pool.</span>
+                       <span className="font-black uppercase text-sm leading-tight text-main">{t('auth.features.rewardsTitle')}</span>
+                       <span className="text-xs font-bold text-subtle leading-snug max-w-[200px] mt-1">{t('auth.features.rewardsBody')}</span>
                     </div>
                   </div>
                 </div>
@@ -123,24 +96,24 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
              <div className="w-full max-w-[450px] flex flex-col shrink-0 z-10 relative">
                 {/* Tabs */}
                 <div className="flex items-end text-sm">
-                   <div className="bg-c2 text-inv font-black uppercase px-6 py-3 border-4 border-main border-b-0 w-1/2 text-center cursor-pointer">SIGN IN</div>
-                   <div className="bg-card text-main font-black uppercase px-6 py-3 border-4 border-main border-b-0 border-l-2 w-1/2 text-center cursor-pointer hover:bg-muted" onClick={() => onNavigate('register')}>CREATE ACCOUNT</div>
+                   <div className="bg-c2 text-inv font-black uppercase px-6 py-3 border-4 border-main border-b-0 w-1/2 text-center cursor-pointer">{t('auth.signIn')}</div>
+                   <div className="bg-card text-main font-black uppercase px-6 py-3 border-4 border-main border-b-0 border-l-2 w-1/2 text-center cursor-pointer hover:bg-muted" onClick={() => onNavigate('register')}>{t('auth.createAccount')}</div>
                 </div>
                 
                 {/* Form body */}
                 <div className="bg-card border-4 border-main p-6 flex flex-col gap-4 shadow-[8px_8px_0_0_var(--color-shadow)] relative z-10 w-full mb-6">
                    <div className="flex flex-col gap-1.5">
-                      <label className="font-black uppercase text-xs">EMAIL / USERNAME</label>
+                      <label className="font-black uppercase text-xs">{t('auth.emailUsername')}</label>
                       <div className="relative">
                          <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-main opacity-80"/>
-                         <input type="text" placeholder="Enter your email or username" className="w-full border-2 border-main p-3 pl-10 font-bold text-sm bg-card shadow-[2px_2px_0_0_var(--color-shadow)] focus:shadow-none focus:translate-y-[2px] focus:translate-x-[2px] transition-all outline-none" />
+                         <input type="text" placeholder={t('auth.enterEmailUsername')} className="w-full border-2 border-main p-3 pl-10 font-bold text-sm bg-card shadow-[2px_2px_0_0_var(--color-shadow)] focus:shadow-none focus:translate-y-[2px] focus:translate-x-[2px] transition-all outline-none" />
                       </div>
                    </div>
                    <div className="flex flex-col gap-1.5">
-                      <label className="font-black uppercase text-xs">PASSWORD</label>
+                      <label className="font-black uppercase text-xs">{t('auth.password')}</label>
                       <div className="relative">
                          <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-main opacity-80"/>
-                         <input type="password" placeholder="Enter your password" className="w-full border-2 border-main p-3 pl-10 pr-10 font-bold text-sm bg-card shadow-[2px_2px_0_0_var(--color-shadow)] focus:shadow-none focus:translate-y-[2px] focus:translate-x-[2px] transition-all outline-none" />
+                         <input type="password" placeholder={t('auth.enterPassword')} className="w-full border-2 border-main p-3 pl-10 pr-10 font-bold text-sm bg-card shadow-[2px_2px_0_0_var(--color-shadow)] focus:shadow-none focus:translate-y-[2px] focus:translate-x-[2px] transition-all outline-none" />
                          <Eye size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-main opacity-80 cursor-pointer"/>
                       </div>
                    </div>
@@ -149,27 +122,27 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                          <div className="w-4 h-4 bg-c2 border-2 border-main flex items-center justify-center shrink-0 text-inv">
                             <CheckSquare size={12} className="opacity-100" />
                          </div>
-                         <span className="font-bold text-xs">Remember me</span>
+                         <span className="font-bold text-xs">{t('auth.rememberMe')}</span>
                       </label>
-                      <span className="font-bold text-xs text-c2 cursor-pointer hover:underline">Forgot password?</span>
+                      <span className="font-bold text-xs text-c2 cursor-pointer hover:underline">{t('auth.forgotPassword')}</span>
                    </div>
 
                    <button className="w-full bg-c2 hover:opacity-90 text-inv font-black uppercase py-4 border-2 border-main shadow-[4px_4px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all text-lg mb-2">
-                      SIGN IN
+                      {t('auth.signIn')}
                    </button>
 
                    <div className="relative flex items-center justify-center py-2">
                       <div className="absolute inset-x-0 h-0.5 bg-line top-1/2 -translate-y-1/2 mx-2"></div>
-                      <span className="bg-card px-4 font-bold text-xs uppercase z-10 relative">OR</span>
+                      <span className="bg-card px-4 font-bold text-xs uppercase z-10 relative">{t('auth.or')}</span>
                    </div>
 
                    <button className="w-full bg-card hover:bg-muted text-main font-black uppercase py-3 border-2 border-main shadow-[4px_4px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all text-sm flex items-center justify-center gap-3">
                       <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                      CONTINUE WITH GOOGLE
+                      {t('auth.continueWithGoogle')}
                    </button>
 
                    <div className="text-center font-bold text-xs mt-3">
-                      New here? <span className="text-c2 cursor-pointer hover:underline" onClick={() => onNavigate('register')}>Create an account</span>
+                      {t('auth.newHere')} <span className="text-c2 cursor-pointer hover:underline" onClick={() => onNavigate('register')}>{t('auth.createAccountLink')}</span>
                    </div>
                 </div>
 
@@ -180,8 +153,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                          <DollarSign size={16} strokeWidth={3} className="text-main" />
                       </div>
                       <div className="flex flex-col">
-                         <span className="font-black text-[10px] uppercase text-main">FREE TO PLAY</span>
-                         <span className="text-[9px] font-bold text-subtle leading-tight">No entry fees.<br/>Just sign up and play.</span>
+                         <span className="font-black text-[10px] uppercase text-main">{t('auth.features.freeTitle')}</span>
+                         <span className="text-[9px] font-bold text-subtle leading-tight">{t('auth.features.freeBody')}</span>
                       </div>
                    </div>
                    <div className="flex items-center gap-3 flex-1 border-b-2 md:border-b-0 md:border-r-2 border-line pb-3 md:pb-0 md:px-3">
@@ -189,8 +162,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                          <Globe size={16} strokeWidth={3} />
                       </div>
                       <div className="flex flex-col">
-                         <span className="font-black text-[10px] uppercase text-main">GLOBAL LEADERBOARD</span>
-                         <span className="text-[9px] font-bold text-subtle leading-tight">Compete against players<br/>from around the world.</span>
+                         <span className="font-black text-[10px] uppercase text-main">{t('auth.features.leaderboardTitle')}</span>
+                         <span className="text-[9px] font-bold text-subtle leading-tight">{t('auth.features.leaderboardBody')}</span>
                       </div>
                    </div>
                    <div className="flex items-center gap-3 flex-1 md:pl-3">
@@ -198,8 +171,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                          <Trophy size={16} strokeWidth={3} />
                       </div>
                       <div className="flex flex-col">
-                         <span className="font-black text-[10px] uppercase text-main">PRIZE POOL ELIGIBLE</span>
-                         <span className="text-[9px] font-bold text-subtle leading-tight">Top players qualify for<br/>the $25,000 prize pool.</span>
+                         <span className="font-black text-[10px] uppercase text-main">{t('auth.features.eligibleTitle')}</span>
+                         <span className="text-[9px] font-bold text-subtle leading-tight">{t('auth.features.eligibleBody')}</span>
                       </div>
                    </div>
                 </div>
@@ -220,8 +193,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                    <UserPlus size={28} strokeWidth={2.5}/>
                 </div>
                 <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">CREATE ACCOUNT</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Sign up in seconds and join the competition.</span>
+                   <span className="font-black text-[13px] xl:text-sm tracking-wide">{t('auth.createAccount')}</span>
+                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">{t('auth.steps.createAccountBody')}</span>
                 </div>
                 <div className="flex items-center justify-center px-4 bg-page">
                    <ChevronRight size={24} className="text-main" />
@@ -238,8 +211,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                    <ClipboardList size={28} strokeWidth={2.5}/>
                 </div>
                 <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">MAKE YOUR PICKS</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Predict exact scores for every match.</span>
+                   <span className="font-black text-[13px] xl:text-sm tracking-wide">{t('picks.makeYourPicks')}</span>
+                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">{t('auth.features.predictBody')}</span>
                 </div>
                 <div className="flex items-center justify-center px-4 bg-page">
                    <ChevronRight size={24} className="text-main" />
@@ -255,8 +228,8 @@ export default function Login({ onNavigate, isVintage, setIsVintage, isDark, set
                    <BarChart2 size={28} strokeWidth={2.5}/>
                 </div>
                 <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">CLIMB THE LEADERBOARD</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Earn points, track your rank, and win prizes.</span>
+                   <span className="font-black text-[13px] xl:text-sm tracking-wide">{t('auth.features.climbTitle')}</span>
+                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">{t('auth.steps.winPrizesBody')}</span>
                 </div>
              </div>
 

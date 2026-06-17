@@ -1,54 +1,54 @@
 import { Activity, Award, ClipboardList, Medal, ShieldCheck, Trophy, User, Users, Wallet } from 'lucide-react';
 
 export type NavigationItem = {
-  label: string;
-  shortLabel?: string;
+  labelKey: string;
+  shortLabelKey?: string;
   to: string;
   icon?: typeof Trophy;
 };
 
 export type NavigationGroup = {
-  label: string;
+  labelKey: string;
   items: NavigationItem[];
 };
 
 export const publicNavigation: NavigationItem[] = [
-  { label: 'Matches', to: '/matches' },
-  { label: 'Leaderboard', to: '/leaderboard' },
-  { label: 'Rules', to: '/rules' },
-  { label: 'Prize Pool', to: '/prize-pool' },
+  { labelKey: 'nav.public.matches', to: '/matches' },
+  { labelKey: 'nav.public.leaderboard', to: '/leaderboard' },
+  { labelKey: 'nav.public.rules', to: '/rules' },
+  { labelKey: 'nav.public.prizePool', to: '/prize-pool' },
 ];
 
 export const appNavigationGroups: NavigationGroup[] = [
   {
-    label: 'Play',
+    labelKey: 'nav.groups.play',
     items: [
-      { label: 'Matches', shortLabel: 'Matches', to: '/matches', icon: Trophy },
-      { label: 'My Picks', shortLabel: 'Picks', to: '/picks', icon: ClipboardList },
-      { label: 'My Predictions', shortLabel: 'Predicts', to: '/my-predictions', icon: Medal },
-      { label: 'Leaderboard', shortLabel: 'Rank', to: '/leaderboard', icon: Award },
+      { labelKey: 'nav.items.matches', shortLabelKey: 'nav.items.matches', to: '/matches', icon: Trophy },
+      { labelKey: 'nav.items.myPicks', shortLabelKey: 'nav.items.picks', to: '/picks', icon: ClipboardList },
+      { labelKey: 'nav.items.myPredictions', shortLabelKey: 'nav.items.predicts', to: '/my-predictions', icon: Medal },
+      { labelKey: 'nav.items.leaderboard', shortLabelKey: 'nav.items.rank', to: '/leaderboard', icon: Award },
     ],
   },
   {
-    label: 'Social',
+    labelKey: 'nav.groups.social',
     items: [
-      { label: 'Leagues', to: '/leagues', icon: Users },
-      { label: 'Activity', to: '/activity', icon: Activity },
-      { label: 'Badges', to: '/badges', icon: Medal },
+      { labelKey: 'nav.items.leagues', to: '/leagues', icon: Users },
+      { labelKey: 'nav.items.activity', to: '/activity', icon: Activity },
+      { labelKey: 'nav.items.badges', to: '/badges', icon: Medal },
     ],
   },
   {
-    label: 'Account',
+    labelKey: 'nav.groups.account',
     items: [
-      { label: 'Profile', to: '/profile', icon: User },
-      { label: 'Rewards', to: '/rewards', icon: Wallet },
+      { labelKey: 'nav.items.profile', to: '/profile', icon: User },
+      { labelKey: 'nav.items.rewards', to: '/rewards', icon: Wallet },
     ],
   },
   {
-    label: 'Admin',
+    labelKey: 'nav.groups.admin',
     items: [
-      { label: 'Control Room', to: '/admin', icon: ShieldCheck },
-      { label: 'Audit Log', to: '/admin/audit', icon: ClipboardList },
+      { labelKey: 'nav.items.controlRoom', to: '/admin', icon: ShieldCheck },
+      { labelKey: 'nav.items.auditLog', to: '/admin/audit', icon: ClipboardList },
     ],
   },
 ];

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Wallet, ChevronDown, Calendar, Star, TrendingDown, TrendingUp, BarChart2, Medal, User, Settings } from 'lucide-react';
 import { RainbowGraphic } from './Landing';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   const leaderboardTop3 = [
     { rank: 2, name: 'NetBuster', pts: '2,120', avatar: 'https://i.pravatar.cc/150?u=2', exactScores: 34, color: 'bg-c2', textColor: 'text-accent-inv', border: 'border-main' },
@@ -42,42 +45,13 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">LEADERBOARD</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">{t('nav.public.leaderboard')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
@@ -90,8 +64,8 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
         </nav>
 
         {/* BIG BACKGROUND IMAGE */}
-        <div className="absolute inset-0 z-0 top-[84px] pointer-events-none opacity-90 overflow-hidden flex justify-center">
-           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-center lg:object-top" />
+        <div className="absolute inset-x-0 top-[84px] h-[calc(100vh-116px)] z-0 pointer-events-none opacity-90 overflow-hidden flex justify-center">
+           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-top" />
         </div>
 
         {/* Main Content Area (Scrollable or growing) */}
@@ -100,7 +74,7 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
           {/* Top Info Banner */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
-                LEADERBOARD
+                {t('nav.public.leaderboard')}
              </h1>
           </div>
 
@@ -111,7 +85,7 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
             <div className="flex border-4 border-main bg-c1 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
               <div className="shrink-0 mr-3"><Trophy size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">PRIZE POOL</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.prizePool')}</div>
                 <div className="text-xl sm:text-2xl font-black leading-none">$25,000</div>
                 <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
               </div>
@@ -354,7 +328,7 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
                        <span className="text-main font-black">18</span>
                     </div>
                     <div className="flex justify-between items-center pb-3 border-b-2 border-line text-subtle">
-                       <span className="flex items-center gap-2 text-main"><Calendar size={16} /> TOTAL MATCHES</span>
+                       <span className="flex items-center gap-2 text-main"><Calendar size={16} /> TOTAL {t('nav.public.matches')}</span>
                        <span className="text-main font-black">28</span>
                     </div>
                     
@@ -401,7 +375,7 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
                        <span>$50</span>
                     </div>
                     <div className="flex justify-between items-center pt-3 border-t-2 border-main font-black uppercase">
-                       <span>TOTAL PRIZE POOL</span>
+                       <span>TOTAL {t('nav.public.prizePool')}</span>
                        <span className="text-lg">$25,000</span>
                     </div>
                   </div>

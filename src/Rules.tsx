@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { Trophy, Users, Crosshair, Clock, Settings, UserCheck, ChevronDown, CheckCircle2, TrendingUp, Lock, BookOpen, PenTool, BarChart2, ChevronRight, Target } from 'lucide-react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Trophy, Users, Crosshair, Clock, UserCheck, ChevronDown, CheckCircle2, TrendingUp, Lock, BookOpen, PenTool, BarChart2, ChevronRight, Target } from 'lucide-react';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   return (
-    <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex flex-col font-sans relative">
-      <div className="w-full max-w-[1600px] border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all relative bg-card flex-1">
+    <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex items-center justify-center font-sans">
+      <div className="w-full max-w-[1600px] border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all relative bg-card">
         
         {/* Mac OS styling frame header */}
         <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2 relative z-30 shrink-0">
@@ -19,47 +22,18 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative shrink-0">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
+            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <UserCheck size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
-                <span className="text-[10px] uppercase font-bold opacity-80">Account</span>
-                <span className="text-sm">Rewards</span>
+                <span className="text-[10px] uppercase font-bold opacity-80">{t('common.account')}</span>
+                <span className="text-sm">{t('common.rewards')}</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
             </button>
@@ -67,57 +41,57 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
         </nav>
 
         {/* BIG BACKGROUND IMAGE */}
-        <div className="absolute inset-0 z-0 top-[84px] pointer-events-none opacity-90 overflow-hidden flex justify-center">
-           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-center lg:object-top" />
+        <div className="absolute inset-x-0 top-[84px] h-[calc(100vh-116px)] z-0 pointer-events-none opacity-90 overflow-hidden flex justify-center">
+           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-top" />
         </div>
 
         {/* Main Content Area */}
-        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 flex-1 overflow-y-auto">
+        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
           
           {/* Top Info Banner */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
-                RULES
+                {t('nav.public.rules')}
              </h1>
           </div>
 
           {/* Main White Wrapper for Content */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
           {/* Top KPI row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            <div className="flex border-4 border-main bg-c1 p-3 lg:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3 lg:mr-4"><Trophy size={40} strokeWidth={2.5}/></div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="flex border-4 border-main bg-c1 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
+              <div className="shrink-0 mr-3"><Trophy size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">PRIZE POOL</div>
-                <div className="text-2xl lg:text-3xl font-black leading-none tracking-tight">$25,000</div>
-                <div className="text-[9px] lg:text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.prizePool')}</div>
+                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">$25,000</div>
+                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
               </div>
             </div>
             
-            <div className="flex border-4 border-main bg-c2 p-3 lg:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3 lg:mr-4"><Users size={40} strokeWidth={2.5}/></div>
+            <div className="flex border-4 border-main bg-c2 p-3 sm:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
+              <div className="shrink-0 mr-3"><Users size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
-                <div className="text-2xl lg:text-3xl font-black leading-none tracking-tight">12,480</div>
-                <div className="text-[9px] lg:text-[10px] font-bold uppercase mt-1">JOINED</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
+                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">12,480</div>
+                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">JOINED</div>
               </div>
             </div>
 
-            <div className="flex border-4 border-main bg-c3 p-3 lg:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3 lg:mr-4"><Crosshair size={40} strokeWidth={2.5}/></div>
+            <div className="flex border-4 border-main bg-c3 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
+              <div className="shrink-0 mr-3"><Crosshair size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">SCORING SYSTEM</div>
-                <div className="text-2xl lg:text-3xl font-black leading-none tracking-tight">POINTS BASED</div>
-                <div className="text-[9px] lg:text-[10px] font-bold uppercase mt-1">MULTIPLE BONUS TYPES</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">SCORING SYSTEM</div>
+                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">POINTS BASED</div>
+                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">MULTIPLE BONUS TYPES</div>
               </div>
             </div>
 
-            <div className="flex border-4 border-main bg-c4 p-3 lg:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3 lg:mr-4"><Clock size={40} strokeWidth={2.5}/></div>
+            <div className="flex border-4 border-main bg-c4 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
+              <div className="shrink-0 mr-3"><Clock size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">DEADLINE BEFORE KICKOFF</div>
-                <div className="text-2xl lg:text-3xl font-black leading-none tracking-tight">PICKS LOCK</div>
-                <div className="text-[9px] lg:text-[10px] font-bold uppercase mt-1">AT KICKOFF</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">DEADLINE BEFORE KICKOFF</div>
+                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">PICKS LOCK</div>
+                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">AT KICKOFF</div>
               </div>
             </div>
           </div>
@@ -301,30 +275,29 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                       </div>
                    </div>
 
-                   {/* IMPORTANT RULES */}
                    <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-2">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">IMPORTANT RULES</div>
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">{t('rules.importantRules')}</div>
                       <div className="p-4 lg:p-5 flex flex-col justify-center h-full">
                          <ul className="list-none space-y-3">
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">One account per player. Multiple accounts will be disqualified from reward eligibility.</span>
+                             <span className="font-bold text-sm">{t('rules.importantItems.oneAccount')}</span>
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">Picks can be edited only before the kickoff deadline.</span>
+                             <span className="font-bold text-sm">{t('rules.importantItems.editBeforeKickoff')}</span>
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">No late entries. Picks after kickoff receive 0 points.</span>
+                             <span className="font-bold text-sm">{t('rules.importantItems.noLateEntries')}</span>
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">Any suspicious activity may result in disqualification.</span>
+                             <span className="font-bold text-sm">{t('rules.importantItems.suspiciousActivity')}</span>
                            </li>
                            <li className="flex items-start gap-3">
                              <div className="w-1.5 h-1.5 rounded-full bg-c5 shrink-0 mt-2"></div>
-                             <span className="font-bold text-sm">Rewards are sponsor/community backed, free to enter, and subject to published eligibility review.</span>
+                             <span className="font-bold text-sm">{t('rules.importantItems.rewardEligibility')}</span>
                            </li>
                          </ul>
                       </div>

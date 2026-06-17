@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Gift, ShieldCheck, Star, Trophy, Users } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import PageHero from '../components/ui/PageHero';
@@ -40,6 +41,7 @@ function getEligibilityIcon(status: EligibilityStatus) {
 }
 
 export default function Rewards({ themeControls }: RewardsProps) {
+  const { t } = useTranslation();
   const approvedCount = mockRewards.filter((reward) => reward.status === 'approved' || reward.status === 'paid').length;
   const pendingCount = mockRewards.filter((reward) => reward.status === 'pending').length;
   const potentialAmount = mockRewards.reduce((sum, reward) => sum + reward.amount, 0);
@@ -48,20 +50,20 @@ export default function Rewards({ themeControls }: RewardsProps) {
   return (
     <AppShell themeControls={themeControls}>
       <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 bg-page flex-1">
-        <PageHero title="Rewards" description="Track sponsor-backed reward eligibility, manual payout review, and the public rules that keep the contest skill-based.">
-          <Link to="/rules" className="bg-c2 text-inv font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] text-xs">Public Rules</Link>
+        <PageHero title={t('appPages.rewards.title')} description={t('appPages.rewards.description')}>
+          <Link to="/rules" className="bg-c2 text-inv font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] text-xs">{t('appPages.rewards.publicRules')}</Link>
         </PageHero>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-          <StatCard label="Eligible Checks" value={`${passedChecks}/${mockEligibilityChecks.length}`} subtitle="Manual review ready" tone="green" icon={<ClipboardCheck size={34} strokeWidth={2.5} />} />
-          <StatCard label="Reward Tracks" value={mockRewards.length} subtitle="Sponsor/community" tone="blue" icon={<Gift size={34} strokeWidth={2.5} />} />
-          <StatCard label="Pending Review" value={pendingCount} subtitle="No instant payout" tone="orange" icon={<ShieldCheck size={34} strokeWidth={2.5} />} />
-          <StatCard label="Approved Items" value={approvedCount} subtitle={formatCurrency(potentialAmount, 'USD')} tone="lime" icon={<Trophy size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.rewards.eligibleChecks')} value={`${passedChecks}/${mockEligibilityChecks.length}`} subtitle={t('appPages.rewards.manualReviewReady')} tone="green" icon={<ClipboardCheck size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.rewards.rewardTracks')} value={mockRewards.length} subtitle={t('appPages.rewards.sponsorCommunity')} tone="blue" icon={<Gift size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.rewards.pendingReview')} value={pendingCount} subtitle={t('appPages.rewards.noInstantPayout')} tone="orange" icon={<ShieldCheck size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.rewards.approvedItems')} value={approvedCount} subtitle={formatCurrency(potentialAmount, 'USD')} tone="lime" icon={<Trophy size={34} strokeWidth={2.5} />} />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 lg:gap-6 items-start">
           <div className="flex flex-col gap-4 lg:gap-6">
-            <Panel title="Eligibility Checklist">
+            <Panel title={t('appPages.rewards.eligibilityChecklist')}>
               <div className="bg-card grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
                 {mockEligibilityChecks.map((check) => (
                   <div key={check.id} className="border-2 border-main bg-page p-4 shadow-[2px_2px_0_var(--color-shadow)] flex gap-3">
@@ -71,14 +73,14 @@ export default function Rewards({ themeControls }: RewardsProps) {
                     <div className="min-w-0">
                       <div className="font-black uppercase text-sm">{check.label}</div>
                       <div className="font-bold text-xs text-subtle mt-1 leading-snug">{check.description}</div>
-                      {check.href && <Link to={check.href} className="inline-flex mt-3 text-[10px] font-black uppercase text-c2 hover:underline">Review details</Link>}
+                      {check.href && <Link to={check.href} className="inline-flex mt-3 text-[10px] font-black uppercase text-c2 hover:underline">{t('appPages.rewards.reviewDetails')}</Link>}
                     </div>
                   </div>
                 ))}
               </div>
             </Panel>
 
-            <Panel title="Reward Status" className="overflow-hidden">
+            <Panel title={t('appPages.rewards.rewardStatus')} className="overflow-hidden">
               <div className="bg-card flex flex-col">
                 {mockRewards.map((reward) => (
                   <div key={reward.id} className="grid grid-cols-1 md:grid-cols-[1fr_150px_130px] border-b-2 border-line last:border-b-0 font-bold text-sm">
@@ -101,19 +103,19 @@ export default function Rewards({ themeControls }: RewardsProps) {
           </div>
 
           <div className="flex flex-col gap-4 lg:gap-6">
-            <Panel title="Payout Safety">
+            <Panel title={t('appPages.rewards.payoutSafety')}>
               <div className="p-4 bg-card flex flex-col gap-3 font-bold text-sm">
                 <div className="border-2 border-main bg-c1 text-main p-4 shadow-[2px_2px_0_var(--color-shadow)]">
-                  <div className="font-black uppercase flex items-center gap-2"><ShieldCheck size={18} /> No wallet balance</div>
-                  <p className="text-xs mt-2 leading-snug">This MVP does not store deposits, withdrawals, or cash balances. Potential winners are contacted manually after eligibility review.</p>
+                  <div className="font-black uppercase flex items-center gap-2"><ShieldCheck size={18} /> {t('appPages.rewards.noWalletBalance')}</div>
+                  <p className="text-xs mt-2 leading-snug">{t('appPages.rewards.noWalletBody')}</p>
                 </div>
-                <Link to="/prize-pool" className="bg-c2 text-inv border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Trophy size={16} /> View prize pool</Link>
-                <Link to="/leaderboard" className="bg-card border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Users size={16} /> Check leaderboard rank</Link>
-                <Link to="/my-predictions" className="bg-card border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Star size={16} /> Improve predictions</Link>
+                <Link to="/prize-pool" className="bg-c2 text-inv border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Trophy size={16} /> {t('appPages.rewards.viewPrizePool')}</Link>
+                <Link to="/leaderboard" className="bg-card border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Users size={16} /> {t('appPages.rewards.checkLeaderboardRank')}</Link>
+                <Link to="/my-predictions" className="bg-card border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)] font-black uppercase text-xs flex items-center gap-2"><Star size={16} /> {t('appPages.rewards.improvePredictions')}</Link>
               </div>
             </Panel>
 
-            <Panel title="Trust Notes">
+            <Panel title={t('appPages.rewards.trustNotes')}>
               <div className="p-4 bg-card flex flex-col gap-3">
                 {mockRewardTrustNotes.map((note) => (
                   <div key={note.id} className="border-2 border-main bg-page p-3 shadow-[2px_2px_0_var(--color-shadow)]">
@@ -124,7 +126,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
               </div>
             </Panel>
 
-            <Panel title="Review Timeline">
+            <Panel title={t('appPages.rewards.reviewTimeline')}>
               <div className="p-4 bg-card flex flex-col gap-3 text-xs font-bold">
                 {mockRewards.map((reward) => (
                   <div key={reward.id} className="flex justify-between gap-3 border-b-2 border-line last:border-b-0 pb-3 last:pb-0">

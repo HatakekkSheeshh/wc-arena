@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Wallet, ChevronDown, Calendar, Star, CheckCircle, Pencil, Lock, Target, TrendingUp, BarChart2, ArrowRight, User, Settings } from 'lucide-react';
 import { PitchIcon, RainbowGraphic } from './Landing';
 import { BR, ES, FR, AR, JP, MX, DE, MA, US as USFlag, KR } from 'country-flag-icons/react/3x2';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   const matches = [
     {
@@ -81,42 +84,13 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-20 relative">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1]">
@@ -147,7 +121,7 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
           <div className="flex items-center gap-4 sm:border-r-4 border-b-4 sm:border-b-0 border-main p-4 lg:p-5 bg-c1 text-main">
             <div className="shrink-0"><Trophy size={36} strokeWidth={2.5}/></div>
             <div className="flex flex-col justify-center">
-              <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">PRIZE POOL</div>
+              <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.prizePool')}</div>
               <div className="text-2xl sm:text-3xl font-black leading-none">$25,000</div>
               <div className="text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
             </div>
@@ -163,7 +137,7 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
           <div className="flex items-center gap-4 border-main p-4 lg:p-5 bg-c3 text-main">
             <div className="shrink-0"><PitchIcon className="w-9 h-9" /></div>
             <div className="flex flex-col justify-center">
-              <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">MATCHES OPEN</div>
+              <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.matches')} OPEN</div>
               <div className="text-2xl sm:text-3xl font-black leading-none">28</div>
               <div className="text-[10px] font-bold uppercase mt-1">MAKE YOUR PICKS</div>
             </div>
@@ -357,7 +331,7 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
             <div className="flex flex-col border-b-4 border-main">
                <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-[11px] flex justify-between items-center">
                  <span>TOP PLAYERS THIS WEEK</span>
-                 <span className="text-faint font-bold hover:text-inv cursor-pointer" onClick={() => onNavigate('leaderboard')}>VIEW LEADERBOARD</span>
+                 <span className="text-faint font-bold hover:text-inv cursor-pointer" onClick={() => onNavigate('leaderboard')}>VIEW {t('nav.public.leaderboard')}</span>
                </div>
                <div className="flex flex-col bg-card">
                   {leaderboardWrapper.map((item) => (
@@ -383,7 +357,7 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
             <div className="flex flex-row flex-1">
                <div className="flex-1 flex flex-col border-r-4 border-main">
                   <div className="bg-main text-inv font-black px-3 py-2 uppercase tracking-wide text-[11px]">
-                     SCORING RULES
+                     SCORING {t('nav.public.rules')}
                   </div>
                   <div className="p-3 flex flex-col gap-2 font-bold text-xs bg-card text-subtle">
                      <div className="flex items-center gap-2">

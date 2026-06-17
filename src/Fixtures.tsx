@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FR, DE, AR, SA, BR, MX, GB, TN, US as USFlag, ES, CR, MA, HR, CH, HU } from 'country-flag-icons/react/3x2';
-import { 
-  Trophy, Settings, Wallet, ChevronDown, ChevronRight, Clock, Search, Filter, 
+import {
+  Trophy, Wallet, ChevronDown, ChevronRight, Clock, Search, Filter,
   MapPin, CheckCircle2, XCircle, ArrowRight, Star, AlertCircle,
-  PlayCircle, Calendar, Flag, Goal, Activity, BarChart2, Check, ExternalLink, CalendarDays, MonitorPlay, Binoculars, Pencil
+  PlayCircle, Calendar, Flag, Goal, Activity, BarChart2, Check, ExternalLink, CalendarDays, MonitorPlay, Binoculars, Pencil, Settings
 } from 'lucide-react';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   return (
     <div className="h-[100dvh] bg-page p-3 sm:p-4 lg:p-6 flex flex-col font-sans relative">
@@ -24,42 +27,13 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative shrink-0">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button onClick={() => onNavigate('login')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex flex-col items-start leading-[1.1] hidden sm:flex">
@@ -98,7 +72,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                 <MonitorPlay size={32} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                 <span className="font-black text-[10px] md:text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL MATCHES</span>
+                 <span className="font-black text-[10px] md:text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL {t('nav.public.matches')}</span>
                  <span className="font-black text-2xl sm:text-3xl leading-none text-main">64</span>
               </div>
             </div>
@@ -510,7 +484,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                 {/* Today's Live Matches */}
                 <div className="flex flex-col border-b-4 border-main">
                    <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center justify-between border-b-4 border-main">
-                      <span>TODAY'S LIVE MATCHES</span>
+                      <span>TODAY'S LIVE {t('nav.public.matches')}</span>
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-c4 animate-pulse"></div> <span className="text-[9px]">LIVE</span></div>
                    </div>
                    <div className="flex flex-col">
@@ -641,7 +615,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                    <Pencil size={28} strokeWidth={2.5}/>
                 </div>
                 <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">PICK MATCHES</span>
+                   <span className="font-black text-[13px] xl:text-sm tracking-wide">PICK {t('nav.public.matches')}</span>
                    <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Make your predictions before kickoff.</span>
                 </div>
              </div>
@@ -669,7 +643,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                    <Trophy size={28} strokeWidth={2.5}/>
                 </div>
                 <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">CLIMB LEADERBOARD</span>
+                   <span className="font-black text-[13px] xl:text-sm tracking-wide">CLIMB {t('nav.public.leaderboard')}</span>
                    <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Earn points and rank higher each week.</span>
                 </div>
              </div>

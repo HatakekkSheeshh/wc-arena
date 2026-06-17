@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Trophy, Users, Clock, ArrowRight, User, Target, CheckCircle, TrendingUp, Pencil, Lock, Settings } from 'lucide-react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Trophy, Users, Clock, ArrowRight, User, Target, CheckCircle, TrendingUp, Pencil, Lock } from 'lucide-react';
 import { BR, ES, FR, AR, JP, MX } from 'country-flag-icons/react/3x2';
+import LegacySettingsMenu from './components/LegacySettingsMenu';
 
 export function PitchIcon({ className }: { className?: string }) {
   return (
@@ -24,13 +26,14 @@ export const RainbowGraphic = () => (
 );
 
 export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
-  const [showSettings, setShowSettings] = useState(false);
+  const { t } = useTranslation();
+  const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   const stats = [
-    { label: 'PRIZE POOL', value: '$25,000', bgColor: 'bg-c1', textColor: 'text-accent-on', icon: <Trophy size={36} strokeWidth={2.5}/> },
-    { label: 'PLAYERS', value: '12,480', bgColor: 'bg-c2', textColor: 'text-accent-inv', icon: <Users size={36} strokeWidth={2.5}/> },
-    { label: 'MATCHES', value: '64', bgColor: 'bg-c3', textColor: 'text-accent-on', icon: <PitchIcon className="w-9 h-9" /> },
-    { label: 'DEADLINE', value: '02:15:34', bgColor: 'bg-c5', textColor: 'text-accent-inv', icon: <Clock size={36} strokeWidth={2.5}/> },
+    { label: t('landing.stats.prizePool'), value: '$25,000', bgColor: 'bg-c1', textColor: 'text-accent-on', icon: <Trophy size={36} strokeWidth={2.5}/> },
+    { label: t('landing.stats.players'), value: '12,480', bgColor: 'bg-c2', textColor: 'text-accent-inv', icon: <Users size={36} strokeWidth={2.5}/> },
+    { label: t('landing.stats.matches'), value: '64', bgColor: 'bg-c3', textColor: 'text-accent-on', icon: <PitchIcon className="w-9 h-9" /> },
+    { label: t('landing.stats.deadline'), value: '02:15:34', bgColor: 'bg-c5', textColor: 'text-accent-inv', icon: <Clock size={36} strokeWidth={2.5}/> },
   ];
 
   const matchData = [
@@ -74,44 +77,15 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-20 relative">
           <div className="text-2xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>MATCHES</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>RULES</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
-                <Settings size={20} className="text-main" />
-              </button>
-              {showSettings && (
-                <div className="absolute right-0 top-14 bg-card border-4 border-main p-4 w-52 shadow-[4px_4px_0_0_var(--color-shadow)] z-50 flex flex-col gap-2">
-                  <div className="font-bold uppercase text-xs text-main">Settings</div>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Vintage Mode</span>
-                    <input type="checkbox" checked={isVintage} onChange={(e) => setIsVintage(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Dark Mode</span>
-                    <input type="checkbox" checked={isDark} onChange={(e) => setIsDark(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Rounded Corners</span>
-                    <input type="checkbox" checked={isRounded} onChange={(e) => setIsRounded(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Shadows</span>
-                    <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
-                    <span className="text-sm font-bold text-main">Mac Frame</span>
-                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
-                  </label>
-                </div>
-              )}
-            </div>
+            <LegacySettingsMenu {...themeControls} />
             <button onClick={() => onNavigate('register')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 md:px-6 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
-              JOIN NOW <ArrowRight size={18} strokeWidth={3} />
+              {t('landing.joinNow')} <ArrowRight size={18} strokeWidth={3} />
             </button>
           </div>
         </nav>
@@ -122,19 +96,19 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
           
           <div className="relative z-10 w-full md:w-[60%] lg:w-[50%] xl:w-[45%] p-8 lg:p-10 lg:pr-10 xl:p-12">
             <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-black uppercase leading-[0.95] tracking-tighter mb-3 lg:mb-4 text-main drop-shadow-sm md:drop-shadow-none">
-              Predict the score.<br/>
-              Climb the leaderboard.<br/>
-              Win the pool.
+              {t('landing.heroLine1')}<br/>
+              {t('landing.heroLine2')}<br/>
+              {t('landing.heroLine3')}
             </h1>
             <p className="font-semibold text-sm sm:text-base lg:text-lg max-w-lg lg:max-w-xl mb-6 lg:mb-8 leading-snug text-subtle drop-shadow-sm md:drop-shadow-none">
-              Predict the exact scores for 2026 tournament matches and compete with thousands for a share of the prize pool.
+              {t('landing.heroBody')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button onClick={() => onNavigate('register')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black px-8 py-3 lg:py-4 uppercase flex items-center justify-center gap-3 border-[3px] border-main shadow-[4px_4px_0px_var(--color-shadow)] focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
-                MAKE PREDICTIONS <ArrowRight size={20} className="mt-0.5" strokeWidth={3} />
+                {t('landing.makePredictions')} <ArrowRight size={20} className="mt-0.5" strokeWidth={3} />
               </button>
               <button onClick={() => onNavigate('leaderboard')} className="bg-card hover:bg-muted text-main font-black px-8 py-3 lg:py-4 uppercase flex items-center justify-center border-[3px] border-main shadow-[4px_4px_0px_var(--color-shadow)] focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
-                VIEW LEADERBOARD
+                {t('landing.viewLeaderboard')}
               </button>
             </div>
           </div>
@@ -160,7 +134,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
           <div className="flex-1 border-r-0 lg:border-r-4 border-main flex flex-col">
             
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main flex items-center">
-              Upcoming Matches
+              {t('landing.upcomingMatches')}
             </div>
             
             <div className="flex flex-col bg-card">
@@ -190,7 +164,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                         <div className="font-black text-xl lg:text-2xl">-</div>
                         <input type="text" maxLength={1} placeholder="-" className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-10 border-[3px] border-main flex items-center justify-center font-black text-lg text-center bg-card shadow-[2px_2px_0_0_var(--color-shadow)] focus:shadow-none focus:translate-y-[2px] transition-all outline-none" />
                       </div>
-                      <div className="text-[9px] sm:text-[10px] font-bold mt-1 tracking-wider uppercase border border-main bg-muted px-1.5 py-0.5 rounded-sm">KICKOFF IN {match.kickoff}</div>
+                      <div className="text-[9px] sm:text-[10px] font-bold mt-1 tracking-wider uppercase border border-main bg-muted px-1.5 py-0.5 rounded-sm">{t('landing.kickoffIn', { time: match.kickoff })}</div>
                     </div>
 
                     {/* Team 2 */}
@@ -207,7 +181,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
 
             {/* Save Picks Action */}
             <div onClick={() => onNavigate('picks')} className="bg-c2 hover:opacity-80 transition-opacity transition-colors text-inv font-black text-lg sm:text-xl py-4 flex items-center justify-center gap-3 border-b-4 border-main cursor-pointer shadow-[0_-4px_0_0_inset_rgba(0,0,0,0.2)]">
-              SAVE PICKS <ArrowRight size={22} strokeWidth={3} className="mt-0.5" />
+              {t('landing.savePicks')} <ArrowRight size={22} strokeWidth={3} className="mt-0.5" />
             </div>
 
             {/* Steps Info Strip */}
@@ -219,8 +193,8 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                   <Pencil size={24} strokeWidth={2.5} className="text-accent-on" />
                 </div>
                 <div className="p-2 sm:p-3 lg:p-4 flex flex-col justify-center">
-                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5">Predict</div>
-                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">Pick the exact scores<br className="hidden sm:block"/>for upcoming matches.</div>
+                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5">{t('landing.steps.predict')}</div>
+                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">{t('landing.steps.predictBody')}</div>
                 </div>
               </div>
 
@@ -231,8 +205,8 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                   <Lock size={24} strokeWidth={2.5} className="text-accent-inv" />
                 </div>
                 <div className="p-2 sm:p-3 lg:p-4 flex flex-col justify-center">
-                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5 truncate">Lock before kickoff</div>
-                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">Submit your picks before<br className="hidden sm:block"/>the match kicks off.</div>
+                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5 truncate">{t('landing.steps.lock')}</div>
+                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">{t('landing.steps.lockBody')}</div>
                 </div>
               </div>
 
@@ -243,8 +217,8 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                   <Trophy size={24} strokeWidth={2.5} className="text-accent-on" />
                 </div>
                 <div className="p-2 sm:p-3 lg:p-4 flex flex-col justify-center">
-                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5">Win Rewards</div>
-                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">Climb the leaderboard<br className="hidden sm:block"/>and win a share of the pool.</div>
+                  <div className="font-black uppercase text-xs lg:text-sm mb-0.5">{t('landing.steps.rewards')}</div>
+                  <div className="font-medium text-[10px] lg:text-xs text-subtle leading-tight">{t('landing.steps.rewardsBody')}</div>
                 </div>
               </div>
             </div>
@@ -256,7 +230,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
             
             {/* Leaderboard Title */}
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main flex items-center">
-              Top 5 Leaderboard
+              {t('landing.topLeaderboard')}
             </div>
 
             {/* Leaderboard Table */}
@@ -281,7 +255,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
 
             {/* Scoring Rules Title */}
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main">
-              How Scoring Works
+              {t('landing.scoringTitle')}
             </div>
             
             {/* Scoring Rules Content */}
@@ -290,19 +264,19 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                 <div className="bg-c1 p-1 border-2 border-main flex items-center justify-center">
                   <Target size={20} strokeWidth={3} className="text-accent-on"/>
                 </div>
-                <span>Exact score = 3 pts</span>
+                <span>{t('landing.exactScore')}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="bg-c2 text-inv p-1 border-2 border-main flex items-center justify-center">
                   <CheckCircle size={20} strokeWidth={3} className="text-accent-inv"/>
                 </div>
-                <span>Correct outcome = 1 pt</span>
+                <span>{t('landing.correctOutcome')}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="bg-c4 text-inv p-1 border-2 border-main flex items-center justify-center">
                   <TrendingUp size={20} strokeWidth={3} className="text-accent-inv"/>
                 </div>
-                <span>Bonus for streaks</span>
+                <span>{t('landing.streakBonus')}</span>
               </div>
             </div>
 

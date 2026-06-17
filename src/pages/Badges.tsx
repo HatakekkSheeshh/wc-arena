@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Award, Lock, Medal, ShieldCheck, Sparkles } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import PageHero from '../components/ui/PageHero';
@@ -24,6 +25,7 @@ function formatDate(value?: string) {
 }
 
 export default function Badges({ themeControls }: BadgesProps) {
+  const { t } = useTranslation();
   const unlocked = mockBadges.filter((badge) => badge.unlockedAt);
   const inProgress = mockBadges.filter((badge) => !badge.unlockedAt);
   const totalProgress = mockBadges.reduce((sum, badge) => {
@@ -35,16 +37,16 @@ export default function Badges({ themeControls }: BadgesProps) {
   return (
     <AppShell themeControls={themeControls}>
       <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 bg-page flex-1">
-        <PageHero title="Badges" description="Track skill achievements, streak milestones, risk-pick progress, and rank-based recognition." />
+        <PageHero title={t('appPages.badges.title')} description={t('appPages.badges.description')} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-          <StatCard label="Unlocked" value={unlocked.length} subtitle="Earned badges" tone="blue" icon={<ShieldCheck size={34} strokeWidth={2.5} />} />
-          <StatCard label="In Progress" value={inProgress.length} subtitle="Active goals" tone="lime" icon={<Sparkles size={34} strokeWidth={2.5} />} />
-          <StatCard label="Completion" value={`${completion}%`} subtitle="Mock collection" tone="green" icon={<Medal size={34} strokeWidth={2.5} />} />
-          <StatCard label="Categories" value={new Set(mockBadges.map((badge) => badge.category)).size} subtitle="Skill areas" tone="orange" icon={<Award size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.activity.unlocked')} value={unlocked.length} subtitle={t('appPages.badges.earnedBadges')} tone="blue" icon={<ShieldCheck size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.common.inProgress')} value={inProgress.length} subtitle={t('appPages.badges.activeGoals')} tone="lime" icon={<Sparkles size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.badges.completion')} value={`${completion}%`} subtitle={t('appPages.badges.mockCollection')} tone="green" icon={<Medal size={34} strokeWidth={2.5} />} />
+          <StatCard label={t('appPages.badges.categories')} value={new Set(mockBadges.map((badge) => badge.category)).size} subtitle={t('appPages.badges.skillAreas')} tone="orange" icon={<Award size={34} strokeWidth={2.5} />} />
         </div>
 
-        <Panel title="Achievement Collection">
+        <Panel title={t('appPages.badges.achievementCollection')}>
           <div className="p-4 bg-card grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {mockBadges.map((badge) => {
               const progress = badge.progressCurrent && badge.progressTarget ? Math.round((badge.progressCurrent / badge.progressTarget) * 100) : 0;
@@ -66,7 +68,7 @@ export default function Badges({ themeControls }: BadgesProps) {
                     <p className="font-bold text-sm text-subtle leading-snug">{badge.description}</p>
                     <div>
                       <div className="flex justify-between font-black uppercase text-[10px] mb-2">
-                        <span>Progress</span>
+                        <span>{t('appPages.common.progress')}</span>
                         <span>{badge.progressCurrent ?? 0}/{badge.progressTarget ?? 0}</span>
                       </div>
                       <div className="h-5 border-2 border-main bg-card shadow-[2px_2px_0_var(--color-shadow)]">
@@ -74,8 +76,8 @@ export default function Badges({ themeControls }: BadgesProps) {
                       </div>
                     </div>
                     <div className="mt-auto border-2 border-main bg-muted p-3 font-black uppercase text-xs flex justify-between">
-                      <span>Status</span>
-                      <span>{badge.unlockedAt ? `Unlocked ${formatDate(badge.unlockedAt)}` : 'In Progress'}</span>
+                      <span>{t('appPages.common.status')}</span>
+                      <span>{badge.unlockedAt ? `${t('appPages.common.unlocked')} ${formatDate(badge.unlockedAt)}` : t('appPages.common.inProgress')}</span>
                     </div>
                   </div>
                 </article>
