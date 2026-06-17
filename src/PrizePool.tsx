@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trophy, Users, Star, Gift, Settings, UserCheck, ChevronDown, CheckCircle2, ShieldCheck, ClipboardCheck, Clock, Mail, User, PenTool, BarChart2, Medal, Flame } from 'lucide-react';
 
-export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void }) {
+export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
   const [showSettings, setShowSettings] = useState(false);
 
   return (
@@ -47,6 +47,10 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                   <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
                     <span className="text-sm font-bold text-main">Shadows</span>
                     <input type="checkbox" checked={hasShadow} onChange={(e) => setHasShadow(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2">
+                    <span className="text-sm font-bold text-main">Mac Frame</span>
+                    <input type="checkbox" checked={hasFrame} onChange={(e) => setHasFrame(e.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" />
                   </label>
                 </div>
               )}

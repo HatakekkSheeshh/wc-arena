@@ -260,4 +260,21 @@
   .theme-no-shadow * {
     box-shadow: none !important;
   }
+
+  .theme-no-frame #root > div,
+  .theme-no-frame #root > div > div {
+    padding: 0 !important;
+  }
+
+  .theme-no-frame #root > div > div {
+    max-width: none !important;
+    border-width: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .theme-no-frame #root > div > div > .h-8:first-child,
+  .theme-no-frame #root > div > div > .w-full.h-8:first-child {
+    display: none !important;
+  }
 }

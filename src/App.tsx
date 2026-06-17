@@ -30,6 +30,8 @@ export type ThemeControls = {
   setIsRounded: (value: boolean) => void;
   hasShadow: boolean;
   setHasShadow: (value: boolean) => void;
+  hasFrame: boolean;
+  setHasFrame: (value: boolean) => void;
 };
 
 type LegacyPageProps = ThemeControls & {
@@ -56,6 +58,7 @@ export default function App() {
   const [isDark, setIsDark] = useState(false);
   const [isRounded, setIsRounded] = useState(false);
   const [hasShadow, setHasShadow] = useState(true);
+  const [hasFrame, setHasFrame] = useState(true);
 
   useEffect(() => {
     let cls = 'bg-page text-main min-h-screen';
@@ -63,8 +66,9 @@ export default function App() {
     if (isDark) cls += ' theme-dark';
     if (isRounded) cls += ' theme-rounded';
     if (!hasShadow) cls += ' theme-no-shadow';
+    if (!hasFrame) cls += ' theme-no-frame';
     document.body.className = cls;
-  }, [isVintage, isDark, isRounded, hasShadow]);
+  }, [isVintage, isDark, isRounded, hasShadow, hasFrame]);
 
   const themeControls: ThemeControls = {
     isVintage,
@@ -75,6 +79,8 @@ export default function App() {
     setIsRounded,
     hasShadow,
     setHasShadow,
+    hasFrame,
+    setHasFrame,
   };
 
   return (

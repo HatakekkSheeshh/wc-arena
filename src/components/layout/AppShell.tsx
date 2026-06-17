@@ -12,7 +12,7 @@ type AppShellProps = {
 
 function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
   const [showSettings, setShowSettings] = useState(false);
-  const { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow } = themeControls;
+  const { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame } = themeControls;
 
   return (
     <div className="relative">
@@ -26,6 +26,7 @@ function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
           <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2"><span className="text-sm font-bold text-main">Dark Mode</span><input type="checkbox" checked={isDark} onChange={(event) => setIsDark(event.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" /></label>
           <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2"><span className="text-sm font-bold text-main">Rounded Corners</span><input type="checkbox" checked={isRounded} onChange={(event) => setIsRounded(event.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" /></label>
           <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2"><span className="text-sm font-bold text-main">Shadows</span><input type="checkbox" checked={hasShadow} onChange={(event) => setHasShadow(event.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" /></label>
+          <label className="flex items-center justify-between cursor-pointer border-t-2 border-main pt-2"><span className="text-sm font-bold text-main">Mac Frame</span><input type="checkbox" checked={hasFrame} onChange={(event) => setHasFrame(event.target.checked)} className="w-4 h-4 border-2 border-main accent-main cursor-pointer" /></label>
         </div>
       )}
     </div>
