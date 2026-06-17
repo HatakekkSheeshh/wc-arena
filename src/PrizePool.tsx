@@ -75,7 +75,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
         <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 flex-1 overflow-y-auto min-h-0">
           
           {/* Top Info Banner */}
-          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-[60%] shadow-[8px_8px_0_0_var(--color-shadow)] lg:mb-2">
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
                 PRIZE POOL
              </h1>
