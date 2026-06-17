@@ -1,4 +1,4 @@
-import { Activity, Award, ClipboardList, Medal, ShieldCheck, Trophy, User, Users, Wallet } from 'lucide-react';
+import { Activity, Award, ClipboardList, Gift, Medal, ScrollText, ShieldCheck, Trophy, User, Users, Wallet } from 'lucide-react';
 
 export type NavigationItem = {
   labelKey: string;
@@ -24,9 +24,11 @@ export const appNavigationGroups: NavigationGroup[] = [
     labelKey: 'nav.groups.play',
     items: [
       { labelKey: 'nav.items.matches', shortLabelKey: 'nav.items.matches', to: '/matches', icon: Trophy },
+      { labelKey: 'nav.items.leaderboard', shortLabelKey: 'nav.items.rank', to: '/leaderboard', icon: Award },
+      { labelKey: 'nav.items.rules', shortLabelKey: 'nav.items.rulesShort', to: '/rules', icon: ScrollText },
+      { labelKey: 'nav.items.prizePool', shortLabelKey: 'nav.items.prizes', to: '/prize-pool', icon: Gift },
       { labelKey: 'nav.items.myPicks', shortLabelKey: 'nav.items.picks', to: '/picks', icon: ClipboardList },
       { labelKey: 'nav.items.myPredictions', shortLabelKey: 'nav.items.predicts', to: '/my-predictions', icon: Medal },
-      { labelKey: 'nav.items.leaderboard', shortLabelKey: 'nav.items.rank', to: '/leaderboard', icon: Award },
     ],
   },
   {

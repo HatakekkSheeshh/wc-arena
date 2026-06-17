@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Calendar, Star, BarChart2, Medal, User, Settings } from 'lucide-react';
 import { RainbowGraphic } from './Landing';
-import LegacySettingsMenu from './components/LegacySettingsMenu';
+import AppShell from './components/layout/AppShell';
 
 export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
   const { t } = useTranslation();
@@ -31,40 +31,7 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
   ];
 
   return (
-    <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex items-center justify-center font-sans">
-      <div className="w-full max-w-[1600px] border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all relative bg-card">
-        
-        {/* Mac OS styling frame header */}
-        <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2 relative z-30">
-          <div className="w-3 h-3 rounded-full bg-c5"></div>
-          <div className="w-3 h-3 rounded-full bg-c1"></div>
-          <div className="w-3 h-3 rounded-full bg-c3"></div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative">
-          <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
-          <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
-            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1">{t('nav.public.leaderboard')}</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
-          </div>
-          <div className="flex items-center gap-3">
-            <LegacySettingsMenu {...themeControls} />
-            <button onClick={() => onNavigate('my-predictions')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)] uppercase text-xs sm:text-sm">
-              <Settings size={18} strokeWidth={2.5} />
-              <span>{t('nav.app.myPredictions')}</span>
-            </button>
-          </div>
-        </nav>
-
-        {/* BIG BACKGROUND IMAGE */}
-        <div className="absolute inset-x-0 top-[84px] h-[calc(100vh-116px)] z-0 pointer-events-none opacity-90 overflow-hidden flex justify-center">
-           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-top" />
-        </div>
-
-        {/* Main Content Area (Scrollable or growing) */}
+    <AppShell themeControls={themeControls}>
         <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
           
           {/* Top Info Banner */}
@@ -384,7 +351,6 @@ export default function Leaderboard({ onNavigate, isVintage, setIsVintage, isDar
           </div>
 
         </div>
-      </div>
-    </div>
+    </AppShell>
   );
 }

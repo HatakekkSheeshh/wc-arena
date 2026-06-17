@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Wallet, ChevronDown, Calendar, Star, CheckCircle, Pencil, Lock, Target, TrendingUp, BarChart2, ArrowRight, User, Settings } from 'lucide-react';
-import { PitchIcon, RainbowGraphic } from './Landing';
+import { PitchIcon } from './Landing';
 import { BR, ES, FR, AR, JP, MX, DE, MA, US as USFlag, KR } from 'country-flag-icons/react/3x2';
-import LegacySettingsMenu from './components/LegacySettingsMenu';
+import AppShell from './components/layout/AppShell';
 
 export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
   const { t } = useTranslation();
@@ -70,53 +70,15 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
   ];
 
   return (
-    <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex items-center justify-center font-sans">
-      <div className="w-full max-w-[1600px] bg-card border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all">
-        
-        {/* Mac OS styling frame header */}
-        <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2">
-          <div className="w-3 h-3 rounded-full bg-c5"></div>
-          <div className="w-3 h-3 rounded-full bg-c1"></div>
-          <div className="w-3 h-3 rounded-full bg-c3"></div>
+    <AppShell themeControls={themeControls}>
+      <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
+            {t('nav.items.myPicks')}
+          </h1>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-20 relative">
-          <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
-          <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
-            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
-          </div>
-          <div className="flex items-center gap-3">
-            <LegacySettingsMenu {...themeControls} />
-            <button className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <Wallet size={18} strokeWidth={2.5} />
-              <div className="flex flex-col items-start leading-[1.1]">
-                <span className="text-[10px] uppercase font-bold opacity-80">Wallet</span>
-                <span className="text-sm">$125.40</span>
-              </div>
-              <ChevronDown size={18} className="ml-1" />
-            </button>
-          </div>
-        </nav>
-
-        {/* Hero Section */}
-        <div className="relative border-b-4 border-main bg-card overflow-hidden min-h-[220px] flex items-center">
-          <RainbowGraphic />
-          
-          <div className="relative z-10 w-full lg:w-[50%] p-8 lg:p-12">
-            <h1 className="text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem] font-black uppercase leading-[0.95] tracking-tighter mb-4 text-main">
-              MAKE YOUR PICKS
-            </h1>
-            <p className="font-semibold text-base sm:text-lg max-w-lg leading-snug text-subtle">
-              Predict the exact scores for each match. Submit before kickoff to earn points and climb the leaderboard.
-            </p>
-          </div>
-        </div>
-
-        {/* Stats Section */}
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
         <div className="grid grid-cols-1 sm:grid-cols-3 border-b-4 border-main">
           <div className="flex items-center gap-4 sm:border-r-4 border-b-4 sm:border-b-0 border-main p-4 lg:p-5 bg-c1 text-main">
             <div className="shrink-0"><Trophy size={36} strokeWidth={2.5}/></div>
@@ -441,7 +403,8 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
           </div>
         </div>
 
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
