@@ -76,7 +76,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
           
           {/* Top Info Banner */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-[60%] shadow-[8px_8px_0_0_var(--color-shadow)] lg:mb-2">
-             <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-2 text-main">
+             <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
                 RULES
              </h1>
           </div>
