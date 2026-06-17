@@ -23,10 +23,11 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
         {/* Navigation */}
         <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative shrink-0">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
-          <div className="hidden lg:flex items-center gap-3 font-black uppercase text-xs tracking-wide">
-            <button className="bg-c2 text-inv border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]" onClick={() => onNavigate('matches')}>Matches</button>
-            <button className="bg-page hover:bg-muted border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]" onClick={() => onNavigate('picks')}>Picks</button>
-            <button className="bg-page hover:bg-muted border-2 border-main px-3 py-2 shadow-[2px_2px_0_var(--color-shadow)]" onClick={() => onNavigate('leaderboard')}>Rank</button>
+          <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
+            <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1" onClick={() => onNavigate('matches')}>MATCHES</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('leaderboard')}>LEADERBOARD</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('rules')}>RULES</button>
+            <button className="hover:text-c2 transition-colors pb-1" onClick={() => onNavigate('prize-pool')}>PRIZE POOL</button>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
