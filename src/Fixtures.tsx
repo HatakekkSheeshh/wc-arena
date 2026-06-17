@@ -13,18 +13,18 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
   const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
 
   return (
-    <div className="h-[100dvh] bg-page p-3 sm:p-4 lg:p-6 flex flex-col font-sans relative">
-      <div className="w-full max-w-[1600px] border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all relative bg-card flex-1 min-h-0">
+    <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex items-center justify-center font-sans">
+      <div className="w-full max-w-[1600px] border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all relative bg-card">
         
         {/* Header Bar */}
-        <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2 relative z-30 shrink-0">
+        <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2 relative z-30">
           <div className="w-3 h-3 rounded-full bg-c5"></div>
           <div className="w-3 h-3 rounded-full bg-c1"></div>
           <div className="w-3 h-3 rounded-full bg-c3"></div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative shrink-0">
+        <nav className="flex items-center justify-between border-b-4 border-main px-6 py-4 bg-card z-30 relative">
           <div className="text-xl md:text-3xl font-black uppercase tracking-tighter cursor-pointer" onClick={() => onNavigate('landing')}>PREDICT 2026</div>
           <div className="hidden lg:flex space-x-10 font-bold uppercase text-sm tracking-wide">
             <button className="text-c2 uppercase tracking-wide border-b-4 border-c2 pb-1" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
@@ -45,74 +45,73 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
           </div>
         </nav>
 
-        {/* Scrollable Content */}
-        <div className="relative z-10 flex flex-col flex-1 overflow-y-auto bg-page min-h-0">
-          
-          {/* Header Section */}
-          <div className="flex justify-between items-stretch border-b-4 border-main relative bg-card shrink-0 border-t-4 sm:border-t-0 border-main">
-            <div className="flex flex-col px-6 py-6 lg:p-10 w-full lg:w-1/2 z-10 justify-center">
-              <h1 className="text-5xl md:text-[5rem] font-black uppercase tracking-tighter leading-[0.85] mb-4 text-main drop-shadow-[4px_4px_0_rgba(0,0,0,0.05)]">
-                FIXTURES
-              </h1>
-              <p className="font-bold text-base md:text-lg max-w-[450px] leading-snug text-main">
-                Track every World Cup 2026 match, kickoff time, results, and prediction status.
-              </p>
-            </div>
-            <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-2/3 pointer-events-none z-0">
-               <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-[120%] h-full object-cover object-[center_20%]" />
-               <div className="absolute inset-0 bg-gradient-to-r from-card via-transparent to-transparent"></div>
-            </div>
+        {/* BIG BACKGROUND IMAGE */}
+        <div className="absolute inset-x-0 top-[84px] h-[calc(100vh-116px)] z-0 pointer-events-none opacity-90 overflow-hidden flex justify-center">
+           <img src="https://s6.imgcdn.dev/Ybh5S0.webp" alt="Background" className="w-full h-full object-cover object-top" />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+
+          {/* Top Info Banner */}
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+            <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
+              {t('nav.public.matches')}
+            </h1>
           </div>
 
+          {/* Main White Wrapper for Content */}
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
+
           {/* Top Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 border-b-4 border-main shrink-0 relative z-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {/* Stat 1 */}
-            <div className="bg-c3 p-4 lg:p-5 flex items-center gap-4 border-r-4 md:border-b-0 border-b-4 border-main">
-              <div className="shrink-0 text-main">
-                <MonitorPlay size={32} strokeWidth={2.5} />
+            <div className="flex border-4 border-main bg-c3 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
+              <div className="shrink-0 mr-3">
+                <MonitorPlay size={36} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col">
-                 <span className="font-black text-[10px] md:text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL {t('nav.public.matches')}</span>
-                 <span className="font-black text-2xl sm:text-3xl leading-none text-main">64</span>
+              <div className="flex flex-col justify-center">
+                 <span className="font-black text-[10px] sm:text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL {t('nav.public.matches')}</span>
+                 <span className="font-black text-xl sm:text-2xl leading-none text-main">64</span>
               </div>
             </div>
             {/* Stat 2 */}
-            <div className="bg-c2 text-inv p-4 lg:p-5 flex items-center gap-4 md:border-r-4 border-b-4 md:border-b-0 border-main">
-              <div className="shrink-0 text-inv">
-                <Activity size={32} strokeWidth={2.5} />
+            <div className="flex border-4 border-main bg-c2 p-3 sm:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)]">
+              <div className="shrink-0 mr-3 text-inv">
+                <Activity size={36} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col">
-                 <span className="font-black text-[10px] md:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">LIVE NOW</span>
-                 <span className="font-black text-2xl sm:text-3xl leading-none">2</span>
+              <div className="flex flex-col justify-center">
+                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">LIVE NOW</span>
+                 <span className="font-black text-xl sm:text-2xl leading-none">2</span>
               </div>
             </div>
             {/* Stat 3 */}
-            <div className="bg-c5 text-main p-4 lg:p-5 flex items-center gap-4 border-r-4 border-main">
-              <div className="shrink-0 text-main">
-                <CalendarDays size={32} strokeWidth={2.5} />
+            <div className="flex border-4 border-main bg-c5 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
+              <div className="shrink-0 mr-3 text-main">
+                <CalendarDays size={36} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col text-main">
-                 <span className="font-black text-[10px] md:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">UPCOMING TODAY</span>
-                 <span className="font-black text-2xl sm:text-3xl leading-none">6</span>
+              <div className="flex flex-col justify-center text-main">
+                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">UPCOMING TODAY</span>
+                 <span className="font-black text-xl sm:text-2xl leading-none">6</span>
               </div>
             </div>
             {/* Stat 4 */}
-            <div className="bg-[#FF6B00] text-main p-4 lg:p-5 flex items-center gap-4">
-              <div className="shrink-0 text-main">
-                <Flag size={32} strokeWidth={2.5} />
+            <div className="flex border-4 border-main bg-[#FF6B00] p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
+              <div className="shrink-0 mr-3 text-main">
+                <Flag size={36} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col text-main">
-                 <span className="font-black text-[10px] md:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">COMPLETED</span>
-                 <span className="font-black text-2xl sm:text-3xl leading-none">18</span>
+              <div className="flex flex-col justify-center text-main">
+                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">COMPLETED</span>
+                 <span className="font-black text-xl sm:text-2xl leading-none">18</span>
               </div>
             </div>
           </div>
 
           {/* Main 2-column layout */}
-          <div className="flex flex-col lg:flex-row flex-1">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
              
              {/* Left Column: Match List */}
-             <div className="flex-1 border-r-0 lg:border-r-4 border-main flex flex-col min-w-0 bg-muted">
+             <div className="flex-1 w-full border-4 border-main flex flex-col min-w-0 bg-card shadow-[4px_4px_0_0_var(--color-shadow)]">
                 {/* Tabs */}
                 <div className="flex flex-wrap md:flex-nowrap border-b-4 border-main bg-card">
                    <button className="flex-1 min-w-[30%] md:min-w-0 py-3 bg-c2 text-inv font-black text-[10px] md:text-xs uppercase border-b-4 md:border-b-0 border-r-4 border-main hover:opacity-90">GROUP STAGE</button>
@@ -149,25 +148,22 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                    </div>
 
                    {/* Table Header (Desktop Only) */}
-                   <div className="hidden md:flex items-center border-b-4 border-main pb-2 pt-2 bg-page font-black text-[10px] uppercase text-subtle px-4">
-                       <div className="w-20">KICKOFF (LOCAL)</div>
-                       <div className="flex-1 min-w-[120px]">STADIUM</div>
-                       <div className="flex-1 text-right">TEAM A</div>
-                       <div className="w-16 text-center">VS</div>
-                       <div className="flex-1 text-left">TEAM B</div>
-                       <div className="w-24 text-center">STATUS</div>
-                       <div className="w-24 text-center">ACTION</div>
+                   <div className="hidden md:grid grid-cols-[180px_1fr_120px_120px] items-center border-b-4 border-main pb-2 pt-2 bg-page font-black text-[10px] uppercase text-subtle px-4 gap-4">
+                       <div>KICKOFF / STADIUM</div>
+                       <div className="text-center">MATCH</div>
+                       <div className="text-center">STATUS</div>
+                       <div className="text-center">ACTION</div>
                    </div>
 
                    {/* Matches List */}
                    <div className="flex flex-col bg-card">
                       
                       {/* Featured Match - Open */}
-                      <div className="relative border-b-2 border-main bg-card p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 hover:bg-page transition-colors">
+                      <div className="relative border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors">
                          <div className="absolute top-0 left-0 bg-c1 border-r-2 border-b-2 border-main text-main text-[10px] px-3 py-0.5 flex items-center gap-1.5 font-black uppercase z-10">
                            <Star size={12} className="fill-main" /> FEATURED MATCH
                          </div>
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0 mt-2 md:mt-0">
+                         <div className="flex items-center w-full gap-4 mt-2 md:mt-0">
                             <div className="w-20 flex flex-col items-center md:items-start text-main">
                                <span className="font-black text-[10px] uppercase">JUN 14</span>
                                <span className="font-black text-xl leading-none mt-0.5">20:00</span>
@@ -183,7 +179,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                <span className="font-black text-sm uppercase hidden sm:block">FRANCE</span>
                                <span className="font-black text-sm uppercase sm:hidden">FRA</span>
@@ -200,21 +196,19 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">GER</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button onClick={() => onNavigate('matches/m-ger-mar')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                                  PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button onClick={() => onNavigate('matches/m-ger-mar')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
+                               PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
                       {/* Locked Soon Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 hover:bg-page transition-colors cursor-default">
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0">
+                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default">
+                         <div className="flex items-center w-full gap-4">
                             <div className="w-20 flex flex-col items-center md:items-start text-main">
                                <span className="font-black text-[10px] uppercase">JUN 14</span>
                                <span className="font-black text-xl leading-none mt-0.5">17:00</span>
@@ -230,7 +224,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right opacity-90">
                                <span className="font-black text-sm uppercase hidden sm:block">ARGENTINA</span>
                                <span className="font-black text-sm uppercase sm:hidden">ARG</span>
@@ -247,24 +241,22 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">KSA</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="bg-c1 text-main font-black text-[10px] px-2 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center w-full">LOCKED SOON</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button onClick={() => onNavigate('matches/m-fra-arg')} className="bg-card hover:bg-muted text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                                  DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="bg-c1 text-main font-black text-[10px] px-2 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center w-full">LOCKED SOON</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button onClick={() => onNavigate('matches/m-fra-arg')} className="bg-card hover:bg-muted text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
+                               DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
                       {/* Live Match */}
-                      <div className="border-b-2 border-main bg-[#f0f9ff] p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 hover:bg-[#e0f2fe] transition-colors cursor-default relative">
+                      <div className="border-b-2 border-main bg-[#f0f9ff] p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-[#e0f2fe] transition-colors cursor-default relative">
                          <div className="absolute top-2 left-2 flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-c4 animate-pulse"></div>
                          </div>
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0 pl-3">
+                         <div className="flex items-center w-full gap-4 pl-3">
                             <div className="w-16 md:w-20 flex flex-col items-center md:items-start text-c4">
                                <span className="font-black text-[10px] uppercase">JUN 13</span>
                                <span className="font-black text-xl md:text-[22px] leading-none mt-0.5">12:00</span>
@@ -280,7 +272,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                <span className="font-black text-sm uppercase hidden sm:block">BRAZIL</span>
                                <span className="font-black text-sm uppercase sm:hidden">BRA</span>
@@ -300,21 +292,19 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">MEX</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="bg-c4 text-inv font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LIVE</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button className="bg-c2 text-inv font-black text-[10px] px-2 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] hover:opacity-90 transition-all">
-                                  VIEW LIVE <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="bg-c4 text-inv font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LIVE</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button className="bg-c2 text-inv font-black text-[10px] px-2 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] hover:opacity-90 transition-all">
+                               VIEW LIVE <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
                       {/* Completed Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 opacity-80 hover:bg-page transition-colors">
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0">
+                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 opacity-80 hover:bg-page transition-colors">
+                         <div className="flex items-center w-full gap-4">
                             <div className="w-20 flex flex-col items-center md:items-start text-subtle">
                                <span className="font-black text-[10px] uppercase">JUN 13</span>
                                <span className="font-black text-xl leading-none mt-0.5">09:00</span>
@@ -330,7 +320,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                <span className="font-black text-sm uppercase hidden sm:block">ENGLAND</span>
                                <span className="font-black text-sm uppercase sm:hidden">ENG</span>
@@ -350,21 +340,19 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">TUN</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="font-black text-[10px] uppercase text-subtle">FT</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button onClick={() => onNavigate('matches/m-jpn-mex')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
-                                  RESULTS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="font-black text-[10px] uppercase text-subtle">FT</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button onClick={() => onNavigate('matches/m-jpn-mex')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
+                               RESULTS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
                       {/* Open Match 2 */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 hover:bg-page transition-colors cursor-default">
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0">
+                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default">
+                         <div className="flex items-center w-full gap-4">
                             <div className="w-20 flex flex-col items-center md:items-start text-main">
                                <span className="font-black text-[10px] uppercase">JUN 13</span>
                                <span className="font-black text-xl leading-none mt-0.5">21:00</span>
@@ -380,7 +368,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                <span className="font-black text-sm uppercase hidden sm:block">USA</span>
                                <span className="font-black text-sm uppercase sm:hidden">USA</span>
@@ -397,21 +385,19 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">WAL</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button onClick={() => onNavigate('matches/m-usa-kor')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                                  PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button onClick={() => onNavigate('matches/m-usa-kor')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
+                               PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
                       {/* Locked Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0 hover:bg-page transition-colors cursor-default opacity-90">
-                         <div className="flex items-center w-full md:w-auto gap-4 md:gap-0">
+                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default opacity-90">
+                         <div className="flex items-center w-full gap-4">
                             <div className="w-20 flex flex-col items-center md:items-start text-main">
                                <span className="font-black text-[10px] uppercase">JUN 12</span>
                                <span className="font-black text-xl leading-none mt-0.5">18:00</span>
@@ -427,7 +413,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                </div>
                             </div>
                          </div>
-                         <div className="flex flex-1 items-center justify-center gap-3 w-full md:w-auto">
+                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
                             <div className="flex-1 flex items-center justify-end gap-2 text-right">
                                <span className="font-black text-sm uppercase hidden sm:block">SPAIN</span>
                                <span className="font-black text-sm uppercase sm:hidden">ESP</span>
@@ -444,15 +430,13 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                                <span className="font-black text-sm uppercase sm:hidden">CRC</span>
                             </div>
                          </div>
-                         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t-2 md:border-t-0 border-line">
-                            <div className="w-24 flex justify-center">
-                               <span className="bg-muted text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LOCKED</span>
-                            </div>
-                            <div className="w-24 flex justify-center">
-                               <button onClick={() => onNavigate('matches/m-bra-esp')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
-                                  DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                               </button>
-                            </div>
+                         <div className="w-full flex justify-center">
+                            <span className="bg-muted text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LOCKED</span>
+                         </div>
+                         <div className="w-full flex justify-center">
+                            <button onClick={() => onNavigate('matches/m-bra-esp')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
+                               DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+                            </button>
                          </div>
                       </div>
 
@@ -462,10 +446,10 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
              </div>
 
              {/* Right Column: Widgets */}
-             <div className="w-full lg:w-[320px] xl:w-[360px] bg-card flex flex-col shrink-0 relative z-20">
+             <div className="w-full lg:w-[320px] xl:w-[360px] flex flex-col gap-4 shrink-0 relative z-20">
                 
                 {/* Next Deadline */}
-                <div className="flex flex-col border-b-4 border-main bg-page">
+                <div className="flex flex-col border-4 border-main bg-page shadow-[4px_4px_0_0_var(--color-shadow)]">
                    <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center border-b-4 border-main">
                       NEXT DEADLINE
                    </div>
@@ -482,7 +466,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                 </div>
 
                 {/* Today's Live Matches */}
-                <div className="flex flex-col border-b-4 border-main">
+                <div className="flex flex-col border-4 border-main bg-card shadow-[4px_4px_0_0_var(--color-shadow)]">
                    <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center justify-between border-b-4 border-main">
                       <span>TODAY'S LIVE {t('nav.public.matches')}</span>
                       <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-c4 animate-pulse"></div> <span className="text-[9px]">LIVE</span></div>
@@ -518,7 +502,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                 </div>
 
                 {/* Your Predictions Stats */}
-                <div className="flex flex-col border-b-4 border-main">
+                <div className="flex flex-col border-4 border-main bg-card shadow-[4px_4px_0_0_var(--color-shadow)]">
                    <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center justify-between border-b-4 border-main">
                       <span>YOUR PREDICTIONS</span>
                       <span className="text-[9px] hover:underline cursor-pointer">VIEW ALL</span>
@@ -552,7 +536,7 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
                 </div>
 
                 {/* Group Standings */}
-                <div className="border-b-4 lg:border-b-0 border-main bg-card flex flex-col">
+                <div className="border-4 border-main bg-card flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
                    <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center justify-between border-b-4 border-main">
                       <span>GROUP A STANDINGS</span>
                       <span className="text-[9px] hover:underline cursor-pointer">VIEW TABLE</span>
@@ -589,8 +573,10 @@ export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, 
 
           </div>
 
+          </div>
+
           {/* BOTTOM BANNER */}
-          <div className="flex flex-col lg:flex-row border-t-4 border-main bg-card overflow-hidden w-full uppercase shrink-0 mt-auto">
+          <div className="flex flex-col lg:flex-row border-4 border-main bg-card overflow-hidden w-full uppercase shrink-0 shadow-[4px_4px_0_0_var(--color-shadow)]">
              
              {/* Step 1 */}
              <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
