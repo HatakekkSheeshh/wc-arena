@@ -4,6 +4,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { ChevronDown, Settings, Wallet } from 'lucide-react';
 import type { ThemeControls } from '../../App';
 import { appNavigationGroups, mobileNavigation } from '../../config/navigation';
+import { useAuth } from '../../lib/auth';
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -54,6 +55,7 @@ function HeaderNavigation() {
 function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
   const [showSettings, setShowSettings] = useState(false);
   const { t, i18n } = useTranslation();
+  const { user, signOut } = useAuth();
   const { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame } = themeControls;
 
   return (
@@ -76,6 +78,11 @@ function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
               <option value="vi">{t('language.vietnamese')}</option>
             </select>
           </label>
+          {user && (
+            <button type="button" onClick={() => void signOut()} className="border-t-2 border-main pt-2 text-left text-sm font-black uppercase text-c5 hover:underline">
+              {t('common.signOut')}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -84,6 +91,7 @@ function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
 
 export default function AppShell({ children, themeControls, fullHeight = false }: AppShellProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   return (
     <div className={`${fullHeight ? 'h-[100dvh]' : 'min-h-screen'} bg-page flex font-sans relative overflow-hidden`}>
@@ -98,11 +106,11 @@ export default function AppShell({ children, themeControls, fullHeight = false }
           </div>
           <div className="flex items-center gap-3 ml-auto">
             <ThemeSettings themeControls={themeControls} />
-            <Link to="/profile" className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
+            <Link to={user ? '/profile' : '/login'} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 border-2 border-main flex items-center gap-3 transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)]">
               <Wallet size={18} strokeWidth={2.5} />
               <div className="flex-col items-start leading-[1.1] hidden sm:flex">
                 <span className="text-[10px] uppercase font-bold opacity-80">{t('common.account')}</span>
-                <span className="text-sm">{t('common.profile')}</span>
+                <span className="text-sm">{user ? t('common.profile') : t('auth.signIn')}</span>
               </div>
               <ChevronDown size={18} className="ml-1 hidden sm:block" />
             </Link>

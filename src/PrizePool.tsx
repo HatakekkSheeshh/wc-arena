@@ -10,7 +10,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
   return (
     <AppShell themeControls={themeControls}>
         <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
-          
+
           {/* Top Info Banner */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
@@ -20,57 +20,57 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
 
           {/* Main White Wrapper for Content */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
-            
+
             {/* Top KPI row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-              <div className="flex border-4 border-main bg-c1 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-                <div className="shrink-0 mr-3"><Trophy size={36} strokeWidth={2.5}/></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 border-b-4 border-main">
+              <div className="flex items-center gap-4 border-b-4 sm:border-r-4 xl:border-b-0 border-main p-4 lg:p-5 bg-c1 text-main">
+                <div className="shrink-0"><Trophy size={36} strokeWidth={2.5}/></div>
                 <div className="flex flex-col justify-center">
-                  <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL {t('nav.public.prizePool')}</div>
-                  <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">$25,000</div>
-                  <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">GUARANTEED</div>
-                </div>
-              </div>
-              
-              <div className="flex border-4 border-main bg-c2 p-3 sm:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-                <div className="shrink-0 mr-3"><Users size={36} strokeWidth={2.5}/></div>
-                <div className="flex flex-col justify-center">
-                  <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
-                  <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">12,480</div>
-                  <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">JOINED</div>
+                  <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL {t('nav.public.prizePool')}</div>
+                  <div className="text-2xl sm:text-3xl font-black leading-none">$25,000</div>
+                  <div className="text-[10px] font-bold uppercase mt-1">GUARANTEED</div>
                 </div>
               </div>
 
-              <div className="flex border-4 border-main bg-c3 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-                <div className="shrink-0 mr-3"><div className="w-10 h-10 border-2 border-main rounded-full flex items-center justify-center"><Star size={24} strokeWidth={3}/></div></div>
+              <div className="flex items-center gap-4 border-b-4 xl:border-b-0 xl:border-r-4 border-main p-4 lg:p-5 bg-c2 text-inv">
+                <div className="shrink-0"><Users size={36} strokeWidth={2.5}/></div>
                 <div className="flex flex-col justify-center">
-                  <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">WINNERS PAID</div>
-                  <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">1,000</div>
-                  <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">CASH PRIZES</div>
+                  <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
+                  <div className="text-2xl sm:text-3xl font-black leading-none">12,480</div>
+                  <div className="text-[10px] font-bold uppercase mt-1">JOINED</div>
                 </div>
               </div>
 
-              <div className="flex border-4 border-main bg-c4 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-                <div className="shrink-0 mr-3"><Gift size={36} strokeWidth={2.5}/></div>
+              <div className="flex items-center gap-4 border-b-4 sm:border-b-0 sm:border-r-4 border-main p-4 lg:p-5 bg-c3 text-main">
+                <div className="shrink-0"><div className="w-10 h-10 border-2 border-main rounded-full flex items-center justify-center"><Star size={24} strokeWidth={3}/></div></div>
                 <div className="flex flex-col justify-center">
-                  <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">WEEKLY BONUS POOL</div>
-                  <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">$2,500</div>
-                  <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">DISTRIBUTED WEEKLY</div>
+                  <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">WINNERS PAID</div>
+                  <div className="text-2xl sm:text-3xl font-black leading-none">1,000</div>
+                  <div className="text-[10px] font-bold uppercase mt-1">CASH PRIZES</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 border-main p-4 lg:p-5 bg-c4 text-main">
+                <div className="shrink-0"><Gift size={36} strokeWidth={2.5}/></div>
+                <div className="flex flex-col justify-center">
+                  <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">WEEKLY BONUS POOL</div>
+                  <div className="text-2xl sm:text-3xl font-black leading-none">$2,500</div>
+                  <div className="text-[10px] font-bold uppercase mt-1">DISTRIBUTED WEEKLY</div>
                 </div>
               </div>
             </div>
 
             {/* 2-Column Main content Split */}
-            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch">
-              
+            <div className="flex flex-col xl:flex-row flex-1 items-stretch">
+
               {/* Left Column */}
-              <div className="flex-1 w-full flex flex-col gap-4 lg:gap-6">
-                 
+              <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
+
                  {/* TOP PRIZE DISTRIBUTION */}
-                 <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
-                    <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">TOP PRIZE DISTRIBUTION</div>
+                 <div className="bg-card flex flex-col border-b-4 border-main">
+                    <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">TOP PRIZE DISTRIBUTION</div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6 bg-page">
-                       
+
                        {/* 1st Place */}
                        <div className="bg-[#FFE875] border-2 border-main p-4 flex flex-col justify-center items-center relative overflow-hidden shadow-[2px_2px_0_var(--color-main)] text-main min-h-[160px]">
                           <Trophy className="absolute -right-4 -bottom-4 opacity-10 text-main" size={120} />
@@ -82,7 +82,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                           <div className="text-4xl xl:text-5xl font-black leading-none tracking-tighter z-10 mb-2">$10,000</div>
                           <div className="text-xs font-bold uppercase tracking-wide opacity-80 z-10">GRAND PRIZE</div>
                        </div>
-                       
+
                        {/* 2nd Place */}
                        <div className="bg-[#E5E7EB] border-2 border-main p-4 flex flex-col justify-center items-center relative overflow-hidden shadow-[2px_2px_0_var(--color-main)] text-main min-h-[160px]">
                           <Trophy className="absolute -right-4 -bottom-4 opacity-10 text-main" size={120} />
@@ -111,7 +111,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                  </div>
 
                  {/* RANKING TIERS */}
-                 <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
+                 <div className="bg-card flex flex-col border-b-4 border-main">
                     <div className="flex bg-main text-inv font-black uppercase tracking-wide text-xs border-b-4 border-main">
                       <div className="flex-1 px-4 py-3 border-r-4 border-main">RANKING TIERS</div>
                       <div className="w-[140px] px-4 py-3 text-right">PRIZE AMOUNT</div>
@@ -145,7 +145,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                  </div>
 
                  {/* PRIZE CATEGORIES EXPLAINED */}
-                 <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
+                 <div className="bg-card flex flex-col border-b-4 border-main">
                     <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">PRIZE CATEGORIES EXPLAINED</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 lg:p-5 bg-page">
                        <div className="bg-card border-2 border-main p-4 relative shadow-[2px_2px_0_var(--color-main)] flex flex-col justify-center">
@@ -178,12 +178,12 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
               </div>
 
               {/* Right Column */}
-              <div className="w-full lg:w-[350px] flex flex-col gap-4 lg:gap-6 flex-shrink-0 self-stretch">
-                 
+              <div className="w-full xl:w-[350px] bg-card flex flex-col flex-shrink-0 self-stretch min-h-full">
+
                  {/* HOW TO WIN */}
-                 <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
-                    <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main">HOW TO WIN</div>
-                    <div className="p-4 flex flex-col gap-3 font-bold text-xs bg-page">
+                 <div className="bg-card flex flex-col border-b-4 border-main">
+                    <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">HOW TO WIN</div>
+                    <div className="p-4 flex flex-col gap-3 font-bold text-xs bg-page flex-1 justify-center">
                        <div className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-c3 mt-0.5 shrink-0" strokeWidth={3}/>
                           <span>Predict exact scores to earn the most points.</span>
@@ -204,7 +204,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
                  </div>
 
                  {/* PAYOUT INFO */}
-                 <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
+                 <div className="bg-card flex flex-col border-b-4 border-main">
                     <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main">PAYOUT INFO</div>
                     <div className="p-4 flex flex-col gap-3 font-bold text-xs bg-page">
                        <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
 
 
                  {/* RECENT TOP WINNERS */}
-                 <div className="bg-card border-4 border-main flex flex-col flex-1 shadow-[4px_4px_0_0_var(--color-shadow)]">
+                 <div className="bg-card flex flex-col flex-1">
                     <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main flex justify-between items-center">
                       <span>REWARD TRACK EXAMPLES</span>
                       <button onClick={() => onNavigate('rewards')} className="text-[10px] opacity-80 cursor-pointer hover:underline">VIEW REWARDS</button>
@@ -259,7 +259,7 @@ export default function PrizePool({ onNavigate, isVintage, setIsVintage, isDark,
 
             </div>
           </div>
-          
+
         </div>
     </AppShell>
   );

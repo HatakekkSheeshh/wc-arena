@@ -10,7 +10,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
   return (
     <AppShell themeControls={themeControls}>
         <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
-          
+
           {/* Top Info Banner */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
              <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
@@ -21,58 +21,58 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
           {/* Main White Wrapper for Content */}
           <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
           {/* Top KPI row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            <div className="flex border-4 border-main bg-c1 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3"><Trophy size={36} strokeWidth={2.5}/></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 border-b-4 border-main">
+            <div className="flex items-center gap-4 border-b-4 sm:border-r-4 xl:border-b-0 border-main p-4 lg:p-5 bg-c1 text-main">
+              <div className="shrink-0"><Trophy size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.prizePool')}</div>
-                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">$25,000</div>
-                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
-              </div>
-            </div>
-            
-            <div className="flex border-4 border-main bg-c2 p-3 sm:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3"><Users size={36} strokeWidth={2.5}/></div>
-              <div className="flex flex-col justify-center">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
-                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">12,480</div>
-                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">JOINED</div>
+                <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('nav.public.prizePool')}</div>
+                <div className="text-2xl sm:text-3xl font-black leading-none">$25,000</div>
+                <div className="text-[10px] font-bold uppercase mt-1">TOTAL GUARANTEED</div>
               </div>
             </div>
 
-            <div className="flex border-4 border-main bg-c3 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3"><Crosshair size={36} strokeWidth={2.5}/></div>
+            <div className="flex items-center gap-4 border-b-4 xl:border-b-0 xl:border-r-4 border-main p-4 lg:p-5 bg-c2 text-inv">
+              <div className="shrink-0"><Users size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">SCORING SYSTEM</div>
-                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">POINTS BASED</div>
-                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">MULTIPLE BONUS TYPES</div>
+                <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">TOTAL PLAYERS</div>
+                <div className="text-2xl sm:text-3xl font-black leading-none">12,480</div>
+                <div className="text-[10px] font-bold uppercase mt-1">JOINED</div>
               </div>
             </div>
 
-            <div className="flex border-4 border-main bg-c4 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)] items-center">
-              <div className="shrink-0 mr-3"><Clock size={36} strokeWidth={2.5}/></div>
+            <div className="flex items-center gap-4 border-b-4 sm:border-b-0 sm:border-r-4 border-main p-4 lg:p-5 bg-c3 text-main">
+              <div className="shrink-0"><Crosshair size={36} strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">DEADLINE BEFORE KICKOFF</div>
-                <div className="text-xl sm:text-2xl font-black leading-none tracking-tight">PICKS LOCK</div>
-                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1">AT KICKOFF</div>
+                <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">SCORING SYSTEM</div>
+                <div className="text-2xl sm:text-3xl font-black leading-none">POINTS BASED</div>
+                <div className="text-[10px] font-bold uppercase mt-1">MULTIPLE BONUS TYPES</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 border-main p-4 lg:p-5 bg-c4 text-main">
+              <div className="shrink-0"><Clock size={36} strokeWidth={2.5}/></div>
+              <div className="flex flex-col justify-center">
+                <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">DEADLINE BEFORE KICKOFF</div>
+                <div className="text-2xl sm:text-3xl font-black leading-none">PICKS LOCK</div>
+                <div className="text-[10px] font-bold uppercase mt-1">AT KICKOFF</div>
               </div>
             </div>
           </div>
 
           {/* 2-Column Main content Split */}
-          <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch">
-             
+          <div className="flex flex-col xl:flex-row flex-1 items-stretch">
+
              {/* Left Column (Main details) */}
-             <div className="flex-1 w-full flex flex-col gap-4 lg:gap-6">
-                
+             <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
+
                 {/* 3-Column Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-                   
+                <div className="grid grid-cols-1 lg:grid-cols-3">
+
                    {/* HOW SCORING WORKS */}
-                   <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-1 h-full">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">HOW SCORING WORKS</div>
+                   <div className="bg-card flex flex-col lg:col-span-1 h-full border-b-4 lg:border-r-4 border-main">
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">HOW SCORING WORKS</div>
                       <div className="flex flex-col">
-                         
+
                          <div className="flex p-3 border-b-2 border-line gap-3 items-center">
                             <div className="w-12 h-12 bg-c3 rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-main"><Target size={24} /></div>
                             <div className="flex flex-col flex-1">
@@ -81,7 +81,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                             </div>
                             <div className="font-black text-2xl text-c3 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">3 PTS</div>
                          </div>
-                         
+
                          <div className="flex p-3 border-b-2 border-line gap-3 items-center">
                             <div className="w-12 h-12 bg-c2 rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><CheckCircle2 size={24} /></div>
                             <div className="flex flex-col flex-1">
@@ -122,10 +122,10 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                    </div>
 
                    {/* HOW TO PLAY */}
-                   <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-1 h-full">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">HOW TO PLAY</div>
+                   <div className="bg-card flex flex-col lg:col-span-1 h-full border-b-4 lg:border-r-4 border-main">
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">HOW TO PLAY</div>
                       <div className="flex flex-col flex-1">
-                        
+
                          <div className="flex border-b-2 border-line flex-1">
                             <div className="w-12 bg-c2 text-inv font-black flex items-center justify-center text-3xl border-r-2 border-main shrink-0">1</div>
                             <div className="flex flex-col justify-center p-3">
@@ -170,24 +170,24 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                    </div>
 
                    {/* PRIZE DISTRIBUTION */}
-                   <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-1 h-full">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">PRIZE DISTRIBUTION</div>
+                   <div className="bg-card flex flex-col lg:col-span-1 h-full border-b-4 border-main">
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">PRIZE DISTRIBUTION</div>
                       <div className="flex flex-col flex-1">
-                         
+
                          <div className="flex border-b-2 border-line items-stretch">
-                            <div className="w-10 bg-[#FFD700] text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl bg-c1">1</div>
+                            <div className="rank-chip-right w-10 bg-c1 text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl rounded-r-sm rounded-l-none">1</div>
                             <div className="font-black px-3 py-3 flex-1 flex items-center text-sm uppercase">1ST PLACE</div>
                             <div className="font-black px-3 py-3 text-right flex items-center text-lg shrink-0">$10,000</div>
                          </div>
 
                          <div className="flex border-b-2 border-line items-stretch">
-                            <div className="w-10 bg-muted text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl">2</div>
+                            <div className="rank-chip-right w-10 bg-muted text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl rounded-r-sm rounded-l-none">2</div>
                             <div className="font-black px-3 py-3 flex-1 flex items-center text-sm uppercase">2ND PLACE</div>
                             <div className="font-black px-3 py-3 text-right flex items-center text-lg shrink-0">$5,000</div>
                          </div>
 
                          <div className="flex border-b-2 border-line items-stretch">
-                            <div className="w-10 bg-c4 text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl">3</div>
+                            <div className="rank-chip-right w-10 bg-c4 text-main font-black flex flex-col justify-center items-center border-r-2 border-main shrink-0 py-3 text-xl rounded-r-sm rounded-l-none">3</div>
                             <div className="font-black px-3 py-3 flex-1 flex items-center text-sm uppercase">3RD PLACE</div>
                             <div className="font-black px-3 py-3 text-right flex items-center text-lg shrink-0">$2,500</div>
                          </div>
@@ -213,11 +213,11 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                 </div>
 
                 {/* 2-Column Grid (Bottom) */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mt-2">
-                   
+                <div className="grid grid-cols-1 lg:grid-cols-3">
+
                    {/* TIEBREAKERS */}
-                   <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-1">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">TIEBREAKERS</div>
+                   <div className="bg-card flex flex-col border-b-4 lg:border-r-4 border-main lg:col-span-1">
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">TIEBREAKERS</div>
                       <div className="p-4 flex flex-col">
                          <div className="flex items-center gap-3 mb-3">
                            <div className="w-5 h-5 bg-c3 text-main font-black flex items-center justify-center text-[10px] rounded-sm border border-main shrink-0 shadow-[2px_2px_0_var(--color-main)]">1</div>
@@ -238,8 +238,8 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                       </div>
                    </div>
 
-                   <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)] lg:col-span-2">
-                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm lg:text-base border-b-4 border-main">{t('rules.importantRules')}</div>
+                   <div className="bg-card flex flex-col border-b-4 border-main lg:col-span-2">
+                      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">{t('rules.importantRules')}</div>
                       <div className="p-4 lg:p-5 flex flex-col justify-center h-full">
                          <ul className="list-none space-y-3">
                            <li className="flex items-start gap-3">
@@ -271,11 +271,11 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
              </div>
 
              {/* Right Column: Sidebar Panels */}
-             <div className="w-full xl:w-[350px] flex flex-col gap-4 lg:gap-6 flex-shrink-0 self-stretch">
-               
+             <div className="w-full xl:w-[350px] bg-card flex flex-col flex-shrink-0 self-stretch">
+
                 {/* QUICK SUMMARY */}
-                <div className="bg-card border-4 border-main flex flex-col shadow-[4px_4px_0_0_var(--color-shadow)]">
-                   <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main">
+                <div className="bg-card flex flex-col border-b-4 border-main">
+                   <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">
                      QUICK SUMMARY
                    </div>
                    <div className="p-4 flex flex-col gap-3 font-bold text-[13px]">
@@ -303,8 +303,8 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                 </div>
 
                 {/* SCORING EXAMPLE */}
-                <div className="bg-card border-4 border-main flex flex-col flex-1 shadow-[4px_4px_0_0_var(--color-shadow)]">
-                   <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main">
+                <div className="bg-card flex flex-col flex-1">
+                   <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-xs border-b-4 border-main min-h-[48px] flex items-center">
                      SCORING EXAMPLE
                    </div>
                    <div className="flex flex-col text-sm font-bold">

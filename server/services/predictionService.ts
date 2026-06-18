@@ -14,12 +14,21 @@ function getMatchResult(match: Match): MatchResult | undefined {
   return { homeScore: match.homeScore, awayScore: match.awayScore };
 }
 
+function getScoreOutcome(homeScore: number, awayScore: number) {
+  if (homeScore > awayScore) return 'home';
+  if (homeScore < awayScore) return 'away';
+  return 'draw';
+}
+
 function validatePayload(payload: PredictionPayload) {
   if (!payload || typeof payload.matchId !== 'string') {
     throw new ApiServiceError('validation_error', 'matchId is required.', 400);
   }
   if (!Number.isInteger(payload.homeScore) || !Number.isInteger(payload.awayScore) || payload.homeScore < 0 || payload.awayScore < 0) {
     throw new ApiServiceError('validation_error', 'Scores must be non-negative integers.', 400);
+  }
+  if (!['home', 'draw', 'away'].includes(payload.predictedOutcome) || payload.predictedOutcome !== getScoreOutcome(payload.homeScore, payload.awayScore)) {
+    throw new ApiServiceError('validation_error', 'Prediction outcome must match the exact score.', 400);
   }
   if (payload.confidence !== undefined && (!Number.isInteger(payload.confidence) || payload.confidence < 0 || payload.confidence > 100)) {
     throw new ApiServiceError('validation_error', 'Confidence must be an integer from 0 to 100.', 400);
@@ -47,6 +56,7 @@ export function savePrediction(db: PredictDb, userId: string, payload: Predictio
   if (existing) {
     existing.homeScore = payload.homeScore;
     existing.awayScore = payload.awayScore;
+    existing.predictedOutcome = payload.predictedOutcome;
     existing.confidence = payload.confidence ?? existing.confidence;
     existing.isRiskPick = payload.isRiskPick ?? existing.isRiskPick;
     existing.updatedAt = now;
@@ -70,6 +80,7 @@ export function savePrediction(db: PredictDb, userId: string, payload: Predictio
     matchId: payload.matchId,
     homeScore: payload.homeScore,
     awayScore: payload.awayScore,
+    predictedOutcome: payload.predictedOutcome,
     confidence: payload.confidence ?? 70,
     isRiskPick: payload.isRiskPick ?? false,
     createdAt: now,

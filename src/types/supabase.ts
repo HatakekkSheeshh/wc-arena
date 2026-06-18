@@ -1,0 +1,897 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      activity_events: {
+        Row: {
+          badge_id: string | null
+          created_at: string
+          description: string
+          href: string | null
+          id: string
+          league_id: string | null
+          match_id: string | null
+          prediction_id: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_id?: string | null
+          created_at?: string
+          description: string
+          href?: string | null
+          id?: string
+          league_id?: string | null
+          match_id?: string | null
+          prediction_id?: string | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_id?: string | null
+          created_at?: string
+          description?: string
+          href?: string | null
+          id?: string
+          league_id?: string | null
+          match_id?: string | null
+          prediction_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          description: string
+          entity_id: string
+          entity_type: string
+          id: string
+          severity: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          description: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          severity: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          description?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      badges: {
+        Row: {
+          category: string
+          description: string
+          icon_path: string | null
+          id: string
+          name: string
+          progress_target: number | null
+          rarity: string
+        }
+        Insert: {
+          category: string
+          description: string
+          icon_path?: string | null
+          id: string
+          name: string
+          progress_target?: number | null
+          rarity: string
+        }
+        Update: {
+          category?: string
+          description?: string
+          icon_path?: string | null
+          id?: string
+          name?: string
+          progress_target?: number | null
+          rarity?: string
+        }
+        Relationships: []
+      }
+      leaderboard_entries: {
+        Row: {
+          accuracy: number
+          exact_scores: number
+          id: string
+          league_id: string | null
+          points: number
+          previous_rank: number | null
+          rank: number
+          scope: string
+          streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          exact_scores?: number
+          id?: string
+          league_id?: string | null
+          points?: number
+          previous_rank?: number | null
+          rank: number
+          scope: string
+          streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          exact_scores?: number
+          id?: string
+          league_id?: string | null
+          points?: number
+          previous_rank?: number | null
+          rank?: number
+          scope?: string
+          streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_entries_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_members: {
+        Row: {
+          joined_at: string
+          league_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          league_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          league_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_members_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leagues: {
+        Row: {
+          created_at: string
+          creator_id: string | null
+          id: string
+          invite_code: string
+          member_count: number
+          name: string
+          prize_mode: string
+          scoring_mode: string
+          slug: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id?: string | null
+          id: string
+          invite_code: string
+          member_count?: number
+          name: string
+          prize_mode?: string
+          scoring_mode?: string
+          slug: string
+          visibility: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          invite_code?: string
+          member_count?: number
+          name?: string
+          prize_mode?: string
+          scoring_mode?: string
+          slug?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leagues_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          away_score: number | null
+          away_team_id: string
+          city: string
+          espn_attendance: number | null
+          espn_away_color: string | null
+          espn_away_logo: string | null
+          espn_away_record: string | null
+          espn_away_win_pct: number | null
+          espn_away_winner: boolean | null
+          espn_competition_id: string | null
+          espn_display_clock: string | null
+          espn_draw_pct: number | null
+          espn_event_id: string | null
+          espn_home_color: string | null
+          espn_home_logo: string | null
+          espn_home_record: string | null
+          espn_home_win_pct: number | null
+          espn_home_winner: boolean | null
+          espn_play_by_play_available: boolean | null
+          espn_prediction_updated_at: string | null
+          espn_state: string | null
+          espn_status: string | null
+          espn_status_detail: string | null
+          espn_summary: Json | null
+          espn_summary_updated_at: string | null
+          espn_updated_at: string | null
+          group_code: string | null
+          home_score: number | null
+          home_team_id: string
+          id: string
+          kickoff_at: string
+          lock_at: string
+          matchday: number | null
+          result_updated_at: string | null
+          stadium: string
+          stage: string
+          status: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_id: string
+          city: string
+          espn_attendance?: number | null
+          espn_away_color?: string | null
+          espn_away_logo?: string | null
+          espn_away_record?: string | null
+          espn_away_win_pct?: number | null
+          espn_away_winner?: boolean | null
+          espn_competition_id?: string | null
+          espn_display_clock?: string | null
+          espn_draw_pct?: number | null
+          espn_event_id?: string | null
+          espn_home_color?: string | null
+          espn_home_logo?: string | null
+          espn_home_record?: string | null
+          espn_home_win_pct?: number | null
+          espn_home_winner?: boolean | null
+          espn_play_by_play_available?: boolean | null
+          espn_prediction_updated_at?: string | null
+          espn_state?: string | null
+          espn_status?: string | null
+          espn_status_detail?: string | null
+          espn_summary?: Json | null
+          espn_summary_updated_at?: string | null
+          espn_updated_at?: string | null
+          group_code?: string | null
+          home_score?: number | null
+          home_team_id: string
+          id: string
+          kickoff_at: string
+          lock_at: string
+          matchday?: number | null
+          result_updated_at?: string | null
+          stadium: string
+          stage: string
+          status: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team_id?: string
+          city?: string
+          espn_attendance?: number | null
+          espn_away_color?: string | null
+          espn_away_logo?: string | null
+          espn_away_record?: string | null
+          espn_away_win_pct?: number | null
+          espn_away_winner?: boolean | null
+          espn_competition_id?: string | null
+          espn_display_clock?: string | null
+          espn_draw_pct?: number | null
+          espn_event_id?: string | null
+          espn_home_color?: string | null
+          espn_home_logo?: string | null
+          espn_home_record?: string | null
+          espn_home_win_pct?: number | null
+          espn_home_winner?: boolean | null
+          espn_play_by_play_available?: boolean | null
+          espn_prediction_updated_at?: string | null
+          espn_state?: string | null
+          espn_status?: string | null
+          espn_status_detail?: string | null
+          espn_summary?: Json | null
+          espn_summary_updated_at?: string | null
+          espn_updated_at?: string | null
+          group_code?: string | null
+          home_score?: number | null
+          home_team_id?: string
+          id?: string
+          kickoff_at?: string
+          lock_at?: string
+          matchday?: number | null
+          result_updated_at?: string | null
+          stadium?: string
+          stage?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_scores: {
+        Row: {
+          calculated_at: string
+          correct_outcome: number
+          exact_score: number
+          outcome: string
+          prediction_id: string
+          risk_multiplier: number
+          scoring_version: string
+          streak_bonus: number
+          total: number
+          underdog_bonus: number
+        }
+        Insert: {
+          calculated_at?: string
+          correct_outcome?: number
+          exact_score?: number
+          outcome: string
+          prediction_id: string
+          risk_multiplier?: number
+          scoring_version: string
+          streak_bonus?: number
+          total?: number
+          underdog_bonus?: number
+        }
+        Update: {
+          calculated_at?: string
+          correct_outcome?: number
+          exact_score?: number
+          outcome?: string
+          prediction_id?: string
+          risk_multiplier?: number
+          scoring_version?: string
+          streak_bonus?: number
+          total?: number
+          underdog_bonus?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_scores_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: true
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          away_score: number
+          confidence: number
+          created_at: string
+          home_score: number
+          id: string
+          is_risk_pick: boolean
+          locked_at: string | null
+          match_id: string
+          predicted_outcome: string
+          revision: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          away_score: number
+          confidence?: number
+          created_at?: string
+          home_score: number
+          id?: string
+          is_risk_pick?: boolean
+          locked_at?: string | null
+          match_id: string
+          predicted_outcome: string
+          revision?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          away_score?: number
+          confidence?: number
+          created_at?: string
+          home_score?: number
+          id?: string
+          is_risk_pick?: boolean
+          locked_at?: string | null
+          match_id?: string
+          predicted_outcome?: string
+          revision?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          accuracy: number | null
+          avatar_url: string | null
+          best_streak: number
+          country_code: string | null
+          created_at: string
+          current_streak: number
+          email: string | null
+          exact_scores: number
+          fan_club_team_id: string | null
+          id: string
+          points: number
+          rank: number | null
+          role: string
+          username: string
+        }
+        Insert: {
+          accuracy?: number | null
+          avatar_url?: string | null
+          best_streak?: number
+          country_code?: string | null
+          created_at?: string
+          current_streak?: number
+          email?: string | null
+          exact_scores?: number
+          fan_club_team_id?: string | null
+          id: string
+          points?: number
+          rank?: number | null
+          role?: string
+          username: string
+        }
+        Update: {
+          accuracy?: number | null
+          avatar_url?: string | null
+          best_streak?: number
+          country_code?: string | null
+          created_at?: string
+          current_streak?: number
+          email?: string | null
+          exact_scores?: number
+          fan_club_team_id?: string | null
+          id?: string
+          points?: number
+          rank?: number | null
+          role?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_fan_club_team_id_fkey"
+            columns: ["fan_club_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_reviews: {
+        Row: {
+          amount: number
+          currency: string
+          id: string
+          note: string
+          period: string
+          placement: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          currency?: string
+          id?: string
+          note: string
+          period: string
+          placement: string
+          source: string
+          status: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          currency?: string
+          id?: string
+          note?: string
+          period?: string
+          placement?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          country_code: string
+          fifa_rank: number | null
+          group_code: string | null
+          id: string
+          name: string
+          short_name: string
+        }
+        Insert: {
+          country_code: string
+          fifa_rank?: number | null
+          group_code?: string | null
+          id: string
+          name: string
+          short_name: string
+        }
+        Update: {
+          country_code?: string
+          fifa_rank?: number | null
+          group_code?: string | null
+          id?: string
+          name?: string
+          short_name?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          progress_current: number
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          progress_current?: number
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          progress_current?: number
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_match_prediction_outcome_summary: {
+        Args: { target_match_id: string }
+        Returns: {
+          away_predictions: number
+          draw_predictions: number
+          home_predictions: number
+          match_id: string
+          total_predictions: number
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const

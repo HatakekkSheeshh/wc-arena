@@ -1,537 +1,401 @@
-import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FR, DE, AR, SA, BR, MX, GB, TN, US as USFlag, ES, CR } from 'country-flag-icons/react/3x2';
 import {
-  Trophy, ChevronDown, ChevronRight, Clock, Search, Filter,
-  MapPin, CheckCircle2, XCircle, ArrowRight, Star, AlertCircle,
-  PlayCircle, Calendar, Flag, Goal, Activity, BarChart2, Check, ExternalLink, CalendarDays, MonitorPlay, Binoculars, Pencil, Settings
+  Activity,
+  BarChart2,
+  Binoculars,
+  Calendar,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  Flag,
+  MonitorPlay,
+  Pencil,
+  Settings,
+  Star,
+  Trophy,
+  XCircle,
 } from 'lucide-react';
 import AppShell from './components/layout/AppShell';
+import { getErrorMessage } from './services/serviceTypes';
+import { listMatches, type MatchRow } from './services/matches';
+import { getTeamMap, type TeamRow } from './services/teams';
+import { getTeamFlag } from './utils/teamFlags';
 
-export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: { onNavigate: (page: string) => void, isVintage: boolean, setIsVintage: (v: boolean) => void, isDark: boolean, setIsDark: (v: boolean) => void, isRounded: boolean, setIsRounded: (v: boolean) => void, hasShadow: boolean, setHasShadow: (v: boolean) => void, hasFrame: boolean, setHasFrame: (v: boolean) => void }) {
+type FixturesProps = {
+  onNavigate: (page: string) => void;
+  isVintage: boolean;
+  setIsVintage: (v: boolean) => void;
+  isDark: boolean;
+  setIsDark: (v: boolean) => void;
+  isRounded: boolean;
+  setIsRounded: (v: boolean) => void;
+  hasShadow: boolean;
+  setHasShadow: (v: boolean) => void;
+  hasFrame: boolean;
+  setHasFrame: (v: boolean) => void;
+};
+
+type StageFilter = 'group' | 'round32' | 'round16' | 'quarter' | 'semi' | 'third_place' | 'final';
+type StatusFilter = 'all' | 'open' | 'locked' | 'live' | 'finished';
+
+const stageLabels: Record<StageFilter, string> = {
+  group: 'GROUP STAGE',
+  round32: 'ROUND OF 32',
+  round16: 'ROUND OF 16',
+  quarter: 'QUARTER-FINALS',
+  semi: 'SEMI-FINALS',
+  third_place: 'THIRD PLACE',
+  final: 'FINAL',
+};
+
+const MATCHES_PER_PAGE = 12;
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(value));
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
+
+function formatDateRange(matches: MatchRow[]) {
+  if (!matches.length) return 'NO MATCHES';
+  return `${formatDate(matches[0].kickoff_at)} - ${formatDate(matches[matches.length - 1].kickoff_at)}`;
+}
+
+function getStatusLabel(status: string) {
+  if (status === 'finished') return 'COMPLETED';
+  return status.toUpperCase();
+}
+
+function getStatusClass(status: string) {
+  if (status === 'open') return 'bg-c5 text-main';
+  if (status === 'locked') return 'bg-muted text-main';
+  if (status === 'live') return 'bg-c4 text-inv';
+  if (status === 'finished') return 'font-black text-[10px] uppercase text-subtle px-3 py-1';
+  return 'bg-c1 text-main';
+}
+
+function TeamFlag({ team }: { team?: TeamRow }) {
+  const FlagIcon = getTeamFlag(team?.country_code, team?.short_name);
+
+  return (
+    <div className="w-8 h-8 lg:w-10 lg:h-10 border-2 border-main rounded-full overflow-hidden flex items-center justify-center bg-elevated shrink-0">
+      {FlagIcon ? <FlagIcon className="w-full h-full object-cover" /> : <span className="font-black text-[10px]">{team?.short_name ?? '?'}</span>}
+    </div>
+  );
+}
+
+function MatchScore({ match }: { match: MatchRow }) {
+  if (typeof match.home_score === 'number' && typeof match.away_score === 'number') {
+    return (
+      <div className={`flex items-center gap-2 ${match.status === 'live' ? 'text-c4' : ''}`}>
+        <div className={`w-10 h-10 lg:w-12 lg:h-12 border-[3px] ${match.status === 'live' ? 'border-c4' : 'border-main'} flex items-center justify-center font-black text-xl bg-card`}>{match.home_score}</div>
+        <div className="font-black text-xl">-</div>
+        <div className={`w-10 h-10 lg:w-12 lg:h-12 border-[3px] ${match.status === 'live' ? 'border-c4' : 'border-main'} flex items-center justify-center font-black text-xl bg-card`}>{match.away_score}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 border-[3px] border-main flex items-center justify-center font-black text-xl bg-card">-</div>
+      <div className="font-black text-xl">-</div>
+      <div className="w-10 h-10 lg:w-12 lg:h-12 border-[3px] border-main flex items-center justify-center font-black text-xl bg-card">-</div>
+    </div>
+  );
+}
+
+function MatchListRow({ match, homeTeam, awayTeam, featured, onNavigate }: { key?: string; match: MatchRow; homeTeam?: TeamRow; awayTeam?: TeamRow; featured: boolean; onNavigate: (page: string) => void }) {
+  const isLive = match.status === 'live';
+  const isFinished = match.status === 'finished';
+
+  return (
+    <div className={`flex border-b-4 border-main relative hover:bg-page transition-colors ${isLive ? 'bg-[#f0f9ff]' : 'bg-card'} ${isFinished ? 'opacity-80' : ''}`}>
+      {featured && (
+        <div className="absolute top-0 right-auto sm:left-24 bg-c1 border-x-4 border-b-4 border-main text-main text-[10px] px-3 py-1 flex items-center gap-1 font-black uppercase z-10">
+          <Star size={12} className="fill-main" /> FEATURED MATCH
+        </div>
+      )}
+      {isLive && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
+          <div className="w-2 h-2 rounded-full bg-c4 animate-pulse" />
+        </div>
+      )}
+      <div className={`w-24 sm:w-32 border-r-4 border-main flex flex-col pt-6 sm:pt-4 p-2 sm:p-3 justify-start shrink-0 ${isLive ? 'bg-[#f0f9ff] text-c4' : 'bg-card text-main'}`}>
+        <span className="font-bold text-[10px] sm:text-xs uppercase whitespace-nowrap mb-0.5">{formatDate(match.kickoff_at)}</span>
+        <span className="font-black text-xl sm:text-2xl leading-none">{formatTime(match.kickoff_at)}</span>
+        <span className="font-bold text-[9px] sm:text-[10px] uppercase opacity-80 mb-4 md:mb-6 text-subtle">LOCAL</span>
+        <div className="mt-auto flex-col gap-0.5 text-faint hidden md:flex">
+          <span className="text-[9px] uppercase font-bold leading-tight">{match.stadium}</span>
+          <span className="text-[8px] uppercase font-bold opacity-80 leading-tight">{match.city}</span>
+        </div>
+      </div>
+      <div className={`flex-1 flex flex-col md:flex-row items-center p-3 lg:p-6 min-w-0 ${featured ? 'pt-8 lg:pt-8' : ''}`}>
+        <div className="flex-1 flex items-center justify-between w-full min-w-0">
+          <div className="flex-1 flex items-center justify-end gap-2 text-right min-w-0">
+            <span className="font-black text-sm lg:text-lg uppercase tracking-wide hidden sm:block truncate">{homeTeam?.name ?? match.home_team_id}</span>
+            <span className="font-black text-sm uppercase sm:hidden">{homeTeam?.short_name ?? match.home_team_id}</span>
+            <TeamFlag team={homeTeam} />
+          </div>
+          <div className="mx-3 flex flex-col items-center gap-1 shrink-0">
+            <MatchScore match={match} />
+            {isLive && <span className="text-[8px] bg-c4 text-inv px-1 h-3 flex items-center leading-none">LIVE</span>}
+            {isFinished && <span className="text-[8px] uppercase text-subtle font-black">FT</span>}
+          </div>
+          <div className="flex-1 flex items-center justify-start gap-2 text-left min-w-0">
+            <TeamFlag team={awayTeam} />
+            <span className="font-black text-sm lg:text-lg uppercase tracking-wide hidden sm:block truncate">{awayTeam?.name ?? match.away_team_id}</span>
+            <span className="font-black text-sm uppercase sm:hidden">{awayTeam?.short_name ?? match.away_team_id}</span>
+          </div>
+        </div>
+        <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-6 flex items-center gap-3 justify-end shrink-0">
+          <span className={`${getStatusClass(match.status)} px-3 py-1 border-2 border-main uppercase`}>{getStatusLabel(match.status)}</span>
+          <button onClick={() => onNavigate(`matches/${match.id}`)} className={`${match.status === 'open' ? 'bg-c2 text-inv hover:opacity-90' : 'bg-card hover:bg-page text-main'} font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 min-w-24 focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all`}>
+            {match.status === 'open' ? 'PREDICT' : isFinished ? 'RESULTS' : 'DETAILS'} <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Fixtures({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: FixturesProps) {
   const { t } = useTranslation();
   const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
+  const [matches, setMatches] = useState<MatchRow[]>([]);
+  const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<StageFilter>('group');
+  const [matchdayFilter, setMatchdayFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([listMatches(), getTeamMap()])
+      .then(([nextMatches, nextTeams]) => {
+        if (!active) return;
+        setMatches(nextMatches);
+        setTeams(nextTeams);
+      })
+      .catch((nextError) => {
+        if (!active) return;
+        setError(getErrorMessage(nextError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredMatches = useMemo(() => matches.filter((match) => {
+    const stageMatches = match.stage === stageFilter;
+    const matchdayMatches = matchdayFilter === 'all' || String(match.matchday) === matchdayFilter;
+    const statusMatches = statusFilter === 'all' || match.status === statusFilter;
+    return stageMatches && matchdayMatches && statusMatches;
+  }), [matches, matchdayFilter, stageFilter, statusFilter]);
+
+  const matchdays = useMemo(() => Array.from(new Set(matches.filter((match) => match.stage === stageFilter && match.matchday).map((match) => match.matchday))).sort((a, b) => Number(a) - Number(b)), [matches, stageFilter]);
+  const pageCount = Math.max(1, Math.ceil(filteredMatches.length / MATCHES_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const visibleMatches = filteredMatches.slice((currentPage - 1) * MATCHES_PER_PAGE, currentPage * MATCHES_PER_PAGE);
+  const totalMatches = matches.length;
+  const liveMatches = matches.filter((match) => match.status === 'live').length;
+  const upcomingMatches = matches.filter((match) => match.status === 'open' || match.status === 'scheduled').length;
+  const completedMatches = matches.filter((match) => match.status === 'finished').length;
+  const nextDeadline = matches.find((match) => match.status === 'open' || match.status === 'scheduled');
+  const nextHomeTeam = nextDeadline ? teams.get(nextDeadline.home_team_id) : undefined;
+  const nextAwayTeam = nextDeadline ? teams.get(nextDeadline.away_team_id) : undefined;
+  const firstOpenMatchId = filteredMatches.find((match) => match.status === 'open')?.id;
 
   return (
     <AppShell themeControls={themeControls}>
-        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
-
-          {/* Top Info Banner */}
-          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
-            <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
-              {t('nav.public.matches')}
-            </h1>
-          </div>
-
-          {/* Main White Wrapper for Content */}
-          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
-
-          {/* Top Stats Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {/* Stat 1 */}
-            <div className="flex border-4 border-main bg-c3 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <div className="shrink-0 mr-3">
-                <MonitorPlay size={36} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col justify-center">
-                 <span className="font-black text-[10px] sm:text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL {t('nav.public.matches')}</span>
-                 <span className="font-black text-xl sm:text-2xl leading-none text-main">64</span>
-              </div>
-            </div>
-            {/* Stat 2 */}
-            <div className="flex border-4 border-main bg-c2 p-3 sm:p-4 text-inv shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <div className="shrink-0 mr-3 text-inv">
-                <Activity size={36} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col justify-center">
-                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">LIVE NOW</span>
-                 <span className="font-black text-xl sm:text-2xl leading-none">2</span>
-              </div>
-            </div>
-            {/* Stat 3 */}
-            <div className="flex border-4 border-main bg-c5 p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <div className="shrink-0 mr-3 text-main">
-                <CalendarDays size={36} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col justify-center text-main">
-                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">UPCOMING TODAY</span>
-                 <span className="font-black text-xl sm:text-2xl leading-none">6</span>
-              </div>
-            </div>
-            {/* Stat 4 */}
-            <div className="flex border-4 border-main bg-[#FF6B00] p-3 sm:p-4 text-main shadow-[4px_4px_0_0_var(--color-shadow)]">
-              <div className="shrink-0 mr-3 text-main">
-                <Flag size={36} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col justify-center text-main">
-                 <span className="font-black text-[10px] sm:text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">COMPLETED</span>
-                 <span className="font-black text-xl sm:text-2xl leading-none">18</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Main 2-column layout */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch">
-             
-             {/* Left Column: Match List */}
-             <div className="flex-1 w-full border-4 border-main flex flex-col min-w-0 bg-card shadow-[4px_4px_0_0_var(--color-shadow)]">
-                {/* Tabs */}
-                <div className="flex flex-wrap md:flex-nowrap border-b-4 border-main bg-card">
-                   <button className="flex-1 min-w-[30%] md:min-w-0 py-3 bg-c2 text-inv font-black text-[10px] md:text-xs uppercase border-b-4 md:border-b-0 border-r-4 border-main hover:opacity-90">GROUP STAGE</button>
-                   <button className="flex-1 min-w-[30%] md:min-w-0 py-3 bg-card hover:bg-muted text-main font-black text-[10px] md:text-xs uppercase border-b-4 md:border-b-0 border-r-4 border-main">ROUND OF 16</button>
-                   <button className="flex-1 min-w-[30%] md:min-w-0 py-3 bg-card hover:bg-muted text-main font-black text-[10px] md:text-xs uppercase border-b-4 md:border-b-0 border-r-4 border-main">QUARTER-FINALS</button>
-                   <button className="flex-1 min-w-[50%] md:min-w-0 py-3 bg-card hover:bg-muted text-main font-black text-[10px] md:text-xs uppercase border-r-4 md:border-r-4 border-main">SEMI-FINALS</button>
-                   <button className="flex-1 min-w-[50%] md:min-w-0 py-3 bg-card hover:bg-muted text-main font-black text-[10px] md:text-xs uppercase">FINAL</button>
-                </div>
-
-                {/* Filters */}
-                <div className="border-b-4 border-main bg-card p-4 flex flex-col relative z-20">
-                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
-                      <div className="flex items-center gap-4 w-full md:w-auto">
-                         <div className="relative flex-1 md:flex-none">
-                            <select className="appearance-none w-full md:w-40 border-2 border-main py-2 pl-3 pr-8 font-black uppercase text-xs bg-card shadow-[2px_2px_0_0_var(--color-shadow)] outline-none cursor-pointer focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
-                               <option>MATCHDAY 2</option>
-                               <option>MATCHDAY 1</option>
-                               <option>MATCHDAY 3</option>
-                            </select>
-                            <ChevronDown size={14} strokeWidth={3} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                         </div>
-                         <div className="flex items-center gap-2 border-2 border-main py-2 px-3 bg-page shadow-[2px_2px_0_0_var(--color-shadow)] font-bold text-xs uppercase flex-1 md:flex-none justify-center">
-                            <Calendar size={14} className="text-main" />
-                            JUN 12 - JUN 18
-                         </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-0 border-2 border-main shadow-[2px_2px_0_0_var(--color-shadow)] w-full md:w-auto">
-                         <button className="px-4 py-2 bg-c2 text-inv font-black text-[10px] uppercase flex-1 md:flex-none border-r-2 border-main border-b-2 sm:border-b-0">ALL</button>
-                         <button className="px-4 py-2 bg-card hover:bg-muted text-main font-black text-[10px] uppercase flex-1 md:flex-none border-r-2 border-main border-b-2 sm:border-b-0">OPEN</button>
-                         <button className="px-4 py-2 bg-card hover:bg-muted text-main font-black text-[10px] uppercase flex-1 md:flex-none border-r-2 md:border-r-2 border-main border-b-2 sm:border-b-0">LOCKED</button>
-                         <button className="px-4 py-2 bg-card hover:bg-muted text-main font-black text-[10px] uppercase flex-1 md:flex-none border-r-2 border-main">LIVE</button>
-                         <button className="px-4 py-2 bg-card hover:bg-muted text-main font-black text-[10px] uppercase flex-1 md:flex-none">COMPLETED</button>
-                      </div>
-                   </div>
-
-                   {/* Table Header (Desktop Only) */}
-                   <div className="hidden md:grid grid-cols-[180px_1fr_120px_120px] items-center border-b-4 border-main pb-2 pt-2 bg-page font-black text-[10px] uppercase text-subtle px-4 gap-4">
-                       <div>KICKOFF / STADIUM</div>
-                       <div className="text-center">MATCH</div>
-                       <div className="text-center">STATUS</div>
-                       <div className="text-center">ACTION</div>
-                   </div>
-
-                   {/* Matches List */}
-                   <div className="flex flex-col bg-card">
-                      
-                      {/* Featured Match - Open */}
-                      <div className="relative border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors">
-                         <div className="absolute top-0 left-0 bg-c1 border-r-2 border-b-2 border-main text-main text-[10px] px-3 py-0.5 flex items-center gap-1.5 font-black uppercase z-10">
-                           <Star size={12} className="fill-main" /> FEATURED MATCH
-                         </div>
-                         <div className="flex items-center w-full gap-4 mt-2 md:mt-0">
-                            <div className="w-20 flex flex-col items-center md:items-start text-main">
-                               <span className="font-black text-[10px] uppercase">JUN 14</span>
-                               <span className="font-black text-xl leading-none mt-0.5">20:00</span>
-                               <span className="font-bold text-[9px] uppercase text-subtle">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">LUSAIL STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">LUSAIL, QAT</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                               <span className="font-black text-sm uppercase hidden sm:block">FRANCE</span>
-                               <span className="font-black text-sm uppercase sm:hidden">FRA</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><FR className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex items-center justify-between border-[3px] border-main bg-page font-black text-sm p-1 shadow-[2px_2px_0_var(--color-shadow)]">
-                               <div className="w-5 text-center">-</div>
-                               <span className="text-subtle">:</span>
-                               <div className="w-5 text-center">-</div>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><DE className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">GERMANY</span>
-                               <span className="font-black text-sm uppercase sm:hidden">GER</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button onClick={() => onNavigate('matches/m-ger-mar')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                               PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                      {/* Locked Soon Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default">
-                         <div className="flex items-center w-full gap-4">
-                            <div className="w-20 flex flex-col items-center md:items-start text-main">
-                               <span className="font-black text-[10px] uppercase">JUN 14</span>
-                               <span className="font-black text-xl leading-none mt-0.5">17:00</span>
-                               <span className="font-bold text-[9px] uppercase text-subtle">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">SOFI STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">LOS ANGELES, USA</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right opacity-90">
-                               <span className="font-black text-sm uppercase hidden sm:block">ARGENTINA</span>
-                               <span className="font-black text-sm uppercase sm:hidden">ARG</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><AR className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex items-center justify-between border-[3px] border-main bg-card font-black text-sm p-1 shadow-[2px_2px_0_var(--color-shadow)]">
-                               <div className="w-5 text-center">-</div>
-                               <span className="text-subtle">:</span>
-                               <div className="w-5 text-center">-</div>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left opacity-90">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><SA className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">SAUDI ARABIA</span>
-                               <span className="font-black text-sm uppercase sm:hidden">KSA</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="bg-c1 text-main font-black text-[10px] px-2 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center w-full">LOCKED SOON</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button onClick={() => onNavigate('matches/m-fra-arg')} className="bg-card hover:bg-muted text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                               DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                      {/* Live Match */}
-                      <div className="border-b-2 border-main bg-[#f0f9ff] p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-[#e0f2fe] transition-colors cursor-default relative">
-                         <div className="absolute top-2 left-2 flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-c4 animate-pulse"></div>
-                         </div>
-                         <div className="flex items-center w-full gap-4 pl-3">
-                            <div className="w-16 md:w-20 flex flex-col items-center md:items-start text-c4">
-                               <span className="font-black text-[10px] uppercase">JUN 13</span>
-                               <span className="font-black text-xl md:text-[22px] leading-none mt-0.5">12:00</span>
-                               <span className="font-bold text-[9px] uppercase">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">NRG STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">HOUSTON, USA</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                               <span className="font-black text-sm uppercase hidden sm:block">BRAZIL</span>
-                               <span className="font-black text-sm uppercase sm:hidden">BRA</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><BR className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex flex-col items-center justify-center border-[3px] border-c4 bg-page font-black text-lg p-1 shadow-[2px_2px_0_var(--color-c4)] text-c4 py-0.5">
-                               <div className="flex items-center w-full justify-between px-1">
-                                 <span>1</span>
-                                 <span>:</span>
-                                 <span>0</span>
-                               </div>
-                               <span className="text-[8px] bg-c4 text-inv px-1 h-3 flex items-center leading-none mt-0.5">45'</span>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><MX className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">MEXICO</span>
-                               <span className="font-black text-sm uppercase sm:hidden">MEX</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="bg-c4 text-inv font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LIVE</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button className="bg-c2 text-inv font-black text-[10px] px-2 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] hover:opacity-90 transition-all">
-                               VIEW LIVE <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                      {/* Completed Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 opacity-80 hover:bg-page transition-colors">
-                         <div className="flex items-center w-full gap-4">
-                            <div className="w-20 flex flex-col items-center md:items-start text-subtle">
-                               <span className="font-black text-[10px] uppercase">JUN 13</span>
-                               <span className="font-black text-xl leading-none mt-0.5">09:00</span>
-                               <span className="font-bold text-[9px] uppercase">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">AT&T STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">DALLAS, USA</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                               <span className="font-black text-sm uppercase hidden sm:block">ENGLAND</span>
-                               <span className="font-black text-sm uppercase sm:hidden">ENG</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><GB className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex flex-col items-center justify-center border-[3px] border-main bg-muted font-black text-sm p-1 shadow-[2px_2px_0_var(--color-shadow)] py-0.5">
-                               <div className="flex items-center w-full justify-between px-1">
-                                 <span>2</span>
-                                 <span className="text-subtle">:</span>
-                                 <span>1</span>
-                               </div>
-                               <span className="text-[8px] uppercase text-subtle">FT</span>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><TN className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">TUNISIA</span>
-                               <span className="font-black text-sm uppercase sm:hidden">TUN</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="font-black text-[10px] uppercase text-subtle">FT</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button onClick={() => onNavigate('matches/m-jpn-mex')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
-                               RESULTS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                      {/* Open Match 2 */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default">
-                         <div className="flex items-center w-full gap-4">
-                            <div className="w-20 flex flex-col items-center md:items-start text-main">
-                               <span className="font-black text-[10px] uppercase">JUN 13</span>
-                               <span className="font-black text-xl leading-none mt-0.5">21:00</span>
-                               <span className="font-bold text-[9px] uppercase text-subtle">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">HARD ROCK STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">MIAMI, USA</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                               <span className="font-black text-sm uppercase hidden sm:block">USA</span>
-                               <span className="font-black text-sm uppercase sm:hidden">USA</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><USFlag className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex items-center justify-between border-[3px] border-main bg-card font-black text-sm p-1 shadow-[2px_2px_0_var(--color-shadow)]">
-                               <div className="w-5 text-center">-</div>
-                               <span className="text-subtle">:</span>
-                               <div className="w-5 text-center">-</div>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><GB className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">WALES</span>
-                               <span className="font-black text-sm uppercase sm:hidden">WAL</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="bg-c5 text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">OPEN</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button onClick={() => onNavigate('matches/m-usa-kor')} className="bg-c2 hover:opacity-90 text-inv font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] focus:shadow-none focus:translate-x-[2px] focus:translate-y-[2px] transition-all">
-                               PREDICT <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                      {/* Locked Match */}
-                      <div className="border-b-2 border-main bg-card p-3 md:p-4 grid grid-cols-1 md:grid-cols-[180px_1fr_120px_120px] items-center gap-4 hover:bg-page transition-colors cursor-default opacity-90">
-                         <div className="flex items-center w-full gap-4">
-                            <div className="w-20 flex flex-col items-center md:items-start text-main">
-                               <span className="font-black text-[10px] uppercase">JUN 12</span>
-                               <span className="font-black text-xl leading-none mt-0.5">18:00</span>
-                               <span className="font-bold text-[9px] uppercase text-subtle">ET</span>
-                            </div>
-                            <div className="flex-1 min-w-[120px] flex items-center gap-2 hidden md:flex">
-                               <div className="w-6 h-6 border-2 border-main rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <MapPin size={10} className="text-subtle" />
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="font-black text-[9px] uppercase">METLIFE STADIUM</span>
-                                  <span className="font-bold text-[9px] uppercase text-subtle">NEW YORK, USA</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center justify-center gap-3 w-full min-w-0">
-                            <div className="flex-1 flex items-center justify-end gap-2 text-right">
-                               <span className="font-black text-sm uppercase hidden sm:block">SPAIN</span>
-                               <span className="font-black text-sm uppercase sm:hidden">ESP</span>
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><ES className="w-full h-full object-cover" /></div>
-                            </div>
-                            <div className="w-14 sm:w-16 flex items-center justify-between border-[3px] border-main bg-page font-black text-sm p-1 shadow-[2px_2px_0_var(--color-shadow)]">
-                               <div className="w-5 text-center">-</div>
-                               <span className="text-subtle">:</span>
-                               <div className="w-5 text-center">-</div>
-                            </div>
-                            <div className="flex-1 flex items-center justify-start gap-2 text-left">
-                               <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-main rounded-full overflow-hidden flex items-center justify-center shrink-0"><CR className="w-full h-full object-cover" /></div>
-                               <span className="font-black text-sm uppercase hidden sm:block">COSTA RICA</span>
-                               <span className="font-black text-sm uppercase sm:hidden">CRC</span>
-                            </div>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <span className="bg-muted text-main font-black text-[10px] px-3 py-1 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">LOCKED</span>
-                         </div>
-                         <div className="w-full flex justify-center">
-                            <button onClick={() => onNavigate('matches/m-bra-esp')} className="bg-card hover:bg-page text-main font-black text-[10px] px-3 py-1.5 border-2 border-main uppercase flex items-center justify-center gap-1 w-full shadow-[2px_2px_0_var(--color-shadow)] transition-all">
-                               DETAILS <ChevronRight size={14} className="-mr-1" strokeWidth={3} />
-                            </button>
-                         </div>
-                      </div>
-
-                   </div>
-                </div>
-
-             </div>
-
-             {/* Right Column: Widgets */}
-             <div className="w-full lg:w-[320px] xl:w-[360px] flex flex-col gap-4 shrink-0 self-stretch relative z-20">
-                
-                {/* Next Deadline */}
-                <div className="flex flex-col border-4 border-main bg-page shadow-[4px_4px_0_0_var(--color-shadow)]">
-                   <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center border-b-4 border-main">
-                      NEXT DEADLINE
-                   </div>
-                   <div className="p-4 flex flex-col items-center text-center">
-                      <Clock size={24} className="mb-2 text-main" />
-                      <span className="font-bold text-[10px] uppercase mb-1">PREDICTIONS LOCK IN</span>
-                      <span className="font-black text-4xl xl:text-5xl text-c4 font-mono tracking-tighter w-full mb-1">01:45:23</span>
-                      <span className="font-black text-xs uppercase">Jun 14, 17:00 ET</span>
-                      <span className="font-bold text-xs text-subtle mt-0.5 mb-4">Argentina vs Saudi Arabia</span>
-                      <button onClick={() => onNavigate('picks')} className="w-full bg-c2 hover:opacity-90 text-inv font-black text-xs uppercase py-3 border-2 border-main shadow-[2px_2px_0_var(--color-shadow)] flex items-center justify-center gap-2 transition-transform active:translate-y-[2px] active:translate-x-[2px] active:shadow-none focus:outline-none">
-                         GO TO MY PICKS <ChevronRight size={16} strokeWidth={3} />
-                      </button>
-                   </div>
-                </div>
-
-
-                {/* Your Predictions Stats */}
-                <div className="flex flex-col flex-1 border-4 border-main bg-card shadow-[4px_4px_0_0_var(--color-shadow)]">
-                   <div className="bg-main text-inv font-black uppercase text-xs py-2 px-3 flex items-center justify-between border-b-4 border-main">
-                      <span>YOUR PREDICTIONS</span>
-                      <span className="text-[9px] hover:underline cursor-pointer">VIEW ALL</span>
-                   </div>
-                   <div className="flex flex-col">
-                      <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
-                         <div className="flex items-center gap-2 font-bold text-sm">
-                            <Clock size={16} className="text-subtle" /> <span>12</span>
-                         </div>
-                         <span className="bg-c5 text-main font-black text-[9px] px-2 py-0.5 border-2 border-main uppercase">OPEN</span>
-                      </div>
-                      <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
-                         <div className="flex items-center gap-2 font-bold text-sm">
-                            <Settings size={16} className="text-subtle" /> <span>5</span>
-                         </div>
-                         <span className="bg-c1 text-main font-black text-[9px] px-2 py-0.5 border-2 border-main uppercase">LOCKED</span>
-                      </div>
-                      <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
-                         <div className="flex items-center gap-2 font-bold text-sm">
-                            <CheckCircle2 size={16} className="text-c5" /> <span>18</span>
-                         </div>
-                         <span className="text-c5 font-black text-[9px] px-2 pt-0.5 uppercase">CORRECT</span>
-                      </div>
-                      <div className="flex items-center justify-between px-3 py-2">
-                         <div className="flex items-center gap-2 font-bold text-sm">
-                            <XCircle size={16} className="text-c4" /> <span>7</span>
-                         </div>
-                         <span className="text-c4 font-black text-[9px] px-2 pt-0.5 uppercase">INCORRECT</span>
-                      </div>
-                   </div>
-                </div>
-
-
-             </div>
-
-          </div>
-
-          </div>
-
-          {/* BOTTOM BANNER */}
-          <div className="flex flex-col lg:flex-row border-4 border-main bg-card overflow-hidden w-full uppercase shrink-0 shadow-[4px_4px_0_0_var(--color-shadow)]">
-             
-             {/* Step 1 */}
-             <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
-                <div className="w-[4.5rem] bg-c3 flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1">
-                   <span className="font-black text-6xl leading-none">1</span>
-                </div>
-                <div className="w-16 bg-c3 flex justify-center items-center border-r-4 border-main shrink-0 text-main">
-                   <Binoculars size={28} strokeWidth={2.5}/>
-                </div>
-                <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">BROWSE FIXTURES</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Explore all World Cup 2026 matches and schedule.</span>
-                </div>
-             </div>
-
-             {/* Step 2 */}
-             <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
-                <div className="w-[4.5rem] bg-c2 flex justify-center items-center border-r-4 border-main shrink-0 text-inv pb-1">
-                   <span className="font-black text-6xl leading-none">2</span>
-                </div>
-                <div className="w-16 bg-c2 flex justify-center items-center border-r-4 border-main shrink-0 text-inv">
-                   <Pencil size={28} strokeWidth={2.5}/>
-                </div>
-                <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">PICK {t('nav.public.matches')}</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Make your predictions before kickoff.</span>
-                </div>
-             </div>
-
-             {/* Step 3 */}
-             <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
-                <div className="w-[4.5rem] bg-c5 flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1">
-                   <span className="font-black text-6xl leading-none">3</span>
-                </div>
-                <div className="w-16 bg-c5 flex justify-center items-center border-r-4 border-main shrink-0 text-main">
-                   <BarChart2 size={28} strokeWidth={2.5}/>
-                </div>
-                <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">TRACK RESULTS</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Follow live scores and completed matches.</span>
-                </div>
-             </div>
-
-             {/* Step 4 */}
-             <div className="flex-1 flex min-h-[90px] xl:min-h-[100px]">
-                <div className="w-[4.5rem] bg-[#FF6B00] flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1">
-                   <span className="font-black text-6xl leading-none">4</span>
-                </div>
-                <div className="w-16 bg-[#FF6B00] flex justify-center items-center border-r-4 border-main shrink-0 text-main">
-                   <Trophy size={28} strokeWidth={2.5}/>
-                </div>
-                <div className="flex flex-col justify-center p-3 flex-1 bg-page">
-                   <span className="font-black text-[13px] xl:text-sm tracking-wide">CLIMB {t('nav.public.leaderboard')}</span>
-                   <span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Earn points and rank higher each week.</span>
-                </div>
-             </div>
-
-          </div>
-
+      <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">
+            {t('nav.public.matches')}
+          </h1>
         </div>
+
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 border-b-4 border-main">
+            <div className="flex items-center gap-4 border-b-4 sm:border-r-4 xl:border-b-0 border-main p-4 lg:p-5 bg-c3 text-main">
+              <div className="shrink-0"><MonitorPlay size={36} strokeWidth={2.5} /></div>
+              <div className="flex flex-col justify-center">
+                <span className="font-black text-xs uppercase text-main opacity-90 tracking-widest mb-1 leading-none">TOTAL {t('nav.public.matches')}</span>
+                <span className="font-black text-2xl sm:text-3xl leading-none text-main">{totalMatches}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border-b-4 xl:border-b-0 xl:border-r-4 border-main p-4 lg:p-5 bg-c2 text-inv">
+              <div className="shrink-0 text-inv"><Activity size={36} strokeWidth={2.5} /></div>
+              <div className="flex flex-col justify-center">
+                <span className="font-black text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">LIVE NOW</span>
+                <span className="font-black text-2xl sm:text-3xl leading-none">{liveMatches}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border-b-4 sm:border-b-0 sm:border-r-4 border-main p-4 lg:p-5 bg-c5 text-main">
+              <div className="shrink-0 text-main"><CalendarDays size={36} strokeWidth={2.5} /></div>
+              <div className="flex flex-col justify-center text-main">
+                <span className="font-black text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">UPCOMING</span>
+                <span className="font-black text-2xl sm:text-3xl leading-none">{upcomingMatches}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border-main p-4 lg:p-5 bg-[#FF6B00] text-main">
+              <div className="shrink-0 text-main"><Flag size={36} strokeWidth={2.5} /></div>
+              <div className="flex flex-col justify-center text-main">
+                <span className="font-black text-xs uppercase opacity-90 tracking-widest mb-1 leading-none">COMPLETED</span>
+                <span className="font-black text-2xl sm:text-3xl leading-none">{completedMatches}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row flex-1 items-stretch">
+            <div className="flex-1 border-r-0 lg:border-r-4 border-main flex flex-col min-w-0 bg-muted">
+              <div className="flex flex-wrap border-b-4 border-main font-black text-sm md:text-base uppercase">
+                {(Object.keys(stageLabels) as StageFilter[]).map((stage) => (
+                  <button key={stage} onClick={() => { setStageFilter(stage); setMatchdayFilter('all'); setPage(1); }} className={`${stageFilter === stage ? 'bg-c2 text-accent-inv' : 'bg-card text-main hover:bg-elevated'} px-4 md:px-6 py-3 border-r-4 border-b-4 md:border-b-0 border-main flex-1 min-w-[max-content] md:flex-none`}>
+                    {stageLabels[stage]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between p-3 border-b-4 border-main bg-card gap-3 relative z-20">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 w-full">
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none">
+                      <select value={matchdayFilter} onChange={(event) => { setMatchdayFilter(event.target.value); setPage(1); }} className="appearance-none w-full md:w-40 border-2 border-main py-2 pl-3 pr-8 font-black uppercase text-xs bg-card outline-none cursor-pointer focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
+                        <option value="all">ALL MATCHDAYS</option>
+                        {matchdays.map((matchday) => <option key={matchday} value={String(matchday)}>MATCHDAY {matchday}</option>)}
+                      </select>
+                      <ChevronDown size={14} strokeWidth={3} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <div className="flex items-center gap-2 border-2 border-main py-2 px-3 bg-page font-bold text-xs uppercase flex-1 md:flex-none justify-center">
+                      <Calendar size={14} className="text-main" />
+                      {formatDateRange(filteredMatches)}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center border-2 border-main font-bold text-xs uppercase self-stretch md:self-auto overflow-hidden w-full md:w-auto">
+                    {(['all', 'open', 'locked', 'live', 'finished'] as StatusFilter[]).map((status) => (
+                      <button key={status} onClick={() => { setStatusFilter(status); setPage(1); }} className={`${statusFilter === status ? 'bg-c2 text-accent-inv' : 'bg-card hover:bg-elevated text-main'} px-4 py-1.5 flex-1 md:flex-none border-r-2 border-main border-b-2 sm:border-b-0 last:border-r-0`}>
+                        {status === 'finished' ? 'COMPLETED' : status.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col bg-card">
+                {loading && <div className="p-6 font-black uppercase text-sm">Loading matches...</div>}
+                {error && <div className="p-6 font-black uppercase text-sm bg-c5 text-main border-b-4 border-main">{error}</div>}
+                {!loading && !error && filteredMatches.length === 0 && <div className="p-6 font-black uppercase text-sm">No matches found for this filter.</div>}
+                {!loading && !error && visibleMatches.map((match) => (
+                  <MatchListRow
+                    key={match.id}
+                    match={match}
+                    homeTeam={teams.get(match.home_team_id)}
+                    awayTeam={teams.get(match.away_team_id)}
+                    featured={match.id === firstOpenMatchId}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+                {!loading && !error && filteredMatches.length > MATCHES_PER_PAGE && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-card border-b-4 border-main font-black uppercase text-xs">
+                    <span>
+                      Showing {(currentPage - 1) * MATCHES_PER_PAGE + 1}-{Math.min(currentPage * MATCHES_PER_PAGE, filteredMatches.length)} of {filteredMatches.length}
+                    </span>
+                    <div className="flex items-center border-2 border-main overflow-hidden">
+                      <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="px-4 py-2 border-r-2 border-main bg-card disabled:bg-muted disabled:text-subtle hover:bg-elevated">
+                        PREV
+                      </button>
+                      <span className="px-4 py-2 bg-page border-r-2 border-main">PAGE {currentPage}/{pageCount}</span>
+                      <button type="button" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="px-4 py-2 bg-card disabled:bg-muted disabled:text-subtle hover:bg-elevated">
+                        NEXT
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="w-full lg:w-[420px] bg-card flex flex-col shrink-0 self-stretch relative z-20">
+              <div className="flex flex-col border-b-4 border-main bg-page">
+                <div className="bg-main text-inv font-black uppercase text-xs py-3 px-4 min-h-[48px] flex items-center border-b-4 border-main">
+                  NEXT DEADLINE
+                </div>
+                <div className="p-4 flex flex-col items-center text-center">
+                  <Clock size={24} className="mb-2 text-main" />
+                  <span className="font-bold text-[10px] uppercase mb-1">PREDICTIONS LOCK IN</span>
+                  <span className="font-black text-4xl xl:text-5xl text-c4 font-mono tracking-tighter w-full mb-1">{nextDeadline ? formatTime(nextDeadline.lock_at) : '—'}</span>
+                  <span className="font-black text-xs uppercase">{nextDeadline ? formatDate(nextDeadline.lock_at) : 'No open deadline'}</span>
+                  <span className="font-bold text-xs text-subtle mt-0.5 mb-4">{nextDeadline ? `${nextHomeTeam?.name ?? nextDeadline.home_team_id} vs ${nextAwayTeam?.name ?? nextDeadline.away_team_id}` : 'Check back after fixtures open'}</span>
+                  <button onClick={() => onNavigate('picks')} className="w-full bg-c2 hover:opacity-90 text-inv font-black text-xs uppercase py-3 border-2 border-main flex items-center justify-center gap-2 transition-transform active:translate-y-[2px] active:translate-x-[2px] active:shadow-none focus:outline-none">
+                    GO TO MY PICKS <ChevronRight size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col flex-1 bg-card">
+                <div className="bg-main text-inv font-black uppercase text-xs py-3 px-4 min-h-[48px] flex items-center justify-between border-b-4 border-main">
+                  <span>YOUR PREDICTIONS</span>
+                  <span className="text-[9px] hover:underline cursor-pointer">VIEW ALL</span>
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
+                    <div className="flex items-center gap-2 font-bold text-sm"><Clock size={16} className="text-subtle" /> <span>{upcomingMatches}</span></div>
+                    <span className="bg-c5 text-main font-black text-[9px] px-2 py-0.5 border-2 border-main uppercase">OPEN</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
+                    <div className="flex items-center gap-2 font-bold text-sm"><Settings size={16} className="text-subtle" /> <span>{matches.filter((match) => match.status === 'locked').length}</span></div>
+                    <span className="bg-c1 text-main font-black text-[9px] px-2 py-0.5 border-2 border-main uppercase">LOCKED</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2 border-b-2 border-line">
+                    <div className="flex items-center gap-2 font-bold text-sm"><CheckCircle2 size={16} className="text-c5" /> <span>{completedMatches}</span></div>
+                    <span className="text-c5 font-black text-[9px] px-2 pt-0.5 uppercase">COMPLETED</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <div className="flex items-center gap-2 font-bold text-sm"><XCircle size={16} className="text-c4" /> <span>{matches.filter((match) => match.status === 'postponed' || match.status === 'cancelled').length}</span></div>
+                    <span className="text-c4 font-black text-[9px] px-2 pt-0.5 uppercase">VOID</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row border-t-4 border-main bg-card overflow-hidden w-full uppercase shrink-0">
+            <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
+              <div className="w-[4.5rem] bg-c3 flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1"><span className="font-black text-6xl leading-none">1</span></div>
+              <div className="w-16 bg-c3 flex justify-center items-center border-r-4 border-main shrink-0 text-main"><Binoculars size={28} strokeWidth={2.5}/></div>
+              <div className="flex flex-col justify-center p-3 flex-1 bg-page"><span className="font-black text-[13px] xl:text-sm tracking-wide">BROWSE FIXTURES</span><span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Explore all World Cup 2026 matches and schedule.</span></div>
+            </div>
+            <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
+              <div className="w-[4.5rem] bg-c2 flex justify-center items-center border-r-4 border-main shrink-0 text-inv pb-1"><span className="font-black text-6xl leading-none">2</span></div>
+              <div className="w-16 bg-c2 flex justify-center items-center border-r-4 border-main shrink-0 text-inv"><Pencil size={28} strokeWidth={2.5}/></div>
+              <div className="flex flex-col justify-center p-3 flex-1 bg-page"><span className="font-black text-[13px] xl:text-sm tracking-wide">PICK {t('nav.public.matches')}</span><span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Make your predictions before kickoff.</span></div>
+            </div>
+            <div className="flex-1 flex border-b-4 lg:border-b-0 lg:border-r-4 border-main min-h-[90px] xl:min-h-[100px]">
+              <div className="w-[4.5rem] bg-c5 flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1"><span className="font-black text-6xl leading-none">3</span></div>
+              <div className="w-16 bg-c5 flex justify-center items-center border-r-4 border-main shrink-0 text-main"><BarChart2 size={28} strokeWidth={2.5}/></div>
+              <div className="flex flex-col justify-center p-3 flex-1 bg-page"><span className="font-black text-[13px] xl:text-sm tracking-wide">TRACK RESULTS</span><span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Follow live scores and completed matches.</span></div>
+            </div>
+            <div className="flex-1 flex min-h-[90px] xl:min-h-[100px]">
+              <div className="w-[4.5rem] bg-[#FF6B00] flex justify-center items-center border-r-4 border-main shrink-0 text-main pb-1"><span className="font-black text-6xl leading-none">4</span></div>
+              <div className="w-16 bg-[#FF6B00] flex justify-center items-center border-r-4 border-main shrink-0 text-main"><Trophy size={28} strokeWidth={2.5}/></div>
+              <div className="flex flex-col justify-center p-3 flex-1 bg-page"><span className="font-black text-[13px] xl:text-sm tracking-wide">CLIMB {t('nav.public.leaderboard')}</span><span className="text-[10px] xl:text-[11px] font-bold leading-[1.2] capitalize text-subtle mt-1 max-w-[170px]">Earn points and rank higher each week.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </AppShell>
   );
 }

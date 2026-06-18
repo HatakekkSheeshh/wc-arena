@@ -9,10 +9,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "data:sync:worldcup": "tsx scripts/sync-openfootball-worldcup.ts",
+    "data:sync:espn": "tsx scripts/sync-espn-worldcup.ts",
+    "supabase:types": "supabase gen types --linked --lang=typescript > src/types/supabase.ts",
+    "supabase:push": "supabase db push --include-seed",
+    "supabase:migrations": "supabase migration list --linked"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "country-flag-icons": "^1.6.17",

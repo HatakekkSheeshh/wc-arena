@@ -242,13 +242,17 @@
   .theme-rounded .w-10,
   .theme-rounded .w-11,
   .theme-rounded .border-\[3px\] {
-    border-radius: 0.75rem !important; /* 12px bo góc */
+    border-radius: 0.75rem !important;
   }
 
   .theme-rounded .rounded-full,
   .theme-rounded .w-3.h-3.rounded-full,
   .theme-rounded .w-1\.5.h-1\.5.rounded-full {
     border-radius: 9999px !important;
+  }
+
+  .theme-rounded .rank-chip-right {
+    border-radius: 0 0.75rem 0.75rem 0 !important;
   }
 
   /* Don't round specific layout wrappers that should stay flush. */

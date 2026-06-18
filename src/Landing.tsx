@@ -65,7 +65,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
   return (
     <div className="min-h-screen bg-page p-3 sm:p-4 lg:p-6 flex items-center justify-center font-sans">
       <div className="w-full max-w-[1600px] bg-card border-4 border-main rounded-lg shadow-[8px_8px_0px_var(--color-shadow)] sm:shadow-[16px_16px_0px_var(--color-shadow)] overflow-hidden flex flex-col mx-auto transition-all">
-        
+
         {/* Mac OS styling frame header */}
         <div className="w-full h-8 border-b-4 border-main bg-main flex items-center px-4 gap-2">
           <div className="w-3 h-3 rounded-full bg-c5"></div>
@@ -84,8 +84,8 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
           </div>
           <div className="flex items-center gap-3">
             <LegacySettingsMenu {...themeControls} />
-            <button onClick={() => onNavigate('my-predictions')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 md:px-6 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)] uppercase text-xs md:text-sm">
-              {t('nav.app.myPredictions')} <ArrowRight size={18} strokeWidth={3} />
+            <button onClick={() => onNavigate('register')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 md:px-6 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)] uppercase text-xs md:text-sm">
+              {t('landing.joinNow')} <ArrowRight size={18} strokeWidth={3} />
             </button>
           </div>
         </nav>
@@ -93,7 +93,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
         {/* Hero Section */}
         <div className="relative border-b-4 border-main bg-card overflow-hidden min-h-[350px] flex items-center">
           <RainbowGraphic />
-          
+
           <div className="relative z-10 w-full md:w-[60%] lg:w-[50%] xl:w-[45%] p-8 lg:p-10 lg:pr-10 xl:p-12">
             <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-black uppercase leading-[0.95] tracking-tighter mb-3 lg:mb-4 text-main drop-shadow-sm md:drop-shadow-none">
               {t('landing.heroLine1')}<br/>
@@ -129,14 +129,14 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
 
         {/* Main Content Layout */}
         <div className="flex flex-col lg:flex-row flex-1">
-          
+
           {/* Left Column: Matches */}
           <div className="flex-1 border-r-0 lg:border-r-4 border-main flex flex-col">
-            
+
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main flex items-center">
               {t('landing.upcomingMatches')}
             </div>
-            
+
             <div className="flex flex-col bg-card">
               {matchData.map((match, i) => (
                 <div key={i} className="flex flex-col sm:flex-row border-b-4 border-main group">
@@ -146,7 +146,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
                     <div className="font-black text-xl lg:text-2xl leading-none">{match.time}</div>
                     <div className="font-bold text-[10px] lg:text-xs uppercase opacity-80 sm:mt-1">UTC</div>
                   </div>
-                  
+
                   {/* Teams & Score Row */}
                   <div className="flex-1 flex items-center justify-between p-3 lg:p-4">
                     {/* Team 1 */}
@@ -227,7 +227,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
 
           {/* Right Column: Leaderboard */}
           <div className="w-full lg:w-[380px] bg-card flex flex-col border-t-4 border-main lg:border-t-0">
-            
+
             {/* Leaderboard Title */}
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main flex items-center">
               {t('landing.topLeaderboard')}
@@ -257,7 +257,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
             <div className="bg-main text-inv font-black px-4 py-2 uppercase tracking-wide text-sm border-b-4 border-main">
               {t('landing.scoringTitle')}
             </div>
-            
+
             {/* Scoring Rules Content */}
             <div className="p-4 flex flex-col gap-3 font-bold text-sm bg-card flex-1">
               <div className="flex items-center gap-3">

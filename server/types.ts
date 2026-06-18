@@ -39,6 +39,7 @@ export type PredictionPayload = {
   matchId: string;
   homeScore: number;
   awayScore: number;
+  predictedOutcome: 'home' | 'draw' | 'away';
   confidence?: number;
   isRiskPick?: boolean;
 };

@@ -1,7 +1,7 @@
 export type MatchStatus = 'scheduled' | 'open' | 'locked' | 'live' | 'finished' | 'postponed' | 'cancelled';
 export type PredictionStatus = 'draft' | 'submitted' | 'locked' | 'scored' | 'void';
 export type PredictionDisplayStatus = 'pending' | 'locked' | 'exact' | 'correct' | 'missed';
-export type MatchStage = 'group' | 'round16' | 'quarter' | 'semi' | 'final';
+export type MatchStage = 'group' | 'round32' | 'round16' | 'quarter' | 'semi' | 'third_place' | 'final';
 export type MatchOutcome = 'home' | 'away' | 'draw';
 
 export type User = {
@@ -53,6 +53,7 @@ export type Prediction = {
   matchId: string;
   homeScore: number;
   awayScore: number;
+  predictedOutcome: MatchOutcome;
   confidence: number;
   isRiskPick: boolean;
   createdAt: string;
