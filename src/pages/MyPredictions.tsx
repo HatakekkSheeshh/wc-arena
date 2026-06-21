@@ -24,6 +24,8 @@ type PredictionRow = {
   status: PredictionDisplayStatus;
   exactScorePoints: number;
   outcomePoints: number;
+  goalDifferencePoints: number;
+  teamScorePoints: number;
   points: number;
 };
 
@@ -50,7 +52,7 @@ function toPrediction(row: PredictionWithMatch): Prediction {
 
 function getMatchResult(row: PredictionWithMatch): MatchResult | undefined {
   const match = row.matches;
-  if (!match || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
+  if (!match || match.status !== 'finished' || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
   return { homeScore: match.home_score, awayScore: match.away_score };
 }
 
@@ -108,7 +110,7 @@ export default function MyPredictions({ themeControls }: MyPredictionsProps) {
     const prediction = toPrediction(source);
     const result = getMatchResult(source);
     const score = result ? calculatePredictionScore(prediction, result, { riskMultiplier: prediction.isRiskPick ? 1 : 1 }) : undefined;
-    const storedScore = source.prediction_scores;
+    const storedScore = source.matches.status === 'finished' ? source.prediction_scores : null;
 
     return [{
       prediction,
@@ -117,6 +119,8 @@ export default function MyPredictions({ themeControls }: MyPredictionsProps) {
       status: getDisplayStatus(prediction, result),
       exactScorePoints: storedScore?.exact_score ?? score?.exactScore ?? 0,
       outcomePoints: storedScore?.correct_outcome ?? score?.correctOutcome ?? 0,
+      goalDifferencePoints: storedScore?.goal_difference_bonus ?? score?.goalDifferenceBonus ?? 0,
+      teamScorePoints: storedScore?.team_score_bonus ?? score?.teamScoreBonus ?? 0,
       points: storedScore?.total ?? score?.total ?? 0,
     }];
   }), [predictions]);
@@ -128,6 +132,8 @@ export default function MyPredictions({ themeControls }: MyPredictionsProps) {
   const exactScorePoints = rows.reduce((sum, row) => sum + row.exactScorePoints, 0);
   const outcomePoints = rows.reduce((sum, row) => sum + row.outcomePoints, 0);
   const totalPoints = rows.reduce((sum, row) => sum + row.points, 0);
+  const goalDifferencePoints = rows.reduce((sum, row) => sum + row.goalDifferencePoints, 0);
+  const teamScorePoints = rows.reduce((sum, row) => sum + row.teamScorePoints, 0);
 
   return (
     <AppShell themeControls={themeControls}>
@@ -234,8 +240,8 @@ export default function MyPredictions({ themeControls }: MyPredictionsProps) {
                 <div className="p-4 bg-card flex flex-col gap-3 text-sm font-bold">
                   <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.exactScorePoints')}</span><span className="font-black">{exactScorePoints}</span></div>
                   <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.outcomePoints')}</span><span className="font-black">{outcomePoints}</span></div>
-                  <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.goalDifferenceBonus')}</span><span className="font-black">{rows.reduce((sum, row) => sum + (row.source.prediction_scores?.goal_difference_bonus ?? 0), 0)}</span></div>
-                  <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.teamScoreBonus')}</span><span className="font-black">{rows.reduce((sum, row) => sum + (row.source.prediction_scores?.team_score_bonus ?? 0), 0)}</span></div>
+                  <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.goalDifferenceBonus')}</span><span className="font-black">{goalDifferencePoints}</span></div>
+                  <div className="flex justify-between border-b-2 border-line pb-2"><span>{t('appPages.predictions.teamScoreBonus')}</span><span className="font-black">{teamScorePoints}</span></div>
                   <div className="flex justify-between text-lg uppercase"><span>{t('appPages.predictions.totalEarned')}</span><span className="font-black">{totalPoints} {t('common.pointsShort')}</span></div>
                 </div>
               </div>

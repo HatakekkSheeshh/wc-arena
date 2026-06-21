@@ -61,7 +61,7 @@ function formatMatchDate(value: string) {
 }
 
 function getMatchResult(match: MatchRow): MatchResult | undefined {
-  if (typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
+  if (match.status !== 'finished' || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
   return { homeScore: match.home_score, awayScore: match.away_score };
 }
 

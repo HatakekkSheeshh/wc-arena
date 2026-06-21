@@ -48,7 +48,7 @@ function toPrediction(row: PredictionWithMatch): Prediction {
 
 function getMatchResult(row: PredictionWithMatch): MatchResult | undefined {
   const match = row.matches;
-  if (!match || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
+  if (!match || match.status !== 'finished' || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
   return { homeScore: match.home_score, awayScore: match.away_score };
 }
 
