@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck, Trophy 
 import LegacySettingsMenu from './components/LegacySettingsMenu';
 import GoogleIcon from './components/ui/GoogleIcon';
 import { useAuth } from './lib/auth';
-import { supabase } from './lib/supabaseClient';
+import { setRememberAuth, supabase } from './lib/supabaseClient';
 import { getAuthRedirectUrl } from './utils/authRedirect';
 import type { ThemeControls } from './App';
 
@@ -23,6 +23,10 @@ export default function Login({ onNavigate, ...themeControls }: LoginProps) {
   const [oauthSubmitting, setOauthSubmitting] = useState(false);
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('predict2026.rememberAuth') !== 'false';
+  });
 
   useEffect(() => {
     if (user) onNavigate('matches');
@@ -31,6 +35,7 @@ export default function Login({ onNavigate, ...themeControls }: LoginProps) {
   async function handleLogin() {
     setFormError(null);
     setFormNotice(null);
+    setRememberAuth(rememberMe);
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     setSubmitting(false);
@@ -46,6 +51,7 @@ export default function Login({ onNavigate, ...themeControls }: LoginProps) {
   async function handleGoogleLogin() {
     setFormError(null);
     setFormNotice(null);
+    setRememberAuth(rememberMe);
     setOauthSubmitting(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -156,8 +162,11 @@ export default function Login({ onNavigate, ...themeControls }: LoginProps) {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-1 mb-2">
-                <span className="font-bold text-xs text-subtle">{t('auth.rememberMe')}</span>
+              <div className="flex items-center justify-between gap-3 mt-1 mb-2">
+                <label className="inline-flex items-center gap-2 font-bold text-xs text-subtle cursor-pointer select-none">
+                  <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-[var(--color-c2)]" />
+                  {t('auth.rememberMe')}
+                </label>
                 <button type="button" onClick={handleForgotPassword} disabled={resetSubmitting || submitting || oauthSubmitting} className="font-bold text-xs text-c2 cursor-pointer hover:underline disabled:cursor-not-allowed disabled:opacity-60">
                   {resetSubmitting ? t('ui.sendingReset') : t('auth.forgotPassword')}
                 </button>
