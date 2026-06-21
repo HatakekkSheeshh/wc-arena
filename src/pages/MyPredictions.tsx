@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BarChart2, ListChecks, Star } from 'lucide-react';
+import PredictionShareButton from '../components/PredictionShareButton';
 import AppShell from '../components/layout/AppShell';
 import StatusPill from '../components/ui/StatusPill';
 import StreakBadge from '../components/ui/StreakBadge';
 import { calculateAccuracy, calculatePredictionScore, calculateStreak, getPredictionOutcome } from '../lib/scoring';
+import { useAuth } from '../lib/auth';
 import { listCurrentUserPredictions, type PredictionWithMatch } from '../services/predictions';
 import { getErrorMessage } from '../services/serviceTypes';
 import { getTeamMap, type TeamRow } from '../services/teams';
@@ -74,6 +76,7 @@ function getTeamShortName(teams: Map<string, TeamRow>, teamId: string, fallback:
 
 export default function MyPredictions({ themeControls }: MyPredictionsProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [predictions, setPredictions] = useState<PredictionWithMatch[]>([]);
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -215,8 +218,24 @@ export default function MyPredictions({ themeControls }: MyPredictionsProps) {
                       </div>
                       <div className="p-3 lg:border-r-2 border-main flex lg:justify-center"><StatusPill status={status} /></div>
                       <div className="p-3 lg:border-r-2 border-main text-left lg:text-center font-black text-lg">{points}</div>
-                      <div className="p-3 flex lg:justify-center">
-                        <Link to={`/predictions/${prediction.id}`} className="bg-card hover:bg-muted text-main font-black text-[10px] px-3 py-2 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)]">
+                      <div className="p-3 flex flex-col gap-2 lg:justify-center">
+                        <PredictionShareButton
+                          prediction={prediction}
+                          match={{
+                            id: match.id,
+                            kickoffAt: match.kickoff_at,
+                            stage: match.stage,
+                            groupCode: match.group_code,
+                            matchday: match.matchday,
+                            stadium: match.stadium,
+                            city: match.city,
+                          }}
+                          homeTeam={{ name: homeTeam?.name ?? match.home_team_id, shortName: homeTeam?.short_name ?? match.home_team_id, fifaRank: homeTeam?.fifa_rank }}
+                          awayTeam={{ name: awayTeam?.name ?? match.away_team_id, shortName: awayTeam?.short_name ?? match.away_team_id, fifaRank: awayTeam?.fifa_rank }}
+                          playerName={user?.email}
+                          points={points}
+                        />
+                        <Link to={`/predictions/${prediction.id}`} className="bg-card hover:bg-muted text-main font-black text-[10px] px-3 py-2 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center">
                           {t('appPages.predictions.viewBreakdown')}
                         </Link>
                       </div>

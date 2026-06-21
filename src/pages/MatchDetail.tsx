@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarClock, Lock, MapPin, Save, ShieldCheck, Target, Trophy } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
+import PredictionShareButton from '../components/PredictionShareButton';
 import StatusPill from '../components/ui/StatusPill';
 import { buildGroupStandings, getRecentCompletedGroupMatchesForTeams } from '../lib/groupStandings';
 import { calculatePredictionScore, getPredictionOutcome } from '../lib/scoring';
@@ -593,7 +594,7 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
                       type="button"
                       disabled={isInputDisabled || predictionType === 'exact_score'}
                       onClick={() => setPredictedOutcome(option.value)}
-                      className={`${predictedOutcome === option.value ? 'bg-c3 text-main' : 'bg-card hover:bg-elevated'} border-r-[3px] last:border-r-0 border-main py-2.5 sm:py-3 px-1 disabled:bg-muted disabled:text-subtle`}
+                      className={`${predictedOutcome === option.value ? 'bg-c3 text-main' : 'bg-card hover:bg-elevated disabled:bg-muted disabled:text-subtle'} border-r-[3px] last:border-r-0 border-main py-2.5 sm:py-3 px-1`}
                     >
                       {option.label}
                     </button>
@@ -618,7 +619,26 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
               <div className="p-4 bg-card flex flex-col gap-3">
                 <Link to="/my-predictions" className="text-center bg-card hover:bg-muted text-main font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] text-xs">{t('ui.myPredictions')}</Link>
                 {submittedPrediction && (
-                  <Link to={`/predictions/${submittedPrediction.id}`} className="text-center bg-c1 text-main font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] text-xs">{t('ui.viewBreakdown')}</Link>
+                  <>
+                    <PredictionShareButton
+                      prediction={submittedPrediction}
+                      match={{
+                        id: match.id,
+                        kickoffAt: match.kickoff_at,
+                        stage: match.stage,
+                        groupCode: match.group_code,
+                        matchday: match.matchday,
+                        stadium: match.stadium,
+                        city: match.city,
+                      }}
+                      homeTeam={{ name: homeTeam.name, shortName: homeTeam.short_name, fifaRank: homeTeam.fifa_rank }}
+                      awayTeam={{ name: awayTeam.name, shortName: awayTeam.short_name, fifaRank: awayTeam.fifa_rank }}
+                      playerName={authUser.email}
+                      points={scoreBreakdown?.total}
+                      variant="primary"
+                    />
+                    <Link to={`/predictions/${submittedPrediction.id}`} className="text-center bg-c1 text-main font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] text-xs">{t('ui.viewBreakdown')}</Link>
+                  </>
                 )}
               </div>
             </div>

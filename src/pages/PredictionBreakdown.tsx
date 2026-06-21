@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart2, CheckCircle2, ShieldCheck, Target, Trophy } from 'lucide-react';
+import PredictionShareButton from '../components/PredictionShareButton';
 import AppShell from '../components/layout/AppShell';
 import StatusPill from '../components/ui/StatusPill';
+import { useAuth } from '../lib/auth';
 import { calculatePredictionScore, getPredictionOutcome } from '../lib/scoring';
 import { getPrediction, type PredictionWithMatch } from '../services/predictions';
 import { getErrorMessage } from '../services/serviceTypes';
@@ -78,6 +80,7 @@ function BreakdownLine({ label, value, description, tone = 'bg-card' }: Breakdow
 
 export default function PredictionBreakdown({ themeControls }: PredictionBreakdownProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { predictionId } = useParams();
   const [predictionRow, setPredictionRow] = useState<PredictionWithMatch | null>(null);
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
@@ -244,6 +247,23 @@ export default function PredictionBreakdown({ themeControls }: PredictionBreakdo
                 {t('ui.actions')}
               </div>
               <div className="p-4 bg-card flex flex-col gap-3 border-b-4 border-main">
+                <PredictionShareButton
+                  prediction={prediction}
+                  match={{
+                    id: match.id,
+                    kickoffAt: match.kickoff_at,
+                    stage: match.stage,
+                    groupCode: match.group_code,
+                    matchday: match.matchday,
+                    stadium: match.stadium,
+                    city: match.city,
+                  }}
+                  homeTeam={{ name: homeTeam.name, shortName: homeTeam.short_name, fifaRank: homeTeam.fifa_rank }}
+                  awayTeam={{ name: awayTeam.name, shortName: awayTeam.short_name, fifaRank: awayTeam.fifa_rank }}
+                  playerName={user?.email}
+                  points={score?.total}
+                  variant="primary"
+                />
                 <Link to="/my-predictions" className="bg-card hover:bg-muted text-main font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] flex items-center justify-center gap-2 text-xs"><ArrowLeft size={16} /> {t('ui.myPredictions')}</Link>
                 <Link to={`/matches/${match.id}`} className="bg-c2 text-inv font-black uppercase py-3 px-4 border-2 border-main shadow-[3px_3px_0_var(--color-shadow)] flex items-center justify-center gap-2 text-xs"><CheckCircle2 size={16} /> {t('ui.matchDetail')}</Link>
               </div>
