@@ -1,10 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
+import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-sync-secret',
 };
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+const ESPN_SUMMARY_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary';
 const ESPN_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world';
 
 const fifaAliases: Record<string, string[]> = {
@@ -24,6 +27,21 @@ const fifaAliases: Record<string, string[]> = {
   USA: ['usa', 'united-states', 'united-states-of-america'],
 };
 
+const neutralTextBlocklist = [
+  'bet',
+  'betting',
+  'odds',
+  'sportsbook',
+  'wager',
+  'moneyline',
+  'money line',
+  'spread',
+  'over/under',
+  'over under',
+  'pickcenter',
+  'disclaimer',
+];
+
 type PredictionOutcome = 'home' | 'draw' | 'away';
 type PredictionType = 'exact_score' | 'outcome_only';
 type ScoreOutcome = 'exact' | 'correct' | 'missed';
@@ -41,7 +59,10 @@ type MatchRow = {
   espn_home_win_pct: number | null;
   espn_draw_pct: number | null;
   espn_away_win_pct: number | null;
+  espn_summary_updated_at: string | null;
 };
+type JsonRecord = Record<string, unknown>;
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 type MatchUpdate = Partial<{
   status: MatchRow['status'];
   home_score: number | null;
@@ -67,6 +88,8 @@ type MatchUpdate = Partial<{
   espn_draw_pct: number | null;
   espn_away_win_pct: number | null;
   espn_prediction_updated_at: string;
+  espn_summary: Json | null;
+  espn_summary_updated_at: string;
   espn_updated_at: string;
 }>;
 type EspnScoreboard = { events?: EspnEvent[] };
@@ -157,6 +180,11 @@ type DailyRewardRow = {
   points_awarded: number;
 };
 
+type PointTransactionRow = {
+  user_id: string;
+  amount: number;
+};
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -200,8 +228,25 @@ function parseScore(value?: string) {
   return Number.isFinite(score) ? score : null;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toArray(value: unknown) {
+  return Array.isArray(value) ? value : [];
+}
+
+function textValue(value: unknown) {
+  if (typeof value === 'string') return value.trim() || null;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return null;
+}
+
+function neutralText(value: unknown) {
+  const text = textValue(value);
+  if (!text) return null;
+  const normalized = text.toLowerCase();
+  return neutralTextBlocklist.some((term) => normalized.includes(term)) ? null : text;
 }
 
 function numberValue(value: unknown) {
@@ -351,6 +396,12 @@ async function fetchCompetitionOdds(eventId: string, competitionId: string) {
   return response.json() as Promise<{ items?: unknown[] }>;
 }
 
+async function fetchSummary(eventId: string) {
+  const response = await fetch(`${ESPN_SUMMARY_URL}?event=${eventId}`);
+  if (!response.ok) throw new Error(`ESPN summary request failed for ${eventId}: ${response.status} ${response.statusText}`);
+  return response.json() as Promise<unknown>;
+}
+
 function buildCandidates(scoreboards: EspnScoreboard[]) {
   return scoreboards.flatMap((scoreboard) => (scoreboard.events ?? []).flatMap((event): EspnCandidate[] => {
     return (event.competitions ?? []).map((competition) => {
@@ -475,7 +526,8 @@ function buildUpdatePlans(matches: MatchRow[], candidates: EspnCandidate[], team
       && (match.espn_home_win_pct !== best.candidate.predictionSignal?.home
         || match.espn_draw_pct !== best.candidate.predictionSignal?.draw
         || match.espn_away_win_pct !== best.candidate.predictionSignal?.away);
-    const shouldUpdate = nextStatus === 'live' || statusChanged || scoreChanged || signalChanged;
+    const needsSummaryRefresh = !match.espn_summary_updated_at || nextStatus === 'live' || nextStatus === 'finished';
+    const shouldUpdate = nextStatus === 'live' || statusChanged || scoreChanged || signalChanged || needsSummaryRefresh;
 
     if (!shouldUpdate) continue;
     if (nextStatus) update.status = nextStatus;
@@ -489,6 +541,208 @@ function buildUpdatePlans(matches: MatchRow[], candidates: EspnCandidate[], team
   }
 
   return plans;
+}
+
+function sanitizeStatistics(value: unknown) {
+  return toArray(value).flatMap((stat) => {
+    if (!isRecord(stat)) return [];
+    const name = neutralText(stat.name);
+    const label = neutralText(stat.displayName ?? stat.label ?? stat.shortDisplayName ?? stat.name);
+    const statValue = neutralText(stat.displayValue ?? stat.value);
+    if (!label || !statValue) return [];
+    return [{ name, label, value: statValue }];
+  }).slice(0, 28);
+}
+
+function sanitizeLeaders(value: unknown, parentLabel?: string | null): JsonRecord[] {
+  return toArray(value).flatMap((leader) => {
+    if (!isRecord(leader)) return [];
+    const groupLabel = neutralText(leader.displayName ?? leader.label ?? leader.name) ?? parentLabel ?? null;
+    if (Array.isArray(leader.leaders)) return sanitizeLeaders(leader.leaders, groupLabel);
+
+    const athlete = isRecord(leader.athlete) ? leader.athlete : undefined;
+    const name = neutralText(athlete?.displayName ?? leader.displayName ?? leader.name);
+    const label = neutralText(leader.label ?? leader.shortDisplayName) ?? groupLabel;
+    const leaderValue = neutralText(leader.displayValue ?? leader.value ?? leader.stat);
+    if (!name && !label) return [];
+
+    return [{ name, label, value: leaderValue }].filter((entry) => Object.values(entry).some(Boolean));
+  }).slice(0, 8);
+}
+
+function sanitizeLastFiveGames(value: unknown) {
+  return toArray(value).flatMap((game) => {
+    if (!isRecord(game)) return [];
+    const opponent = isRecord(game.opponent) ? neutralText(game.opponent.displayName ?? game.opponent.abbreviation) : neutralText(game.opponent);
+    const result = neutralText(game.gameResult ?? game.result ?? game.displayResult);
+    const score = neutralText(game.score ?? game.displayScore);
+    const date = neutralText(game.gameDate ?? game.date);
+    const entry = { opponent, result, score, date };
+    return Object.values(entry).some(Boolean) ? [entry] : [];
+  }).slice(0, 5);
+}
+
+function sanitizeNews(value: unknown) {
+  return toArray(value).flatMap((article) => {
+    if (!isRecord(article)) return [];
+    const headline = neutralText(article.headline);
+    const description = neutralText(article.description);
+    const link = isRecord(article.links) && isRecord(article.links.web) ? neutralText(article.links.web.href) : neutralText(article.link ?? article.href);
+    const published = neutralText(article.published ?? article.lastModified);
+
+    if (!headline || !link) return [];
+    return [{ headline, description, link, published, label: 'ESPN' }];
+  }).slice(0, 5);
+}
+
+function sanitizeParticipants(value: unknown) {
+  return toArray(value).flatMap((participant) => {
+    if (!isRecord(participant)) return [];
+    const athlete = isRecord(participant.athlete) ? participant.athlete : undefined;
+    const type = isRecord(participant.type) ? neutralText(participant.type.displayName ?? participant.type.name) : neutralText(participant.type);
+    const name = neutralText(athlete?.displayName ?? participant.displayName ?? participant.name);
+    const entry = { name, type };
+    return Object.values(entry).some(Boolean) ? [entry] : [];
+  }).slice(0, 6);
+}
+
+function sanitizeTeamRef(value: unknown) {
+  if (!isRecord(value)) return {};
+  return {
+    id: neutralText(value.id),
+    name: neutralText(value.displayName ?? value.name),
+    abbreviation: neutralText(value.abbreviation ?? value.shortDisplayName),
+    side: neutralText(value.homeAway),
+  };
+}
+
+function sanitizeKeyEvents(value: unknown) {
+  return toArray(value).flatMap((event) => {
+    if (!isRecord(event)) return [];
+    const type = isRecord(event.type) ? neutralText(event.type.id ?? event.type.name) : neutralText(event.type);
+    const typeText = isRecord(event.type) ? neutralText(event.type.text ?? event.type.displayName ?? event.type.name) : neutralText(event.typeText ?? event.displayType);
+    const team = sanitizeTeamRef(event.team);
+    const entry = {
+      id: neutralText(event.id),
+      type,
+      typeText,
+      clock: neutralText(isRecord(event.clock) ? event.clock.displayValue : event.displayClock ?? event.clock),
+      period: numberValue(isRecord(event.period) ? event.period.number : event.period),
+      team,
+      text: neutralText(event.text ?? event.displayText ?? event.shortText),
+      participants: sanitizeParticipants(event.participants),
+      homeScore: numberValue(event.homeScore),
+      awayScore: numberValue(event.awayScore),
+      scoringPlay: Boolean(event.scoringPlay),
+    };
+    return Object.values(entry).some((nextValue) => Array.isArray(nextValue) ? nextValue.length > 0 : Boolean(nextValue)) ? [entry] : [];
+  }).slice(0, 60);
+}
+
+function sanitizeCommentary(value: unknown) {
+  return toArray(value).flatMap((event) => {
+    if (!isRecord(event)) return [];
+    const text = neutralText(event.text ?? event.displayText ?? event.shortText);
+    if (!text) return [];
+    const typeText = isRecord(event.type) ? neutralText(event.type.text ?? event.type.displayName ?? event.type.name) : neutralText(event.type);
+    return [{
+      id: neutralText(event.id),
+      typeText,
+      clock: neutralText(isRecord(event.clock) ? event.clock.displayValue : event.displayClock ?? event.clock),
+      period: numberValue(isRecord(event.period) ? event.period.number : event.period),
+      text,
+    }];
+  }).slice(0, 80);
+}
+
+function sanitizeOfficials(value: unknown) {
+  return toArray(value).flatMap((official) => {
+    if (!isRecord(official)) return [];
+    const type = isRecord(official.type) ? official.type : undefined;
+    const entry = {
+      name: neutralText(official.displayName ?? official.fullName ?? official.name),
+      role: neutralText(type?.displayName ?? type?.name ?? official.role),
+    };
+    return Object.values(entry).some(Boolean) ? [entry] : [];
+  }).slice(0, 8);
+}
+
+function sanitizeBoxscoreTeams(value: unknown) {
+  const teams = toArray(value);
+  const entries: [string, JsonRecord][] = [];
+
+  teams.forEach((teamEntry, index) => {
+    if (!isRecord(teamEntry)) return;
+    const side = textValue(teamEntry.homeAway) ?? (index === 0 ? 'home' : 'away');
+    const team = isRecord(teamEntry.team) ? teamEntry.team : undefined;
+    const payload = {
+      id: neutralText(team?.id),
+      name: neutralText(team?.displayName ?? teamEntry.displayName),
+      abbreviation: neutralText(team?.abbreviation ?? team?.shortDisplayName),
+      statistics: sanitizeStatistics(teamEntry.statistics),
+      leaders: sanitizeLeaders(teamEntry.leaders),
+      lastFiveGames: sanitizeLastFiveGames(team?.lastFiveGames ?? teamEntry.lastFiveGames),
+    };
+
+    if (!Object.values(payload).some((entry) => Array.isArray(entry) ? entry.length > 0 : Boolean(entry))) return;
+    entries.push([side === 'away' ? 'away' : 'home', payload]);
+  });
+
+  return Object.fromEntries(entries);
+}
+
+function sanitizeSummary(summary: unknown): Json | null {
+  if (!isRecord(summary)) return null;
+
+  const gameInfo = isRecord(summary.gameInfo) ? summary.gameInfo : undefined;
+  const venueSource = isRecord(gameInfo?.venue) ? gameInfo.venue : undefined;
+  const address = isRecord(venueSource?.address) ? venueSource.address : undefined;
+  const venue = {
+    name: neutralText(venueSource?.fullName ?? venueSource?.name),
+    city: neutralText(address?.city),
+    country: neutralText(address?.country),
+  };
+  const broadcasts = toArray(summary.broadcasts).flatMap((broadcast) => {
+    if (!isRecord(broadcast)) return [];
+    const names = toArray(broadcast.names).map(neutralText).filter(Boolean);
+    const name = neutralText(broadcast.name ?? broadcast.shortName);
+    return [...names, name].filter(Boolean) as string[];
+  }).slice(0, 8);
+  const boxscore = isRecord(summary.boxscore) ? summary.boxscore : undefined;
+  const teams = sanitizeBoxscoreTeams(boxscore?.teams);
+  const leaders = sanitizeLeaders(summary.leaders ?? boxscore?.leaders);
+  const news = isRecord(summary.news) ? sanitizeNews(summary.news.articles) : [];
+  const keyEvents = sanitizeKeyEvents(summary.keyEvents);
+  const commentary = sanitizeCommentary(summary.commentary);
+  const officials = sanitizeOfficials(gameInfo?.officials);
+  const attendance = numberValue(gameInfo?.attendance ?? summary.attendance);
+
+  const payload: JsonRecord = {};
+  if (Object.values(venue).some(Boolean)) payload.venue = venue;
+  if (attendance !== null) payload.attendance = attendance;
+  if (officials.length) payload.officials = officials;
+  if (broadcasts.length) payload.broadcasts = [...new Set(broadcasts)];
+  if (Object.keys(teams).length) payload.teams = teams;
+  if (leaders.length) payload.leaders = leaders;
+  if (keyEvents.length) payload.keyEvents = keyEvents;
+  if (commentary.length) payload.commentary = commentary;
+  if (news.length) payload.news = news;
+
+  return Object.keys(payload).length ? payload as Json : null;
+}
+
+async function enrichPlansWithSummaries(plans: { candidate: EspnCandidate; update: MatchUpdate }[]) {
+  await Promise.all(plans.map(async (plan) => {
+    try {
+      const summary = await fetchSummary(plan.candidate.eventId);
+      const sanitized = sanitizeSummary(summary);
+      if (!sanitized) return;
+      plan.update.espn_summary = sanitized;
+      plan.update.espn_summary_updated_at = new Date().toISOString();
+    } catch (error) {
+      console.warn(`Skipping ESPN summary for ${plan.candidate.eventId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }));
 }
 
 function getOutcome(score: Score): PredictionOutcome {
@@ -567,18 +821,19 @@ function getBestStreak(scores: CalculatedScore[]) {
   return best;
 }
 
-function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>): UserAggregate[] {
+function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>, pointAdjustmentsByUser: Map<string, number>): UserAggregate[] {
   const scoresByUser = new Map<string, CalculatedScore[]>();
   for (const score of scores) {
     scoresByUser.set(score.user_id, [...(scoresByUser.get(score.user_id) ?? []), score]);
   }
 
-  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys()]);
+  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys(), ...pointAdjustmentsByUser.keys()]);
   return [...userIds]
     .map((userId) => {
       const userScores = scoresByUser.get(userId) ?? [];
       const predictionPoints = userScores.reduce((sum, score) => sum + score.total, 0);
       const rewardPoints = rewardPointsByUser.get(userId) ?? 0;
+      const pointAdjustments = pointAdjustmentsByUser.get(userId) ?? 0;
       const exactScores = userScores.filter((score) => score.outcome === 'exact').length;
       const correctScores = userScores.filter((score) => score.outcome !== 'missed').length;
       const accuracy = userScores.length ? Math.round((correctScores / userScores.length) * 100) : 0;
@@ -587,7 +842,7 @@ function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<stri
         userId,
         predictionPoints,
         rewardPoints,
-        points: predictionPoints + rewardPoints,
+        points: Math.max(0, predictionPoints + rewardPoints + pointAdjustments),
         exactScores,
         accuracy,
         currentStreak: getCurrentStreak(userScores),
@@ -625,7 +880,19 @@ async function recalculateScores(supabase: ReturnType<typeof createClient>) {
     rewardPointsByUser.set(reward.user_id, (rewardPointsByUser.get(reward.user_id) ?? 0) + reward.points_awarded);
   }
 
-  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser);
+  const { data: pointTransactions, error: pointTransactionsError } = await supabase
+    .from('point_transactions')
+    .select('user_id, amount')
+    .in('type', ['stake', 'payout', 'refund']);
+
+  if (pointTransactionsError) throw pointTransactionsError;
+
+  const pointAdjustmentsByUser = new Map<string, number>();
+  for (const transaction of (pointTransactions ?? []) as PointTransactionRow[]) {
+    pointAdjustmentsByUser.set(transaction.user_id, (pointAdjustmentsByUser.get(transaction.user_id) ?? 0) + transaction.amount);
+  }
+
+  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser, pointAdjustmentsByUser);
   const { data: previousEntries, error: previousError } = await supabase
     .from('leaderboard_entries')
     .select('user_id, rank')
@@ -673,7 +940,9 @@ async function recalculateScores(supabase: ReturnType<typeof createClient>) {
     if (error) throw error;
   }
 
-  return { predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length };
+  const leagueRefresh = await refreshLeagueLeaderboards(supabase);
+  const eventRefresh = await refreshLeagueEventLeaderboards(supabase);
+  return { predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length, ...leagueRefresh, ...eventRefresh };
 }
 
 Deno.serve(async (req) => {
@@ -699,7 +968,7 @@ Deno.serve(async (req) => {
     await enrichCandidatesWithOdds(candidates);
     const { data: matches, error: matchesError } = await supabase
       .from('matches')
-      .select('id, home_team_id, away_team_id, kickoff_at, lock_at, status, home_score, away_score, espn_home_win_pct, espn_draw_pct, espn_away_win_pct')
+      .select('id, home_team_id, away_team_id, kickoff_at, lock_at, status, home_score, away_score, espn_home_win_pct, espn_draw_pct, espn_away_win_pct, espn_summary_updated_at')
       .like('id', 'wc2026-%')
       .order('kickoff_at', { ascending: true });
     const { data: teams, error: teamsError } = await supabase.from('teams').select('id, name, short_name, country_code');
@@ -709,6 +978,7 @@ Deno.serve(async (req) => {
 
     const teamMap = new Map((teams ?? []).map((team: TeamRow) => [team.id, team]));
     const plans = buildUpdatePlans((matches ?? []) as MatchRow[], candidates, teamMap);
+    await enrichPlansWithSummaries(plans);
     const matchedEventIds = new Set(plans.map((plan) => plan.candidate.eventId));
     const unmatchedCandidates = candidates.filter((candidate) => !matchedEventIds.has(candidate.eventId));
     let updatedMatches = 0;
@@ -743,7 +1013,7 @@ Deno.serve(async (req) => {
         action: 'espn_result_sync_completed',
         entity_type: 'system',
         entity_id: 'espn-result-sync',
-        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, recalculated ${scoring.predictionScores} prediction scores.`,
+        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, recalculated ${scoring.predictionScores} prediction scores and ${scoring.leagueLeaderboardEntries} league leaderboard entries.`,
         severity: 'info',
       });
     }

@@ -48,7 +48,7 @@ function toPrediction(row: PredictionWithMatch): Prediction {
 
 function getMatchResult(row: PredictionWithMatch): MatchResult | undefined {
   const match = row.matches;
-  if (!match || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
+  if (!match || match.status !== 'finished' || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
   return { homeScore: match.home_score, awayScore: match.away_score };
 }
 
@@ -158,7 +158,7 @@ export default function PredictionBreakdown({ themeControls }: PredictionBreakdo
   const prediction = toPrediction(predictionRow);
   const result = getMatchResult(predictionRow);
   const fallbackScore = result ? calculatePredictionScore(prediction, result, { riskMultiplier: prediction.isRiskPick ? 1 : 1 }) : undefined;
-  const storedScore = predictionRow.prediction_scores;
+  const storedScore = match.status === 'finished' ? predictionRow.prediction_scores : null;
   const score = storedScore ? {
     predictionId: storedScore.prediction_id,
     exactScore: storedScore.exact_score,

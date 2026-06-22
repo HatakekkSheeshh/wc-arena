@@ -20,10 +20,22 @@ type AppShellProps = {
 
 function HeaderNavigation() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const { t } = useTranslation();
 
+  useEffect(() => {
+    if (!openGroup) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!navRef.current?.contains(event.target as Node)) setOpenGroup(null);
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, [openGroup]);
+
   return (
-    <nav className="hidden lg:flex items-center gap-2 ml-6">
+    <nav ref={navRef} className="hidden lg:flex items-center gap-2 ml-6">
       {appNavigationGroups.map((group) => (
         <div key={group.labelKey} className="relative">
           <button
@@ -82,12 +94,24 @@ const mobilePrimaryPaths = ['/matches', '/picks', '/leaderboard'];
 
 function ThemeSettings({ themeControls }: { themeControls: ThemeControls }) {
   const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
   const { t, i18n } = useTranslation();
   const { user, signOut } = useAuth();
   const { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame } = themeControls;
 
+  useEffect(() => {
+    if (!showSettings) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) setShowSettings(false);
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, [showSettings]);
+
   return (
-    <div className="relative">
+    <div ref={settingsRef} className="relative">
       <button type="button" onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
         <Settings size={20} className="text-main" />
       </button>
@@ -152,6 +176,17 @@ export default function AppShell({ children, themeControls, fullHeight = false }
       window.removeEventListener('resize', updateSpacer);
       window.removeEventListener('orientationchange', updateSpacer);
     };
+  }, []);
+
+  useEffect(() => {
+    const updateProfilePoints = (event: Event) => {
+      const points = (event as CustomEvent<{ points?: unknown }>).detail?.points;
+      if (typeof points !== 'number') return;
+      setProfile((currentProfile) => currentProfile ? { ...currentProfile, points } : currentProfile);
+    };
+
+    window.addEventListener('wc26:profile-points-changed', updateProfilePoints);
+    return () => window.removeEventListener('wc26:profile-points-changed', updateProfilePoints);
   }, []);
 
   useEffect(() => {

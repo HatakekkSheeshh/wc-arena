@@ -313,6 +313,262 @@ export type Database = {
           },
         ]
       }
+      league_event_entries: {
+        Row: {
+          entered_at: string
+          event_id: string
+          stake: number
+          user_id: string
+        }
+        Insert: {
+          entered_at?: string
+          event_id: string
+          stake: number
+          user_id: string
+        }
+        Update: {
+          entered_at?: string
+          event_id?: string
+          stake?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_event_entries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "league_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_event_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_event_leaderboard_entries: {
+        Row: {
+          accuracy: number
+          event_id: string
+          exact_scores: number
+          payout: number
+          payout_factor: number
+          points: number
+          previous_rank: number | null
+          rank: number
+          stake: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          event_id: string
+          exact_scores?: number
+          payout?: number
+          payout_factor?: number
+          points?: number
+          previous_rank?: number | null
+          rank: number
+          stake?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          event_id?: string
+          exact_scores?: number
+          payout?: number
+          payout_factor?: number
+          points?: number
+          previous_rank?: number | null
+          rank?: number
+          stake?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_event_leaderboard_entries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "league_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_event_leaderboard_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_event_matches: {
+        Row: {
+          created_at: string
+          event_id: string
+          match_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          match_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_event_matches_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "league_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_event_matches_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_events: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          ends_at: string
+          event_type: string
+          id: string
+          league_id: string
+          matchday: number | null
+          max_stake: number
+          metadata: Json
+          min_stake: number
+          name: string
+          payout_config: Json
+          payout_curve: string
+          prize_pool: number
+          settled_at: string | null
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          ends_at: string
+          event_type: string
+          id: string
+          league_id: string
+          matchday?: number | null
+          max_stake?: number
+          metadata?: Json
+          min_stake?: number
+          name: string
+          payout_config?: Json
+          payout_curve?: string
+          prize_pool?: number
+          settled_at?: string | null
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          ends_at?: string
+          event_type?: string
+          id?: string
+          league_id?: string
+          matchday?: number | null
+          max_stake?: number
+          metadata?: Json
+          min_stake?: number
+          name?: string
+          payout_config?: Json
+          payout_curve?: string
+          prize_pool?: number
+          settled_at?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_events_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      league_join_requests: {
+        Row: {
+          league_id: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          league_id: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          league_id?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_join_requests_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_join_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       league_members: {
         Row: {
           joined_at: string
@@ -351,42 +607,70 @@ export type Database = {
       }
       leagues: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
           creator_id: string | null
+          description: string
           id: string
           invite_code: string
+          join_policy: string
           member_count: number
           name: string
           prize_mode: string
           scoring_mode: string
           slug: string
+          status: string
+          updated_at: string
           visibility: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           creator_id?: string | null
+          description?: string
           id: string
           invite_code: string
+          join_policy?: string
           member_count?: number
           name: string
           prize_mode?: string
           scoring_mode?: string
           slug: string
+          status?: string
+          updated_at?: string
           visibility: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
           creator_id?: string | null
+          description?: string
           id?: string
           invite_code?: string
+          join_policy?: string
           member_count?: number
           name?: string
           prize_mode?: string
           scoring_mode?: string
           slug?: string
+          status?: string
+          updated_at?: string
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "leagues_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leagues_creator_id_fkey"
             columns: ["creator_id"]
@@ -580,6 +864,90 @@ export type Database = {
             columns: ["prediction_id"]
             isOneToOne: true
             referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string
+          event_id: string | null
+          id: string
+          league_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string
+          event_id?: string | null
+          id?: string
+          league_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string
+          event_id?: string | null
+          id?: string
+          league_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "league_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_wallets: {
+        Row: {
+          balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

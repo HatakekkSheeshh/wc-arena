@@ -371,6 +371,12 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+[functions.league_event_maintenance]
+enabled = true
+verify_jwt = false
+import_map = "./functions/league_event_maintenance/deno.json"
+entrypoint = "./functions/league_event_maintenance/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

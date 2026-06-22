@@ -1,5 +1,5 @@
 import { Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ThemeControls } from '../App';
 
@@ -7,10 +7,22 @@ type LegacySettingsMenuProps = ThemeControls;
 
 export default function LegacySettingsMenu({ isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: LegacySettingsMenuProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
   const { t, i18n } = useTranslation();
 
+  useEffect(() => {
+    if (!showSettings) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) setShowSettings(false);
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, [showSettings]);
+
   return (
-    <div className="relative">
+    <div ref={settingsRef} className="relative">
       <button onClick={() => setShowSettings(!showSettings)} className="w-10 md:w-11 h-10 md:h-11 border-2 border-main flex items-center justify-center hover:bg-muted transition-colors bg-card shadow-[2px_2px_0_0_var(--color-shadow)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
         <Settings size={20} className="text-main" />
       </button>

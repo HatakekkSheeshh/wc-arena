@@ -26,6 +26,7 @@ declare module 'country-flag-icons/react/3x2' {
   export const FR: FlagComponent;
   export const GB: FlagComponent;
   export const GH: FlagComponent;
+  export const HR: FlagComponent;
   export const HT: FlagComponent;
   export const IR: FlagComponent;
   export const IQ: FlagComponent;

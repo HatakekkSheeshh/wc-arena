@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
+import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +64,11 @@ type UserAggregate = {
 type DailyRewardRow = {
   user_id: string;
   points_awarded: number;
+};
+
+type PointTransactionRow = {
+  user_id: string;
+  amount: number;
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -148,17 +155,18 @@ function getBestStreak(scores: CalculatedScore[]) {
   return best;
 }
 
-function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>): UserAggregate[] {
+function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>, pointAdjustmentsByUser: Map<string, number>): UserAggregate[] {
   const scoresByUser = new Map<string, CalculatedScore[]>();
   for (const score of scores) {
     scoresByUser.set(score.user_id, [...(scoresByUser.get(score.user_id) ?? []), score]);
   }
 
-  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys()]);
+  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys(), ...pointAdjustmentsByUser.keys()]);
   const aggregates = [...userIds].map((userId) => {
     const userScores = scoresByUser.get(userId) ?? [];
     const predictionPoints = userScores.reduce((sum, score) => sum + score.total, 0);
     const rewardPoints = rewardPointsByUser.get(userId) ?? 0;
+    const pointAdjustments = pointAdjustmentsByUser.get(userId) ?? 0;
     const exactScores = userScores.filter((score) => score.outcome === 'exact').length;
     const correctScores = userScores.filter((score) => score.outcome !== 'missed').length;
     const accuracy = userScores.length ? Math.round((correctScores / userScores.length) * 100) : 0;
@@ -167,7 +175,7 @@ function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<stri
       userId,
       predictionPoints,
       rewardPoints,
-      points: predictionPoints + rewardPoints,
+      points: Math.max(0, predictionPoints + rewardPoints + pointAdjustments),
       exactScores,
       accuracy,
       currentStreak: getCurrentStreak(userScores),
@@ -249,7 +257,21 @@ Deno.serve(async (req) => {
     rewardPointsByUser.set(reward.user_id, (rewardPointsByUser.get(reward.user_id) ?? 0) + reward.points_awarded);
   }
 
-  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser);
+  const { data: pointTransactions, error: pointTransactionsError } = await supabase
+    .from('point_transactions')
+    .select('user_id, amount')
+    .in('type', ['stake', 'payout', 'refund']);
+
+  if (pointTransactionsError) {
+    return jsonResponse({ error: pointTransactionsError.message }, 500);
+  }
+
+  const pointAdjustmentsByUser = new Map<string, number>();
+  for (const transaction of (pointTransactions ?? []) as PointTransactionRow[]) {
+    pointAdjustmentsByUser.set(transaction.user_id, (pointAdjustmentsByUser.get(transaction.user_id) ?? 0) + transaction.amount);
+  }
+
+  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser, pointAdjustmentsByUser);
   const { data: previousEntries, error: previousError } = await supabase
     .from('leaderboard_entries')
     .select('user_id, rank')
@@ -305,14 +327,17 @@ Deno.serve(async (req) => {
     }
   }
 
+  const leagueRefresh = await refreshLeagueLeaderboards(supabase);
+  const eventRefresh = await refreshLeagueEventLeaderboards(supabase);
+
   await supabase.from('admin_audit_logs').insert({
     actor_id: userData.user.id,
     action: 'score_recalculation_completed',
     entity_type: 'leaderboard',
     entity_id: 'global',
-    description: `Recalculated ${calculatedScores.length} prediction scores and ${aggregates.length} leaderboard entries.`,
+    description: `Recalculated ${calculatedScores.length} prediction scores, ${aggregates.length} global leaderboard entries, ${leagueRefresh.leagueLeaderboardEntries} league leaderboard entries, and ${eventRefresh.leagueEventLeaderboardEntries} event leaderboard entries.`,
     severity: 'info',
   });
 
-  return jsonResponse({ predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length });
+  return jsonResponse({ predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length, ...leagueRefresh, ...eventRefresh });
 });

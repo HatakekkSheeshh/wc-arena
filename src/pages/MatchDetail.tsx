@@ -20,21 +20,71 @@ type MatchDetailProps = {
   themeControls: ThemeControls;
 };
 
+type EspnSummaryParticipant = {
+  name?: string | null;
+  type?: string | null;
+};
+
+type EspnSummaryTeamRef = {
+  id?: string | null;
+  name?: string | null;
+  abbreviation?: string | null;
+  side?: string | null;
+};
+
+type EspnSummaryKeyEvent = {
+  id?: string | null;
+  type?: string | null;
+  typeText?: string | null;
+  clock?: string | null;
+  period?: number | null;
+  team?: EspnSummaryTeamRef;
+  text?: string | null;
+  participants?: EspnSummaryParticipant[];
+  homeScore?: number | null;
+  awayScore?: number | null;
+  scoringPlay?: boolean;
+};
+
 type EspnSummaryPayload = {
   venue?: {
     name?: string | null;
     city?: string | null;
     country?: string | null;
   };
+  attendance?: number | null;
+  officials?: { name?: string | null; role?: string | null }[];
   broadcasts?: string[];
   teams?: Record<string, {
+    id?: string | null;
     name?: string | null;
-    statistics?: { label?: string | null; value?: string | null }[];
+    abbreviation?: string | null;
+    statistics?: { name?: string | null; label?: string | null; value?: string | null }[];
     leaders?: { name?: string | null; label?: string | null; value?: string | null }[];
     lastFiveGames?: { opponent?: string | null; result?: string | null; score?: string | null; date?: string | null }[];
   }>;
   leaders?: { name?: string | null; label?: string | null; value?: string | null }[];
+  keyEvents?: EspnSummaryKeyEvent[];
+  commentary?: { id?: string | null; typeText?: string | null; clock?: string | null; period?: number | null; text?: string | null }[];
   news?: { headline?: string | null; description?: string | null; link?: string | null; published?: string | null; label?: string | null }[];
+};
+
+type MatchStatRow = {
+  key: string;
+  label: string;
+  homeValue: string | null;
+  awayValue: string | null;
+  homeNumber: number | null;
+  awayNumber: number | null;
+};
+
+type ScoringEvent = {
+  id: string;
+  side: 'home' | 'away';
+  minute: string;
+  scorer: string;
+  assist?: string | null;
+  typeText?: string | null;
 };
 
 type SignalRowProps = {
@@ -61,7 +111,7 @@ function formatMatchDate(value: string) {
 }
 
 function getMatchResult(match: MatchRow): MatchResult | undefined {
-  if (typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
+  if (match.status !== 'finished' || typeof match.home_score !== 'number' || typeof match.away_score !== 'number') return undefined;
   return { homeScore: match.home_score, awayScore: match.away_score };
 }
 
@@ -119,6 +169,137 @@ function getEspnSummary(match: MatchRow): EspnSummaryPayload {
 function getLiveLabel(match: MatchRow) {
   if (match.espn_state === 'in') return match.espn_display_clock ? `LIVE ${match.espn_display_clock}` : 'LIVE';
   return match.espn_status_detail ?? match.espn_status ?? match.status;
+}
+
+function normalizeStatName(value?: string | null) {
+  return (value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function parseStatNumber(value?: string | null) {
+  if (!value) return null;
+  const parsed = Number(value.replace(/[^0-9+.-]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getTeamSummary(summary: EspnSummaryPayload, side: 'home' | 'away') {
+  return summary.teams?.[side];
+}
+
+function getStatValue(summary: EspnSummaryPayload, side: 'home' | 'away', aliases: string[]) {
+  const stats = getTeamSummary(summary, side)?.statistics ?? [];
+  return stats.find((stat) => {
+    const normalizedName = normalizeStatName(stat.name);
+    const normalizedLabel = normalizeStatName(stat.label);
+    return aliases.some((alias) => normalizedName === alias || normalizedLabel === alias);
+  })?.value ?? null;
+}
+
+function buildMatchStats(summary: EspnSummaryPayload): MatchStatRow[] {
+  const definitions = [
+    { key: 'possession', label: 'Possession', aliases: ['possessionpct', 'possession'] },
+    { key: 'shots', label: 'Total Shots', aliases: ['totalshots', 'shots'] },
+    { key: 'shotsOnTarget', label: 'Shots on Target', aliases: ['shotsontarget'] },
+    { key: 'corners', label: 'Corners', aliases: ['woncorners', 'corners'] },
+    { key: 'fouls', label: 'Fouls', aliases: ['foulscommitted', 'fouls'] },
+    { key: 'yellowCards', label: 'Yellow Cards', aliases: ['yellowcards'] },
+    { key: 'saves', label: 'Saves', aliases: ['saves'] },
+    { key: 'passAccuracy', label: 'Pass Accuracy', aliases: ['passpct', 'passingaccuracy'] },
+  ];
+
+  return definitions.flatMap((definition) => {
+    const homeValue = getStatValue(summary, 'home', definition.aliases);
+    const awayValue = getStatValue(summary, 'away', definition.aliases);
+    if (!homeValue && !awayValue) return [];
+    return [{
+      key: definition.key,
+      label: definition.label,
+      homeValue,
+      awayValue,
+      homeNumber: parseStatNumber(homeValue),
+      awayNumber: parseStatNumber(awayValue),
+    }];
+  });
+}
+
+function normalizeTeamText(value?: string | null) {
+  return (value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function getTeamAliases(team?: TeamRow) {
+  const aliases = [team?.name, team?.short_name, team?.country_code].map(normalizeTeamText).filter(Boolean);
+  if (team?.country_code === 'CPV') aliases.push('capeverde');
+  return aliases;
+}
+
+function getGoalTeamNameFromText(text?: string | null) {
+  const match = text?.match(/Goal!\s*[^.]+\.\s*[^()]+\(([^)]+)\)/i);
+  return normalizeTeamText(match?.[1]);
+}
+
+function getEventSide(event: EspnSummaryKeyEvent, homeTeam?: TeamRow, awayTeam?: TeamRow): 'home' | 'away' | null {
+  const side = event.team?.side?.toLowerCase();
+  if (side === 'home' || side === 'away') return side;
+
+  const homeNames = getTeamAliases(homeTeam);
+  const awayNames = getTeamAliases(awayTeam);
+  const eventTeamName = normalizeTeamText(event.team?.name ?? event.team?.abbreviation);
+  const goalTeamName = getGoalTeamNameFromText(event.text);
+
+  if (eventTeamName && homeNames.includes(eventTeamName)) return 'home';
+  if (eventTeamName && awayNames.includes(eventTeamName)) return 'away';
+  if (goalTeamName && homeNames.includes(goalTeamName)) return 'home';
+  if (goalTeamName && awayNames.includes(goalTeamName)) return 'away';
+  return null;
+}
+
+function isGoalEvent(event: EspnSummaryKeyEvent) {
+  const text = `${event.type ?? ''} ${event.typeText ?? ''} ${event.text ?? ''}`.toLowerCase();
+  return event.scoringPlay || text.includes('goal');
+}
+
+function getParticipantName(event: EspnSummaryKeyEvent, type: string) {
+  const normalizedType = type.toLowerCase();
+  return event.participants?.find((participant) => participant.type?.toLowerCase().includes(normalizedType))?.name ?? null;
+}
+
+function getScoringEvents(summary: EspnSummaryPayload, homeTeam?: TeamRow, awayTeam?: TeamRow): ScoringEvent[] {
+  return (summary.keyEvents ?? []).flatMap((event, index) => {
+    const side = getEventSide(event, homeTeam, awayTeam);
+    if (!side || !isGoalEvent(event)) return [];
+    const scorer = getParticipantName(event, 'scorer') ?? event.participants?.[0]?.name ?? event.text ?? event.typeText;
+    if (!scorer) return [];
+    const assist = getParticipantName(event, 'assist') ?? event.participants?.[1]?.name ?? event.text?.match(/Assisted by ([^.]+)\./i)?.[1] ?? null;
+    return [{
+      id: event.id ?? `goal-${index}`,
+      side,
+      minute: event.clock ?? '—',
+      scorer,
+      assist: assist === scorer ? null : assist,
+      typeText: event.typeText,
+    }];
+  });
+}
+
+function StatComparisonRow({ stat }: { stat: MatchStatRow }) {
+  const home = stat.homeNumber ?? 0;
+  const away = stat.awayNumber ?? 0;
+  const total = home + away;
+  const homeWidth = total > 0 ? Math.max(8, Math.round((home / total) * 100)) : 50;
+  const awayWidth = total > 0 ? Math.max(8, Math.round((away / total) * 100)) : 50;
+
+  return (
+    <div className="p-3 border-b-2 border-line last:border-b-0 bg-card">
+      <div className="grid grid-cols-[52px_1fr_52px] items-center gap-3 font-black text-xs uppercase">
+        <span>{stat.homeValue ?? '—'}</span>
+        <span className="text-center text-subtle text-[10px] tracking-wide">{stat.label}</span>
+        <span className="text-right">{stat.awayValue ?? '—'}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-1 mt-2">
+        <div className="h-2 border-2 border-main bg-muted flex justify-end overflow-hidden"><div className="h-full bg-c2" style={{ width: `${homeWidth}%` }} /></div>
+        <div className="h-2 border-2 border-main bg-muted overflow-hidden"><div className="h-full bg-c4" style={{ width: `${awayWidth}%` }} /></div>
+      </div>
+    </div>
+  );
 }
 
 function SignalRow({ label, homeLabel, awayLabel, homePct, drawPct, awayPct }: SignalRowProps) {
@@ -242,6 +423,10 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
   const isSaveDisabled = isInputDisabled || effectiveStatus === 'locked';
   const displayStatus = getDisplayStatus(submittedPrediction, result);
   const espnSummary = match ? getEspnSummary(match) : {};
+  const matchStats = buildMatchStats(espnSummary);
+  const scoringEvents = getScoringEvents(espnSummary, homeTeam, awayTeam);
+  const homeScoringEvents = scoringEvents.filter((event) => event.side === 'home');
+  const awayScoringEvents = scoringEvents.filter((event) => event.side === 'away');
   const communityTotal = communitySignal?.total_predictions ?? 0;
   const communityHomePct = toPercent(communitySignal?.home_predictions ?? 0, communityTotal);
   const communityDrawPct = toPercent(communitySignal?.draw_predictions ?? 0, communityTotal);
@@ -418,6 +603,50 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
                 <div className="flex items-center gap-2 min-w-0"><MapPin size={16} className="shrink-0" /> <span className="truncate">{match.stadium}</span></div>
                 <div className="uppercase text-subtle">{match.city}</div>
               </div>
+
+              {(scoringEvents.length > 0 || matchStats.length > 0) && (
+                <div className="border-t-4 border-main bg-page">
+                  <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">{t('ui.matchCenter')}</div>
+                  <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr]">
+                    <div className="xl:border-r-4 border-main bg-card">
+                      <div className="bg-c1 border-b-4 border-main px-4 py-3 font-black uppercase text-sm">{t('ui.goalsAndAssists')}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2">
+                        <div className="border-b-4 sm:border-b-0 sm:border-r-4 border-main p-4 flex flex-col gap-3">
+                          <div className="font-black uppercase text-xs flex items-center gap-2"><SmallTeamFlag team={homeTeam} /> {homeTeam.short_name}</div>
+                          {homeScoringEvents.map((event) => (
+                            <div key={event.id} className="bg-page border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)]">
+                              <div className="flex items-start justify-between gap-3 font-black text-sm"><span>{event.scorer}</span><span className="text-c2 shrink-0">{event.minute}</span></div>
+                              <div className="font-bold text-[10px] uppercase text-subtle mt-1">{event.assist ? t('ui.assistedBy', { player: event.assist }) : event.typeText ?? t('ui.goal')}</div>
+                            </div>
+                          ))}
+                          {homeScoringEvents.length === 0 && <div className="bg-muted border-2 border-main p-3 font-bold text-xs text-subtle">{t('ui.noGoalsListed')}</div>}
+                        </div>
+                        <div className="p-4 flex flex-col gap-3">
+                          <div className="font-black uppercase text-xs flex items-center gap-2 justify-start sm:justify-end"><SmallTeamFlag team={awayTeam} /> {awayTeam.short_name}</div>
+                          {awayScoringEvents.map((event) => (
+                            <div key={event.id} className="bg-page border-2 border-main p-3 shadow-[2px_2px_0_var(--color-shadow)]">
+                              <div className="flex items-start justify-between gap-3 font-black text-sm"><span>{event.scorer}</span><span className="text-c2 shrink-0">{event.minute}</span></div>
+                              <div className="font-bold text-[10px] uppercase text-subtle mt-1">{event.assist ? t('ui.assistedBy', { player: event.assist }) : event.typeText ?? t('ui.goal')}</div>
+                            </div>
+                          ))}
+                          {awayScoringEvents.length === 0 && <div className="bg-muted border-2 border-main p-3 font-bold text-xs text-subtle">{t('ui.noGoalsListed')}</div>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-card">
+                      <div className="bg-c3 border-b-4 border-main px-4 py-3 font-black uppercase text-sm">{t('ui.matchStats')}</div>
+                      <div className="grid grid-cols-[1fr_auto_1fr] bg-main text-inv border-b-4 border-main font-black uppercase text-xs">
+                        <div className="p-3 flex items-center gap-2"><SmallTeamFlag team={homeTeam} /> {homeTeam.short_name}</div>
+                        <div className="p-3 text-center">{t('ui.stats')}</div>
+                        <div className="p-3 flex items-center justify-end gap-2">{awayTeam.short_name} <SmallTeamFlag team={awayTeam} /></div>
+                      </div>
+                      {matchStats.map((stat) => <div key={stat.key}><StatComparisonRow stat={stat} /></div>)}
+                      {matchStats.length === 0 && <div className="p-4 bg-muted font-bold text-xs text-subtle">{t('ui.noMatchStats')}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {(match.espn_status_detail || match.espn_display_clock || match.espn_attendance || match.espn_play_by_play_available !== null) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 border-t-4 border-main bg-c4 text-main">
