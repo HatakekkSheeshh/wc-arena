@@ -52,11 +52,10 @@ function getEventTypeLabel(event: LeagueEventRow, t: (key: string) => string) {
   return t('ui.createCustomEvent');
 }
 
-function getEventStatusLabel(status: string, t: (key: string) => string) {
-  if (status === 'settled') return t('ui.eventSettled');
-  if (status === 'cancelled') return t('ui.eventCancelled');
-  if (status === 'locked') return t('ui.eventLocked');
-  return status;
+function getEventDisplayName(event: LeagueEventRow, t: (key: string, options?: Record<string, unknown>) => string) {
+  if (event.event_type === 'weekly') return t('ui.currentWeeklyPool');
+  if (event.event_type === 'matchday') return t('ui.matchdayPoolTitle', { matchday: event.matchday ?? '-' });
+  return event.name;
 }
 
 function getPayoutCurveLabel(curve: string, t: (key: string) => string) {
@@ -66,17 +65,44 @@ function getPayoutCurveLabel(curve: string, t: (key: string) => string) {
   return t('ui.balancedTop3');
 }
 
-function isEventEnterable(event: LeagueEventRow) {
+function getEventPhase(event: LeagueEventRow) {
   const now = Date.now();
-  return event.status === 'open' && new Date(event.starts_at).getTime() > now && new Date(event.ends_at).getTime() > now;
+  const startsAt = new Date(event.starts_at).getTime();
+  const endsAt = new Date(event.ends_at).getTime();
+
+  if (event.status === 'cancelled') return 'cancelled';
+  if (event.status === 'settled') return 'settled';
+  if (now < startsAt) return 'joinable';
+  if (now < endsAt) return 'active';
+  return 'closed';
 }
 
-function groupEvents(events: LeagueEventRow[]) {
+function isEventEnterable(event: LeagueEventRow) {
+  return event.status === 'open' && getEventPhase(event) === 'joinable';
+}
+
+function groupEventsByPhase(events: LeagueEventRow[]) {
   return {
-    weekly: events.filter((event) => event.event_type === 'weekly'),
-    matchday: events.filter((event) => event.event_type === 'matchday'),
-    custom: events.filter((event) => event.event_type === 'custom'),
+    joinable: events.filter((event) => getEventPhase(event) === 'joinable'),
+    active: events.filter((event) => getEventPhase(event) === 'active'),
+    closed: events.filter((event) => ['closed', 'settled', 'cancelled'].includes(getEventPhase(event))),
   };
+}
+
+function getEventPhaseLabel(phase: string, t: (key: string) => string) {
+  if (phase === 'joinable') return t('ui.poolJoinable');
+  if (phase === 'active') return t('ui.poolActive');
+  if (phase === 'settled') return t('ui.eventSettled');
+  if (phase === 'cancelled') return t('ui.eventCancelled');
+  return t('ui.poolClosed');
+}
+
+function getEventPhaseClass(phase: string) {
+  if (phase === 'joinable') return 'bg-c3';
+  if (phase === 'active') return 'bg-c4 text-inv';
+  if (phase === 'settled') return 'bg-c1';
+  if (phase === 'cancelled') return 'bg-c5';
+  return 'bg-muted';
 }
 
 function CompactTeam({ team, fallback }: { team?: TeamRow; fallback: string }) {
@@ -122,7 +148,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [error, setError] = useState<string | null>(null);
 
   const currentMembership = useMemo(() => members.find((member) => member.user_id === user?.id) ?? null, [members, user?.id]);
-  const groupedEvents = useMemo(() => groupEvents(events), [events]);
+  const groupedEvents = useMemo(() => groupEventsByPhase(events), [events]);
   const matchesByMatchday = useMemo(() => {
     const nextMatchesByMatchday = new Map<number, MatchRow[]>();
     for (const match of matches) {
@@ -339,23 +365,25 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     const eventMatches = event.event_type === 'matchday' && event.matchday !== null ? matchesByMatchday.get(event.matchday) ?? [] : [];
     const alreadyEntered = rows.some((row) => row.user_id === user?.id);
     const enterable = isEventEnterable(event);
-    const statusClass = event.status === 'cancelled' ? 'bg-c5' : event.status === 'locked' ? 'bg-c4' : event.status === 'settled' ? 'bg-c3' : 'bg-card';
+    const phase = getEventPhase(event);
+    const phaseClass = getEventPhaseClass(phase);
 
     return (
       <div key={event.id} className={`border-4 border-main ${event.status === 'cancelled' ? 'bg-muted opacity-80' : 'bg-page'} rounded-sm overflow-hidden flex flex-col`}>
-        <div className="p-3 border-b-4 border-main bg-card flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{getEventTypeLabel(event, t)}</div>
-            <div className="font-black uppercase text-lg truncate">{event.name}</div>
-            <div className="font-bold text-[10px] text-subtle uppercase">{formatDate(event.starts_at)} - {formatDate(event.ends_at)}</div>
-            <div className="mt-1 inline-flex bg-c1 border-2 border-main px-2 py-0.5 font-black uppercase text-[9px]">{getPayoutCurveLabel(event.payout_curve, t)}</div>
+        <div className="p-3 border-b-4 border-main bg-card flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{getEventTypeLabel(event, t)}</div>
+              <div className="font-black uppercase text-xl leading-tight truncate">{getEventDisplayName(event, t)}</div>
+              <div className="font-bold text-[10px] text-subtle uppercase">{formatDate(event.starts_at)} - {formatDate(event.ends_at)}</div>
+            </div>
+            <div className={`${phaseClass} border-2 border-main px-2 py-1 font-black uppercase text-[10px] whitespace-nowrap`}>{getEventPhaseLabel(phase, t)}</div>
           </div>
-          <div className="bg-c3 border-2 border-main px-2 py-1 font-black text-xs whitespace-nowrap">{event.prize_pool} {t('ui.pointsShort')}</div>
-        </div>
-        <div className="p-3 grid grid-cols-3 border-b-2 border-main text-xs font-bold">
-          <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.prizePoolPoints')}</div>{event.prize_pool}</div>
-          <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.stakePoints')}</div>{event.min_stake}-{event.max_stake}</div>
-          <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.status')}</div><span className={`${statusClass} border-2 border-main px-1 font-black uppercase text-[10px]`}>{getEventStatusLabel(event.status, t)}</span></div>
+          <div className="grid grid-cols-3 gap-2 text-xs font-bold">
+            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.prizePoolPoints')}</div>{event.prize_pool} {t('ui.pointsShort')}</div>
+            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.stakePoints')}</div>{event.min_stake}-{event.max_stake}</div>
+            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.payoutCurve')}</div>{getPayoutCurveLabel(event.payout_curve, t)}</div>
+          </div>
         </div>
         {eventMatches.length > 0 && (
           <div className="p-3 border-b-2 border-main bg-card flex flex-col gap-2">
@@ -375,14 +403,21 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
           </div>
         )}
         {isMember && enterable && (
-          <div className="p-3 border-b-2 border-main flex gap-2">
-            <input type="number" min={event.min_stake} max={event.max_stake} value={stakeByEventId[event.id] ?? String(event.min_stake)} onChange={(item) => setStakeByEventId((values) => ({ ...values, [event.id]: item.target.value }))} disabled={alreadyEntered} className="bg-card border-2 border-main px-3 py-2 font-black w-24 rounded-sm" />
-            <button onClick={() => handleEnterEvent(event)} disabled={alreadyEntered || enteringEventId === event.id} className="bg-c2 text-inv border-2 border-main px-3 py-2 font-black uppercase text-xs flex-1 disabled:opacity-60 rounded-sm">
-              {alreadyEntered ? t('ui.alreadyEntered') : enteringEventId === event.id ? t('ui.saving') : t('ui.enterPool')}
-            </button>
+          <div className="p-3 border-b-2 border-main bg-c3 flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="font-black uppercase text-xs">{t('ui.joinPoolNow')}</div>
+              <div className="font-bold text-[10px] uppercase text-subtle">{t('ui.joinPoolHelp')}</div>
+            </div>
+            <div className="flex gap-2">
+              <input type="number" min={event.min_stake} max={event.max_stake} value={stakeByEventId[event.id] ?? String(event.min_stake)} onChange={(item) => setStakeByEventId((values) => ({ ...values, [event.id]: item.target.value }))} disabled={alreadyEntered} className="bg-card border-2 border-main px-3 py-2 font-black w-24 rounded-sm" />
+              <button onClick={() => handleEnterEvent(event)} disabled={alreadyEntered || enteringEventId === event.id} className="bg-c2 text-inv border-2 border-main px-3 py-2 font-black uppercase text-xs disabled:opacity-60 rounded-sm">
+                {alreadyEntered ? t('ui.alreadyEntered') : enteringEventId === event.id ? t('ui.saving') : t('ui.enterPool')}
+              </button>
+            </div>
           </div>
         )}
-        {isMember && !enterable && event.status !== 'settled' && event.status !== 'cancelled' && <div className="p-3 border-b-2 border-main font-black uppercase text-xs bg-muted">{t('ui.eventNotOpen')}</div>}
+        {isMember && !enterable && phase === 'active' && <div className="p-3 border-b-2 border-main font-black uppercase text-xs bg-c4 text-inv">{t('ui.poolScoringInProgress')}</div>}
+        {isMember && !enterable && ['closed', 'settled', 'cancelled'].includes(phase) && <div className="p-3 border-b-2 border-main font-black uppercase text-xs bg-muted">{t('ui.poolNoLongerAcceptingEntries')}</div>}
         <div className="flex flex-col bg-card">
           {rows.slice(0, 3).map((row) => (
             <div key={row.user_id} className="grid grid-cols-[44px_1fr_auto] items-center gap-2 p-3 border-b-2 border-line last:border-b-0 text-xs font-bold">
@@ -391,7 +426,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
               <div className="font-black text-right">+{row.payout || 0}</div>
             </div>
           ))}
-          {rows.length === 0 && <div className="p-3 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
+          {rows.length === 0 && <div className="p-3 font-black uppercase text-xs">{phase === 'joinable' ? t('ui.noPoolEntriesYet') : t('ui.noPoolStandingsYet')}</div>}
         </div>
         {isOwner && event.status !== 'settled' && event.status !== 'cancelled' && rows.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 border-t-4 border-main">
@@ -568,9 +603,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
             {events.length === 0 && <div className="p-4 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
             {events.length > 0 && (
               <div className="p-3 sm:p-4 flex flex-col gap-5">
-                {renderEventSection(t('ui.weeklyLeaderboard'), t('ui.weeklyLeaderboardBody'), groupedEvents.weekly)}
-                {renderEventSection(t('ui.matchdayLeaderboard'), t('ui.matchdayLeaderboardBody'), groupedEvents.matchday)}
-                {renderEventSection(t('ui.createCustomEvent'), t('ui.customLeaderboardBody'), groupedEvents.custom)}
+                {renderEventSection(t('ui.joinablePools'), t('ui.joinablePoolsBody'), groupedEvents.joinable)}
+                {renderEventSection(t('ui.activePools'), t('ui.activePoolsBody'), groupedEvents.active)}
+                {renderEventSection(t('ui.closedPools'), t('ui.closedPoolsBody'), groupedEvents.closed)}
               </div>
             )}
           </div>
