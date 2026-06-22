@@ -226,17 +226,30 @@ function normalizeTeamText(value?: string | null) {
   return (value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
+function getTeamAliases(team?: TeamRow) {
+  const aliases = [team?.name, team?.short_name, team?.country_code].map(normalizeTeamText).filter(Boolean);
+  if (team?.country_code === 'CPV') aliases.push('capeverde');
+  return aliases;
+}
+
+function getGoalTeamNameFromText(text?: string | null) {
+  const match = text?.match(/Goal!\s*[^.]+\.\s*[^()]+\(([^)]+)\)/i);
+  return normalizeTeamText(match?.[1]);
+}
+
 function getEventSide(event: EspnSummaryKeyEvent, homeTeam?: TeamRow, awayTeam?: TeamRow): 'home' | 'away' | null {
   const side = event.team?.side?.toLowerCase();
   if (side === 'home' || side === 'away') return side;
 
+  const homeNames = getTeamAliases(homeTeam);
+  const awayNames = getTeamAliases(awayTeam);
   const eventTeamName = normalizeTeamText(event.team?.name ?? event.team?.abbreviation);
-  if (!eventTeamName) return null;
+  const goalTeamName = getGoalTeamNameFromText(event.text);
 
-  const homeNames = [homeTeam?.name, homeTeam?.short_name].map(normalizeTeamText);
-  const awayNames = [awayTeam?.name, awayTeam?.short_name].map(normalizeTeamText);
-  if (homeNames.includes(eventTeamName)) return 'home';
-  if (awayNames.includes(eventTeamName)) return 'away';
+  if (eventTeamName && homeNames.includes(eventTeamName)) return 'home';
+  if (eventTeamName && awayNames.includes(eventTeamName)) return 'away';
+  if (goalTeamName && homeNames.includes(goalTeamName)) return 'home';
+  if (goalTeamName && awayNames.includes(goalTeamName)) return 'away';
   return null;
 }
 
