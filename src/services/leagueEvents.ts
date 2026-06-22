@@ -25,6 +25,14 @@ async function invokeLeagueAction<T>(body: Record<string, unknown>) {
   return data as T;
 }
 
+function isDisplayableLeagueEvent(event: LeagueEventRow) {
+  const hasEnded = new Date(event.ends_at).getTime() <= Date.now();
+  const isLegacyWeekly = event.event_type === 'weekly' && (event.id.endsWith('-weekly-1') || event.name === 'Weekly #1');
+  const isExpiredGeneratedMatchday = event.event_type === 'matchday' && hasEnded;
+
+  return !isLegacyWeekly && !isExpiredGeneratedMatchday;
+}
+
 export async function listLeagueEvents(leagueId: string) {
   const { data, error } = await supabase
     .from('league_events')
@@ -33,7 +41,7 @@ export async function listLeagueEvents(leagueId: string) {
     .order('starts_at', { ascending: false });
 
   if (error) throw error;
-  return data as LeagueEventRow[];
+  return ((data ?? []) as LeagueEventRow[]).filter(isDisplayableLeagueEvent);
 }
 
 export async function listLeagueEventLeaderboard(eventId: string) {
