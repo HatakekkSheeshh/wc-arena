@@ -413,9 +413,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
             <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{eventMatches.length} {t('ui.matches')}</div>
             <div className="grid grid-cols-1 gap-1.5">
               {eventMatches.map((match) => (
-                <Link key={match.id} to={`/matches/${match.id}`} className="grid grid-cols-[72px_1fr] items-center gap-2 border-2 border-line bg-page px-2.5 py-2 text-[10px] font-black uppercase hover:bg-muted rounded-sm">
-                  <span className="text-subtle leading-tight">{formatDate(match.kickoff_at)}</span>
-                  <span className="grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-2 min-w-0">
+                <Link key={match.id} to={`/matches/${match.id}`} className="relative grid items-center border-2 border-line bg-page px-2.5 py-2 text-[10px] font-black uppercase hover:bg-muted rounded-sm min-h-[46px]">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle leading-tight w-[72px]">{formatDate(match.kickoff_at)}</span>
+                  <span className="grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-2 min-w-0 w-full pl-[82px] sm:pl-0">
                     <CompactTeam team={teams.get(match.home_team_id)} fallback={match.home_team_id} align="right" />
                     <span className="text-subtle text-center">vs</span>
                     <CompactTeam team={teams.get(match.away_team_id)} fallback={match.away_team_id} />
