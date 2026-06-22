@@ -32,6 +32,8 @@ type EventFormState = {
   rankShares: [string, string, string];
 };
 
+type PoolTab = 'joinable' | 'active' | 'closed';
+
 const defaultEventForm: EventFormState = {
   name: '',
   startsAt: '',
@@ -81,11 +83,15 @@ function isEventEnterable(event: LeagueEventRow) {
   return event.status === 'open' && getEventPhase(event) === 'joinable';
 }
 
+function sortEventsByNearest(events: LeagueEventRow[]) {
+  return [...events].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+}
+
 function groupEventsByPhase(events: LeagueEventRow[]) {
   return {
-    joinable: events.filter((event) => getEventPhase(event) === 'joinable'),
-    active: events.filter((event) => getEventPhase(event) === 'active'),
-    closed: events.filter((event) => ['closed', 'settled', 'cancelled'].includes(getEventPhase(event))),
+    joinable: sortEventsByNearest(events.filter((event) => getEventPhase(event) === 'joinable')),
+    active: sortEventsByNearest(events.filter((event) => getEventPhase(event) === 'active')),
+    closed: sortEventsByNearest(events.filter((event) => ['closed', 'settled', 'cancelled'].includes(getEventPhase(event)))),
   };
 }
 
@@ -136,6 +142,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [eventForm, setEventForm] = useState<EventFormState>(defaultEventForm);
+  const [activePoolTab, setActivePoolTab] = useState<PoolTab>('joinable');
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -157,6 +164,12 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     }
     return new Map([...nextMatchesByMatchday.entries()].map(([matchday, matchdayMatches]) => [matchday, matchdayMatches.sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at))]));
   }, [matches]);
+  const poolTabs: Array<{ id: PoolTab; label: string; description: string; events: LeagueEventRow[] }> = [
+    { id: 'joinable', label: t('ui.joinablePools'), description: t('ui.joinablePoolsBody'), events: groupedEvents.joinable },
+    { id: 'active', label: t('ui.activePools'), description: t('ui.activePoolsBody'), events: groupedEvents.active },
+    { id: 'closed', label: t('ui.closedPools'), description: t('ui.closedPoolsBody'), events: groupedEvents.closed },
+  ];
+  const activePool = poolTabs.find((tab) => tab.id === activePoolTab) ?? poolTabs[0];
   const isOwner = currentMembership?.role === 'owner';
   const isMember = Boolean(currentMembership);
   const inviteLink = league ? `${window.location.origin}/leagues/join/${league.invite_code}` : '';
@@ -442,21 +455,22 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     );
   }
 
-  function renderEventSection(title: string, description: string, sectionEvents: LeagueEventRow[]) {
-    if (sectionEvents.length === 0) return null;
-
+  function renderPoolTabPanel() {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 border-b-2 border-line pb-2">
           <div>
-            <div className="font-black uppercase text-sm text-main">{title}</div>
-            <div className="font-bold text-[10px] text-subtle uppercase leading-snug">{description}</div>
+            <div className="font-black uppercase text-sm text-main">{activePool.label}</div>
+            <div className="font-bold text-[10px] text-subtle uppercase leading-snug">{activePool.description}</div>
           </div>
-          <div className="bg-c1 border-2 border-main px-2 py-0.5 font-black uppercase text-[10px] w-fit">{sectionEvents.length}</div>
+          <div className="bg-c1 border-2 border-main px-2 py-0.5 font-black uppercase text-[10px] w-fit">{activePool.events.length}</div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {sectionEvents.map(renderEventCard)}
-        </div>
+        {activePool.events.length === 0 && <div className="border-2 border-line bg-page p-4 font-black uppercase text-xs rounded-sm">{t('ui.noPoolsInTab')}</div>}
+        {activePool.events.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
+            {activePool.events.map(renderEventCard)}
+          </div>
+        )}
       </div>
     );
   }
@@ -602,10 +616,16 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
             )}
             {events.length === 0 && <div className="p-4 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
             {events.length > 0 && (
-              <div className="p-3 sm:p-4 flex flex-col gap-5">
-                {renderEventSection(t('ui.joinablePools'), t('ui.joinablePoolsBody'), groupedEvents.joinable)}
-                {renderEventSection(t('ui.activePools'), t('ui.activePoolsBody'), groupedEvents.active)}
-                {renderEventSection(t('ui.closedPools'), t('ui.closedPoolsBody'), groupedEvents.closed)}
+              <div className="p-3 sm:p-4 flex flex-col gap-4">
+                <div className="grid grid-cols-3 border-2 border-main rounded-sm overflow-hidden">
+                  {poolTabs.map((tab) => (
+                    <button key={tab.id} type="button" onClick={() => setActivePoolTab(tab.id)} className={`p-2.5 font-black uppercase text-[10px] sm:text-xs border-r-2 border-main last:border-r-0 ${activePoolTab === tab.id ? 'bg-c2 text-inv' : 'bg-card hover:bg-muted'}`}>
+                      <span className="block truncate">{tab.label}</span>
+                      <span className="mt-1 inline-flex bg-c1 text-main border-2 border-main px-1.5 py-0.5 text-[9px]">{tab.events.length}</span>
+                    </button>
+                  ))}
+                </div>
+                {renderPoolTabPanel()}
               </div>
             )}
           </div>
