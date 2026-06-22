@@ -17,6 +17,8 @@ const Activity = lazy(() => import('./pages/Activity'));
 const AdminAudit = lazy(() => import('./pages/AdminAudit'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Badges = lazy(() => import('./pages/Badges'));
+const JoinLeague = lazy(() => import('./pages/JoinLeague'));
+const LeagueCreate = lazy(() => import('./pages/LeagueCreate'));
 const LeagueDetail = lazy(() => import('./pages/LeagueDetail'));
 const Leagues = lazy(() => import('./pages/Leagues'));
 const MatchDetail = lazy(() => import('./pages/MatchDetail'));
@@ -116,7 +118,10 @@ export default function App() {
           <Route path="/badges" element={<Badges themeControls={themeControls} />} />
           <Route path="/achievements" element={<Achievements themeControls={themeControls} />} />
           <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
+          <Route path="/leagues/create" element={<LeagueCreate themeControls={themeControls} />} />
+          <Route path="/leagues/join/:inviteCode" element={<JoinLeague themeControls={themeControls} />} />
           <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />
+          <Route path="/global-arena" element={<Navigate to="/leagues/global-arena" replace />} />
           <Route path="/activity" element={<Activity themeControls={themeControls} />} />
           <Route path="/rewards" element={<Rewards themeControls={themeControls} />} />
           <Route path="/admin" element={<AdminDashboard themeControls={themeControls} />} />

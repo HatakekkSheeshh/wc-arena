@@ -9,7 +9,7 @@ import StatusPill from '../components/ui/StatusPill';
 import StreakBadge from '../components/ui/StreakBadge';
 import { useAuth } from '../lib/auth';
 import { listCurrentUserBadges, type UserBadgeWithBadge } from '../services/badges';
-import { listCurrentUserLeagueMemberships, listLeagueMemberCounts, type LeagueMemberRow } from '../services/leagues';
+import { listCurrentUserLeagueMemberships, type LeagueMemberRow } from '../services/leagues';
 import { calculateAccuracy, calculateStreak, getPredictionOutcome } from '../lib/scoring';
 import { listCurrentUserPredictions, type PredictionWithMatch } from '../services/predictions';
 import { ensureCurrentProfile, updateCurrentProfile, type ProfileRow } from '../services/profile';
@@ -69,7 +69,6 @@ export default function Profile({ themeControls }: ProfileProps) {
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
   const [badges, setBadges] = useState<UserBadgeWithBadge[]>([]);
   const [leagueMemberships, setLeagueMemberships] = useState<LeagueMemberRow[]>([]);
-  const [leagueMemberCounts, setLeagueMemberCounts] = useState<Map<string, number>>(new Map());
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [displayNameDraft, setDisplayNameDraft] = useState('');
@@ -93,8 +92,7 @@ export default function Profile({ themeControls }: ProfileProps) {
     setProfileError(null);
 
     Promise.all([ensureCurrentProfile(authUser.id, authUser.email, authUser.user_metadata.username), listCurrentUserPredictions(), getTeamMap(), listCurrentUserBadges(), listCurrentUserLeagueMemberships()])
-      .then(async ([nextProfile, nextPredictions, nextTeams, nextBadges, nextLeagueMemberships]) => {
-        const nextLeagueMemberCounts = await listLeagueMemberCounts(nextLeagueMemberships.map((membership) => membership.league_id));
+      .then(([nextProfile, nextPredictions, nextTeams, nextBadges, nextLeagueMemberships]) => {
         if (!active) return;
         setProfile(nextProfile);
         setDisplayNameDraft(nextProfile.display_name ?? '');
@@ -104,7 +102,6 @@ export default function Profile({ themeControls }: ProfileProps) {
         setTeams(nextTeams);
         setBadges(nextBadges);
         setLeagueMemberships(nextLeagueMemberships);
-        setLeagueMemberCounts(nextLeagueMemberCounts);
       })
       .catch((error) => {
         if (!active) return;
@@ -353,9 +350,9 @@ export default function Profile({ themeControls }: ProfileProps) {
                   const league = membership.leagues;
                   if (!league) return null;
                   return (
-                    <Link key={membership.league_id} to={`/leagues/${league.id}`} className="p-3 sm:p-4 border-b-2 sm:border-r-2 xl:border-r-0 border-line last:border-b-0 hover:bg-muted min-w-0">
+                    <Link key={membership.league_id} to={`/leagues/${league.slug}`} className="p-3 sm:p-4 border-b-2 sm:border-r-2 xl:border-r-0 border-line last:border-b-0 hover:bg-muted min-w-0">
                       <div className="font-black uppercase text-sm truncate">{league.name}</div>
-                      <div className="text-[10px] sm:text-xs font-bold text-subtle uppercase mt-1 truncate">{t('ui.memberCount', { count: (leagueMemberCounts.get(league.id) ?? 0).toLocaleString() })} • {league.visibility}</div>
+                      <div className="text-[10px] sm:text-xs font-bold text-subtle uppercase mt-1 truncate">{t('ui.memberCount', { count: league.member_count.toLocaleString() })} • {league.visibility}</div>
                     </Link>
                   );
                 })}

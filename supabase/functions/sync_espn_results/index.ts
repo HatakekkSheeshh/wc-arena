@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -920,7 +921,8 @@ async function recalculateScores(supabase: ReturnType<typeof createClient>) {
     if (error) throw error;
   }
 
-  return { predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length };
+  const leagueRefresh = await refreshLeagueLeaderboards(supabase);
+  return { predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length, ...leagueRefresh };
 }
 
 Deno.serve(async (req) => {
@@ -991,7 +993,7 @@ Deno.serve(async (req) => {
         action: 'espn_result_sync_completed',
         entity_type: 'system',
         entity_id: 'espn-result-sync',
-        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, recalculated ${scoring.predictionScores} prediction scores.`,
+        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, recalculated ${scoring.predictionScores} prediction scores and ${scoring.leagueLeaderboardEntries} league leaderboard entries.`,
         severity: 'info',
       });
     }

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -305,14 +306,16 @@ Deno.serve(async (req) => {
     }
   }
 
+  const leagueRefresh = await refreshLeagueLeaderboards(supabase);
+
   await supabase.from('admin_audit_logs').insert({
     actor_id: userData.user.id,
     action: 'score_recalculation_completed',
     entity_type: 'leaderboard',
     entity_id: 'global',
-    description: `Recalculated ${calculatedScores.length} prediction scores and ${aggregates.length} leaderboard entries.`,
+    description: `Recalculated ${calculatedScores.length} prediction scores, ${aggregates.length} global leaderboard entries, and ${leagueRefresh.leagueLeaderboardEntries} league leaderboard entries.`,
     severity: 'info',
   });
 
-  return jsonResponse({ predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length });
+  return jsonResponse({ predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length, ...leagueRefresh });
 });

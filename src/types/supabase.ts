@@ -313,6 +313,55 @@ export type Database = {
           },
         ]
       }
+      league_join_requests: {
+        Row: {
+          league_id: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          league_id: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          league_id?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_join_requests_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_join_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       league_members: {
         Row: {
           joined_at: string
@@ -353,37 +402,46 @@ export type Database = {
         Row: {
           created_at: string
           creator_id: string | null
+          description: string
           id: string
           invite_code: string
+          join_policy: string
           member_count: number
           name: string
           prize_mode: string
           scoring_mode: string
           slug: string
+          updated_at: string
           visibility: string
         }
         Insert: {
           created_at?: string
           creator_id?: string | null
+          description?: string
           id: string
           invite_code: string
+          join_policy?: string
           member_count?: number
           name: string
           prize_mode?: string
           scoring_mode?: string
           slug: string
+          updated_at?: string
           visibility: string
         }
         Update: {
           created_at?: string
           creator_id?: string | null
+          description?: string
           id?: string
           invite_code?: string
+          join_policy?: string
           member_count?: number
           name?: string
           prize_mode?: string
           scoring_mode?: string
           slug?: string
+          updated_at?: string
           visibility?: string
         }
         Relationships: [
