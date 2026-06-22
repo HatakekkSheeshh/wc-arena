@@ -492,11 +492,12 @@ function buildUpdatePlan(matches: MatchRow[], candidates: EspnCandidate[], teamM
 function sanitizeStatistics(value: unknown) {
   return toArray(value).flatMap((stat) => {
     if (!isRecord(stat)) return [];
-    const label = neutralText(stat.displayName ?? stat.name ?? stat.label);
+    const name = neutralText(stat.name);
+    const label = neutralText(stat.displayName ?? stat.label ?? stat.shortDisplayName ?? stat.name);
     const statValue = neutralText(stat.displayValue ?? stat.value);
     if (!label || !statValue) return [];
-    return [{ label, value: statValue }];
-  }).slice(0, 12);
+    return [{ name, label, value: statValue }];
+  }).slice(0, 28);
 }
 
 function sanitizeLeaders(value: unknown, parentLabel?: string | null): JsonRecord[] {
@@ -540,6 +541,78 @@ function sanitizeNews(value: unknown) {
   }).slice(0, 5);
 }
 
+function sanitizeParticipants(value: unknown) {
+  return toArray(value).flatMap((participant) => {
+    if (!isRecord(participant)) return [];
+    const athlete = isRecord(participant.athlete) ? participant.athlete : undefined;
+    const type = isRecord(participant.type) ? neutralText(participant.type.displayName ?? participant.type.name) : neutralText(participant.type);
+    const name = neutralText(athlete?.displayName ?? participant.displayName ?? participant.name);
+    const entry = { name, type };
+    return Object.values(entry).some(Boolean) ? [entry] : [];
+  }).slice(0, 6);
+}
+
+function sanitizeTeamRef(value: unknown) {
+  if (!isRecord(value)) return {};
+  return {
+    id: neutralText(value.id),
+    name: neutralText(value.displayName ?? value.name),
+    abbreviation: neutralText(value.abbreviation ?? value.shortDisplayName),
+    side: neutralText(value.homeAway),
+  };
+}
+
+function sanitizeKeyEvents(value: unknown) {
+  return toArray(value).flatMap((event) => {
+    if (!isRecord(event)) return [];
+    const type = isRecord(event.type) ? neutralText(event.type.id ?? event.type.name) : neutralText(event.type);
+    const typeText = isRecord(event.type) ? neutralText(event.type.text ?? event.type.displayName ?? event.type.name) : neutralText(event.typeText ?? event.displayType);
+    const team = sanitizeTeamRef(event.team);
+    const entry = {
+      id: neutralText(event.id),
+      type,
+      typeText,
+      clock: neutralText(isRecord(event.clock) ? event.clock.displayValue : event.displayClock ?? event.clock),
+      period: numberValue(isRecord(event.period) ? event.period.number : event.period),
+      team,
+      text: neutralText(event.text ?? event.displayText ?? event.shortText),
+      participants: sanitizeParticipants(event.participants),
+      homeScore: numberValue(event.homeScore),
+      awayScore: numberValue(event.awayScore),
+      scoringPlay: Boolean(event.scoringPlay),
+    };
+    return Object.values(entry).some((nextValue) => Array.isArray(nextValue) ? nextValue.length > 0 : Boolean(nextValue)) ? [entry] : [];
+  }).slice(0, 60);
+}
+
+function sanitizeCommentary(value: unknown) {
+  return toArray(value).flatMap((event) => {
+    if (!isRecord(event)) return [];
+    const text = neutralText(event.text ?? event.displayText ?? event.shortText);
+    if (!text) return [];
+    const typeText = isRecord(event.type) ? neutralText(event.type.text ?? event.type.displayName ?? event.type.name) : neutralText(event.type);
+    return [{
+      id: neutralText(event.id),
+      typeText,
+      clock: neutralText(isRecord(event.clock) ? event.clock.displayValue : event.displayClock ?? event.clock),
+      period: numberValue(isRecord(event.period) ? event.period.number : event.period),
+      text,
+    }];
+  }).slice(0, 80);
+}
+
+function sanitizeOfficials(value: unknown) {
+  return toArray(value).flatMap((official) => {
+    if (!isRecord(official)) return [];
+    const type = isRecord(official.type) ? official.type : undefined;
+    const entry = {
+      name: neutralText(official.displayName ?? official.fullName ?? official.name),
+      role: neutralText(type?.displayName ?? type?.name ?? official.role),
+    };
+    return Object.values(entry).some(Boolean) ? [entry] : [];
+  }).slice(0, 8);
+}
+
 function sanitizeBoxscoreTeams(value: unknown) {
   const teams = toArray(value);
   const entries: [string, JsonRecord][] = [];
@@ -549,7 +622,9 @@ function sanitizeBoxscoreTeams(value: unknown) {
     const side = textValue(teamEntry.homeAway) ?? (index === 0 ? 'home' : 'away');
     const team = isRecord(teamEntry.team) ? teamEntry.team : undefined;
     const payload = {
+      id: neutralText(team?.id),
       name: neutralText(team?.displayName ?? teamEntry.displayName),
+      abbreviation: neutralText(team?.abbreviation ?? team?.shortDisplayName),
       statistics: sanitizeStatistics(teamEntry.statistics),
       leaders: sanitizeLeaders(teamEntry.leaders),
       lastFiveGames: sanitizeLastFiveGames(team?.lastFiveGames ?? teamEntry.lastFiveGames),
@@ -583,12 +658,20 @@ function sanitizeSummary(summary: unknown): Json | null {
   const teams = sanitizeBoxscoreTeams(boxscore?.teams);
   const leaders = sanitizeLeaders(summary.leaders ?? boxscore?.leaders);
   const news = isRecord(summary.news) ? sanitizeNews(summary.news.articles) : [];
+  const keyEvents = sanitizeKeyEvents(summary.keyEvents);
+  const commentary = sanitizeCommentary(summary.commentary);
+  const officials = sanitizeOfficials(gameInfo?.officials);
+  const attendance = numberValue(gameInfo?.attendance ?? summary.attendance);
 
   const payload: JsonRecord = {};
   if (Object.values(venue).some(Boolean)) payload.venue = venue;
+  if (attendance !== null) payload.attendance = attendance;
+  if (officials.length) payload.officials = officials;
   if (broadcasts.length) payload.broadcasts = [...new Set(broadcasts)];
   if (Object.keys(teams).length) payload.teams = teams;
   if (leaders.length) payload.leaders = leaders;
+  if (keyEvents.length) payload.keyEvents = keyEvents;
+  if (commentary.length) payload.commentary = commentary;
   if (news.length) payload.news = news;
 
   return Object.keys(payload).length ? payload as Json : null;
