@@ -1,4 +1,4 @@
-# Picks Attached-Card Design System
+  # Picks Attached-Card Design System
 
 This document captures the layout rules from `src/Picks.tsx` so other app pages can match its attached-card style.
 

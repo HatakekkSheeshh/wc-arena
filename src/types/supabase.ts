@@ -712,6 +712,50 @@ export type Database = {
           },
         ]
       }
+      reward_eligibility_checks: {
+        Row: {
+          created_at: string
+          description: string
+          href: string | null
+          id: string
+          label: string
+          sort_order: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          href?: string | null
+          id: string
+          label: string
+          sort_order?: number
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          href?: string | null
+          id?: string
+          label?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_eligibility_checks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_reviews: {
         Row: {
           amount: number
@@ -762,50 +806,6 @@ export type Database = {
           },
         ]
       }
-      reward_eligibility_checks: {
-        Row: {
-          created_at: string
-          description: string
-          href: string | null
-          id: string
-          label: string
-          sort_order: number
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          href?: string | null
-          id: string
-          label: string
-          sort_order?: number
-          status: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          href?: string | null
-          id?: string
-          label?: string
-          sort_order?: number
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reward_eligibility_checks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       reward_trust_notes: {
         Row: {
           created_at: string
@@ -835,47 +835,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      user_trust_signals: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          label: string
-          severity: string
-          status: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id: string
-          label: string
-          severity: string
-          status: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          label?: string
-          severity?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_trust_signals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       teams: {
         Row: {
@@ -940,6 +899,47 @@ export type Database = {
           },
         ]
       }
+      user_trust_signals: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          label: string
+          severity: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id: string
+          label: string
+          severity: string
+          status: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          label?: string
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_trust_signals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -967,6 +967,7 @@ export type Database = {
           total_predictions: number
         }[]
       }
+      refresh_global_leaderboard_entries: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

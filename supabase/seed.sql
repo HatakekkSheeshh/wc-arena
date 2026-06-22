@@ -38,13 +38,13 @@ values
   ('m-esp-fra', 'group', 'A', 3, 'esp', 'fra', '2026-06-18T19:00:00Z', '2026-06-18T18:45:00Z', 'Mercedes-Benz Stadium', 'Atlanta, USA', 'scheduled', null, null, null)
 on conflict (id) do nothing;
 
-insert into public.predictions (id, user_id, match_id, home_score, away_score, confidence, is_risk_pick, status, revision, created_at, updated_at, locked_at)
+insert into public.predictions (id, user_id, match_id, home_score, away_score, predicted_outcome, confidence, is_risk_pick, status, revision, created_at, updated_at, locked_at)
 values
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', 2, 1, 82, false, 'scored', 2, '2026-06-10T10:00:00Z', '2026-06-12T12:15:00Z', '2026-06-12T17:45:00Z'),
-  ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'm-fra-arg', 2, 1, 61, false, 'scored', 1, '2026-06-10T11:00:00Z', '2026-06-12T14:30:00Z', '2026-06-12T20:45:00Z'),
-  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'm-jpn-mex', 0, 2, 74, true, 'scored', 3, '2026-06-11T08:00:00Z', '2026-06-13T09:20:00Z', '2026-06-13T14:45:00Z'),
-  ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', 2, 0, 68, false, 'locked', 1, '2026-06-13T13:00:00Z', '2026-06-14T08:15:00Z', '2026-06-14T17:45:00Z'),
-  ('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'm-usa-kor', 3, 1, 70, false, 'submitted', 1, '2026-06-14T10:00:00Z', '2026-06-14T10:00:00Z', null)
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', 2, 1, 'home', 82, false, 'scored', 2, '2026-06-10T10:00:00Z', '2026-06-12T12:15:00Z', '2026-06-12T17:45:00Z'),
+  ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'm-fra-arg', 2, 1, 'home', 61, false, 'scored', 1, '2026-06-10T11:00:00Z', '2026-06-12T14:30:00Z', '2026-06-12T20:45:00Z'),
+  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'm-jpn-mex', 0, 2, 'away', 74, true, 'scored', 3, '2026-06-11T08:00:00Z', '2026-06-13T09:20:00Z', '2026-06-13T14:45:00Z'),
+  ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', 2, 0, 'home', 68, false, 'locked', 1, '2026-06-13T13:00:00Z', '2026-06-14T08:15:00Z', '2026-06-14T17:45:00Z'),
+  ('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'm-usa-kor', 3, 1, 'home', 70, false, 'submitted', 1, '2026-06-14T10:00:00Z', '2026-06-14T10:00:00Z', null)
 on conflict (id) do nothing;
 
 insert into public.prediction_scores (prediction_id, exact_score, correct_outcome, streak_bonus, risk_multiplier, underdog_bonus, total, outcome, scoring_version, calculated_at)
