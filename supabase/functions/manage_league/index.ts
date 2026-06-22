@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
-import { refreshLeagueEventLeaderboards, settleLeagueEvent } from '../_shared/leagueEvents.ts';
+import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PayoutCurve } from '../_shared/leagueEvents.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,6 +32,14 @@ type Body = {
   description?: string;
   visibility?: LeagueVisibility;
   joinPolicy?: JoinPolicy;
+  eventType?: 'custom';
+  startsAt?: string;
+  endsAt?: string;
+  matchday?: number;
+  minStake?: number;
+  maxStake?: number;
+  payoutCurve?: PayoutCurve;
+  rankShares?: number[];
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -63,6 +71,13 @@ function assertName(value: unknown) {
   return name;
 }
 
+function assertEventName(value: unknown) {
+  if (typeof value !== 'string') throw new Error('Event name is required.');
+  const name = value.trim();
+  if (name.length < 3 || name.length > 64) throw new Error('Event name must be 3-64 characters.');
+  return name;
+}
+
 function assertDescription(value: unknown) {
   if (value === undefined || value === null) return '';
   if (typeof value !== 'string') throw new Error('Description must be text.');
@@ -77,6 +92,42 @@ function assertVisibility(value: unknown): LeagueVisibility {
 function assertJoinPolicy(value: unknown): JoinPolicy {
   if (value === 'auto' || value === 'approval') return value;
   throw new Error('Invalid join policy.');
+}
+
+function assertDateRange(startsAtValue: unknown, endsAtValue: unknown) {
+  if (typeof startsAtValue !== 'string' || typeof endsAtValue !== 'string') throw new Error('Event dates are required.');
+  const startsAt = new Date(startsAtValue);
+  const endsAt = new Date(endsAtValue);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) throw new Error('Event dates are invalid.');
+  if (endsAt <= startsAt) throw new Error('Event end must be after start.');
+  return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
+function assertStakeBounds(minStakeValue: unknown, maxStakeValue: unknown) {
+  const minStake = minStakeValue === undefined ? 1 : minStakeValue;
+  const maxStake = maxStakeValue === undefined ? 100 : maxStakeValue;
+  if (!Number.isInteger(minStake) || !Number.isInteger(maxStake)) throw new Error('Stake limits must be whole numbers.');
+  if ((minStake as number) < 1) throw new Error('Minimum stake must be at least 1 point.');
+  if ((maxStake as number) < (minStake as number)) throw new Error('Maximum stake must be greater than minimum stake.');
+  if ((maxStake as number) > 10000) throw new Error('Maximum stake is too high.');
+  return { minStake: minStake as number, maxStake: maxStake as number };
+}
+
+function assertPayoutCurve(value: unknown): PayoutCurve {
+  if (value === undefined || value === null) return 'balanced_top3';
+  if (value === 'balanced_top3' || value === 'winner_take_all' || value === 'flat_top3' || value === 'custom_top3') return value;
+  throw new Error('Invalid payout curve.');
+}
+
+function assertRankShares(payoutCurve: PayoutCurve, value: unknown) {
+  if (payoutCurve !== 'custom_top3') return { rankShares: [50, 30, 20] };
+  const validShares = Array.isArray(value)
+    && value.length === 3
+    && value.every((share) => Number.isInteger(share) && share >= 0)
+    && value.reduce((sum, share) => sum + share, 0) === 100
+    && value[0] > 0;
+  if (!validShares) throw new Error('Top 3 shares must be whole numbers totaling 100.');
+  return { rankShares: value as number[] };
 }
 
 function makeInviteCode() {
@@ -144,51 +195,8 @@ async function requireMember(supabase: ReturnType<typeof createClient>, leagueId
 }
 
 async function createDefaultLeagueEvents(supabase: ReturnType<typeof createClient>, leagueId: string) {
-  const now = new Date();
-  const day = now.getUTCDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + mondayOffset));
-  const weekEnd = new Date(weekStart);
-  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-  const events = [{
-    id: `event-${leagueId}-weekly-1`,
-    league_id: leagueId,
-    event_type: 'weekly',
-    name: 'Weekly #1',
-    starts_at: weekStart.toISOString(),
-    ends_at: weekEnd.toISOString(),
-    min_stake: 1,
-    max_stake: 100,
-  }];
-
-  const { data: matchday } = await supabase
-    .from('matches')
-    .select('matchday, kickoff_at')
-    .not('matchday', 'is', null)
-    .order('kickoff_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (matchday?.matchday && matchday.kickoff_at) {
-    const startsAt = new Date(matchday.kickoff_at);
-    const endsAt = new Date(startsAt);
-    endsAt.setUTCDate(endsAt.getUTCDate() + 1);
-    events.push({
-      id: `event-${leagueId}-matchday-${matchday.matchday}`,
-      league_id: leagueId,
-      event_type: 'matchday',
-      name: `Matchday ${matchday.matchday}`,
-      starts_at: startsAt.toISOString(),
-      ends_at: endsAt.toISOString(),
-      matchday: matchday.matchday,
-      min_stake: 1,
-      max_stake: 100,
-    } as typeof events[number] & { matchday: number });
-  }
-
-  const { error } = await supabase.from('league_events').upsert(events, { onConflict: 'id' });
-  if (error) throw error;
+  await ensureWeeklyLeagueEvents(supabase, [leagueId]);
+  await ensureFutureMatchdayEvents(supabase, [leagueId]);
 }
 
 function assertStake(value: unknown, minStake: number, maxStake: number) {
@@ -397,11 +405,48 @@ async function kickLeagueMember(supabase: ReturnType<typeof createClient>, userI
   return { status: 'removed' };
 }
 
+async function createLeagueEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
+  if (!body.leagueId) throw new Error('League is required.');
+  await requireOwner(supabase, body.leagueId, userId);
+
+  const name = assertEventName(body.name);
+  const { startsAt, endsAt } = assertDateRange(body.startsAt, body.endsAt);
+  const { minStake, maxStake } = assertStakeBounds(body.minStake, body.maxStake);
+  const payoutCurve = assertPayoutCurve(body.payoutCurve);
+  const payoutConfig = assertRankShares(payoutCurve, body.rankShares);
+  const eventType = body.eventType ?? 'custom';
+  if (eventType !== 'custom') throw new Error('Only custom events can be created here.');
+
+  const { data: event, error } = await supabase
+    .from('league_events')
+    .insert({
+      id: `event-${body.leagueId}-custom-${crypto.randomUUID()}`,
+      league_id: body.leagueId,
+      event_type: eventType,
+      name,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      matchday: Number.isInteger(body.matchday) ? body.matchday : null,
+      status: 'open',
+      min_stake: minStake,
+      max_stake: maxStake,
+      payout_curve: payoutCurve,
+      payout_config: payoutConfig,
+      metadata: { createdBy: userId },
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return { event, status: 'created' };
+}
+
 async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
   if (!body.eventId) throw new Error('Event is required.');
   const { data: event, error: eventError } = await supabase.from('league_events').select('*').eq('id', body.eventId).single();
   if (eventError) throw eventError;
-  if (event.status !== 'open') throw new Error('This event is not open for entries.');
+  const now = new Date().toISOString();
+  if (event.status !== 'open' || event.starts_at <= now || event.ends_at <= now) throw new Error('This event is not open for entries.');
 
   await requireMember(supabase, event.league_id, userId);
   const stake = assertStake(body.stake, event.min_stake, event.max_stake);
@@ -456,9 +501,19 @@ async function settleEvent(supabase: ReturnType<typeof createClient>, userId: st
   if (eventError) throw eventError;
   await requireOwner(supabase, event.league_id, userId);
   if (event.status === 'settled') throw new Error('This event is already settled.');
+  if (event.status === 'cancelled') throw new Error('This event is cancelled.');
 
   const result = await settleLeagueEvent(supabase, event.id);
   return { status: 'settled', ...result };
+}
+
+async function cancelEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
+  if (!body.eventId) throw new Error('Event is required.');
+  const { data: event, error: eventError } = await supabase.from('league_events').select('id, league_id, status').eq('id', body.eventId).single();
+  if (eventError) throw eventError;
+  await requireOwner(supabase, event.league_id, userId);
+  const result = await cancelLeagueEvent(supabase, event.id, userId);
+  return { status: 'cancelled', ...result };
 }
 
 Deno.serve(async (req) => {
@@ -485,8 +540,10 @@ Deno.serve(async (req) => {
     if (body.action === 'rejectJoinRequest') return jsonResponse(await rejectJoinRequest(supabase, userData.user.id, body));
     if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, userData.user.id, body));
     if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, userData.user.id, body));
+    if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, userData.user.id, body));
     if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, userData.user.id, body));
     if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, userData.user.id, body));
+    if (body.action === 'cancelLeagueEvent') return jsonResponse(await cancelEvent(supabase, userData.user.id, body));
     return jsonResponse({ error: 'Unknown action.' }, 400);
   } catch (error) {
     if (error instanceof Response) return error;

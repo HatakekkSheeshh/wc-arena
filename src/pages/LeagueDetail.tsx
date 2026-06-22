@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Check, Copy, Crown, Shield, Trophy, UserMinus, Users, X } from 'lucide-react';
+import { Activity, ArrowLeft, Check, Copy, UserMinus, X } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import RankBadge from '../components/ui/RankBadge';
 import StreakBadge from '../components/ui/StreakBadge';
@@ -9,7 +9,7 @@ import { useAuth } from '../lib/auth';
 import { listLeagueActivity, type ActivityEventRow } from '../services/activity';
 import { listLeagueLeaderboard, type LeaderboardEntryWithProfile } from '../services/leaderboard';
 import { approveJoinRequest, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
-import { enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventRow } from '../services/leagueEvents';
+import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventRow, type PayoutCurve } from '../services/leagueEvents';
 import { getErrorMessage } from '../services/serviceTypes';
 import { getCurrentProfile, type ProfileRow } from '../services/profile';
 import { getPublicDisplayName } from '../utils/displayName';
@@ -19,8 +19,53 @@ type LeagueDetailProps = {
   themeControls: ThemeControls;
 };
 
+type EventFormState = {
+  name: string;
+  startsAt: string;
+  endsAt: string;
+  minStake: string;
+  maxStake: string;
+  payoutCurve: PayoutCurve;
+  rankShares: [string, string, string];
+};
+
+const defaultEventForm: EventFormState = {
+  name: '',
+  startsAt: '',
+  endsAt: '',
+  minStake: '1',
+  maxStake: '100',
+  payoutCurve: 'balanced_top3',
+  rankShares: ['50', '30', '20'],
+};
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
+
+function getEventTypeLabel(event: LeagueEventRow, t: (key: string) => string) {
+  if (event.event_type === 'weekly') return t('ui.weeklyLeaderboard');
+  if (event.event_type === 'matchday') return t('ui.matchdayLeaderboard');
+  return t('ui.createCustomEvent');
+}
+
+function getEventStatusLabel(status: string, t: (key: string) => string) {
+  if (status === 'settled') return t('ui.eventSettled');
+  if (status === 'cancelled') return t('ui.eventCancelled');
+  if (status === 'locked') return t('ui.eventLocked');
+  return status;
+}
+
+function getPayoutCurveLabel(curve: string, t: (key: string) => string) {
+  if (curve === 'winner_take_all') return t('ui.winnerTakeAll');
+  if (curve === 'flat_top3') return t('ui.flatTop3');
+  if (curve === 'custom_top3') return t('ui.customTop3');
+  return t('ui.balancedTop3');
+}
+
+function isEventEnterable(event: LeagueEventRow) {
+  const now = Date.now();
+  return event.status === 'open' && new Date(event.starts_at).getTime() > now && new Date(event.ends_at).getTime() > now;
 }
 
 export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
@@ -39,12 +84,16 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [stakeByEventId, setStakeByEventId] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [eventForm, setEventForm] = useState<EventFormState>(defaultEventForm);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingEvent, setSavingEvent] = useState(false);
   const [joining, setJoining] = useState(false);
   const [enteringEventId, setEnteringEventId] = useState<string | null>(null);
   const [settlingEventId, setSettlingEventId] = useState<string | null>(null);
+  const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentMembership = useMemo(() => members.find((member) => member.user_id === user?.id) ?? null, [members, user?.id]);
@@ -149,6 +198,38 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     }
   }
 
+  async function handleCreateEvent(event: FormEvent) {
+    event.preventDefault();
+    if (!league) return;
+    const rankShares = eventForm.rankShares.map((share) => Number(share));
+    if (eventForm.payoutCurve === 'custom_top3' && rankShares.reduce((sum, share) => sum + share, 0) !== 100) {
+      setError(t('ui.sharesMustTotal100'));
+      return;
+    }
+
+    setSavingEvent(true);
+    setError(null);
+    try {
+      await createLeagueEvent({
+        leagueId: league.id,
+        name: eventForm.name,
+        startsAt: new Date(eventForm.startsAt).toISOString(),
+        endsAt: new Date(eventForm.endsAt).toISOString(),
+        minStake: Number(eventForm.minStake),
+        maxStake: Number(eventForm.maxStake),
+        payoutCurve: eventForm.payoutCurve,
+        rankShares,
+      });
+      setEventForm(defaultEventForm);
+      setShowCreateEvent(false);
+      loadLeague();
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setSavingEvent(false);
+    }
+  }
+
   async function handleRequestAction(requestUserId: string, action: 'approve' | 'reject') {
     if (!league) return;
     setError(null);
@@ -200,6 +281,19 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     }
   }
 
+  async function handleCancelEvent(eventId: string) {
+    setCancellingEventId(eventId);
+    setError(null);
+    try {
+      await cancelLeagueEvent({ eventId });
+      loadLeague();
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setCancellingEventId(null);
+    }
+  }
+
   if (loading) {
     return (
       <AppShell themeControls={themeControls}>
@@ -210,7 +304,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     );
   }
 
-  if (error || !league) {
+  if (!league) {
     return (
       <AppShell themeControls={themeControls}>
         <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
@@ -309,27 +403,60 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
               <span>{t('ui.miniLeaderboards')}</span>
               {user && <span className="bg-c1 text-main border-2 border-main px-2 py-0.5 text-[10px] inline-flex items-center gap-1">{t('ui.availablePoints')}: {availablePoints ?? t('ui.notSet')} {t('ui.pointsShort')}</span>}
             </div>
+            {isOwner && (
+              <div className="p-3 sm:p-4 border-b-4 border-main bg-page">
+                <button type="button" onClick={() => setShowCreateEvent((value) => !value)} className="bg-c1 border-2 border-main px-3 py-2 font-black uppercase text-xs rounded-sm shadow-[3px_3px_0_var(--color-shadow)]">
+                  {t('ui.createCustomEvent')}
+                </button>
+                {showCreateEvent && (
+                  <form onSubmit={handleCreateEvent} className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 text-xs font-bold">
+                    <input required minLength={3} maxLength={64} value={eventForm.name} onChange={(item) => setEventForm((value) => ({ ...value, name: item.target.value }))} placeholder={t('ui.eventName')} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm xl:col-span-2" />
+                    <input required type="datetime-local" value={eventForm.startsAt} onChange={(item) => setEventForm((value) => ({ ...value, startsAt: item.target.value }))} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" aria-label={t('ui.startsAt')} />
+                    <input required type="datetime-local" value={eventForm.endsAt} onChange={(item) => setEventForm((value) => ({ ...value, endsAt: item.target.value }))} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" aria-label={t('ui.endsAt')} />
+                    <input required type="number" min={1} value={eventForm.minStake} onChange={(item) => setEventForm((value) => ({ ...value, minStake: item.target.value }))} placeholder={t('ui.minStake')} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" />
+                    <input required type="number" min={1} value={eventForm.maxStake} onChange={(item) => setEventForm((value) => ({ ...value, maxStake: item.target.value }))} placeholder={t('ui.maxStake')} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" />
+                    <select value={eventForm.payoutCurve} onChange={(item) => setEventForm((value) => ({ ...value, payoutCurve: item.target.value as PayoutCurve }))} className="bg-card border-2 border-main p-2.5 font-black rounded-sm md:col-span-2">
+                      <option value="balanced_top3">{t('ui.balancedTop3')}</option>
+                      <option value="winner_take_all">{t('ui.winnerTakeAll')}</option>
+                      <option value="flat_top3">{t('ui.flatTop3')}</option>
+                      <option value="custom_top3">{t('ui.customTop3')}</option>
+                    </select>
+                    {eventForm.payoutCurve === 'custom_top3' && eventForm.rankShares.map((share, index) => (
+                      <input key={index} required type="number" min={0} max={100} value={share} onChange={(item) => setEventForm((value) => {
+                        const rankShares = [...value.rankShares] as [string, string, string];
+                        rankShares[index] = item.target.value;
+                        return { ...value, rankShares };
+                      })} placeholder={t(`ui.top${index + 1}Share`)} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" />
+                    ))}
+                    <button disabled={savingEvent} className="bg-c2 text-inv border-2 border-main px-3 py-2.5 font-black uppercase disabled:opacity-60 rounded-sm md:col-span-2 xl:col-span-4">{savingEvent ? t('ui.saving') : t('ui.createCustomEvent')}</button>
+                  </form>
+                )}
+              </div>
+            )}
             {events.length === 0 && <div className="p-4 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 sm:p-4">
               {events.map((event) => {
                 const rows = eventStandings[event.id] ?? [];
                 const alreadyEntered = rows.some((row) => row.user_id === user?.id);
+                const enterable = isEventEnterable(event);
+                const statusClass = event.status === 'cancelled' ? 'bg-c5' : event.status === 'locked' ? 'bg-c4' : event.status === 'settled' ? 'bg-c3' : 'bg-card';
                 return (
-                  <div key={event.id} className="border-4 border-main bg-page rounded-sm overflow-hidden flex flex-col">
+                  <div key={event.id} className={`border-4 border-main ${event.status === 'cancelled' ? 'bg-muted opacity-80' : 'bg-page'} rounded-sm overflow-hidden flex flex-col`}>
                     <div className="p-3 border-b-4 border-main bg-card flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{event.event_type === 'weekly' ? t('ui.weeklyLeaderboard') : t('ui.matchdayLeaderboard')}</div>
+                        <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{getEventTypeLabel(event, t)}</div>
                         <div className="font-black uppercase text-lg truncate">{event.name}</div>
                         <div className="font-bold text-[10px] text-subtle uppercase">{formatDate(event.starts_at)} - {formatDate(event.ends_at)}</div>
+                        <div className="mt-1 inline-flex bg-c1 border-2 border-main px-2 py-0.5 font-black uppercase text-[9px]">{getPayoutCurveLabel(event.payout_curve, t)}</div>
                       </div>
                       <div className="bg-c3 border-2 border-main px-2 py-1 font-black text-xs whitespace-nowrap">{event.prize_pool} {t('ui.pointsShort')}</div>
                     </div>
                     <div className="p-3 grid grid-cols-3 border-b-2 border-main text-xs font-bold">
                       <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.prizePoolPoints')}</div>{event.prize_pool}</div>
                       <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.stakePoints')}</div>{event.min_stake}-{event.max_stake}</div>
-                      <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.status')}</div>{event.status}</div>
+                      <div><div className="font-black uppercase text-[9px] text-subtle">{t('ui.status')}</div><span className={`${statusClass} border-2 border-main px-1 font-black uppercase text-[10px]`}>{getEventStatusLabel(event.status, t)}</span></div>
                     </div>
-                    {isMember && event.status === 'open' && (
+                    {isMember && enterable && (
                       <div className="p-3 border-b-2 border-main flex gap-2">
                         <input type="number" min={event.min_stake} max={event.max_stake} value={stakeByEventId[event.id] ?? String(event.min_stake)} onChange={(item) => setStakeByEventId((values) => ({ ...values, [event.id]: item.target.value }))} disabled={alreadyEntered} className="bg-card border-2 border-main px-3 py-2 font-black w-24 rounded-sm" />
                         <button onClick={() => handleEnterEvent(event)} disabled={alreadyEntered || enteringEventId === event.id} className="bg-c2 text-inv border-2 border-main px-3 py-2 font-black uppercase text-xs flex-1 disabled:opacity-60 rounded-sm">
@@ -337,6 +464,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                         </button>
                       </div>
                     )}
+                    {isMember && !enterable && event.status !== 'settled' && event.status !== 'cancelled' && <div className="p-3 border-b-2 border-main font-black uppercase text-xs bg-muted">{t('ui.eventNotOpen')}</div>}
                     <div className="flex flex-col bg-card">
                       {rows.slice(0, 3).map((row) => (
                         <div key={row.user_id} className="grid grid-cols-[44px_1fr_auto] items-center gap-2 p-3 border-b-2 border-line last:border-b-0 text-xs font-bold">
@@ -347,10 +475,15 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                       ))}
                       {rows.length === 0 && <div className="p-3 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
                     </div>
-                    {isOwner && event.status !== 'settled' && rows.length > 0 && (
-                      <button onClick={() => handleSettleEvent(event.id)} disabled={settlingEventId === event.id} className="bg-c4 border-t-4 border-main px-3 py-2.5 font-black uppercase text-xs disabled:opacity-60">
-                        {settlingEventId === event.id ? t('ui.saving') : t('ui.settleEvent')}
-                      </button>
+                    {isOwner && event.status !== 'settled' && event.status !== 'cancelled' && rows.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 border-t-4 border-main">
+                        <button onClick={() => handleSettleEvent(event.id)} disabled={settlingEventId === event.id} className="bg-c4 px-3 py-2.5 font-black uppercase text-xs disabled:opacity-60 sm:border-r-4 border-main">
+                          {settlingEventId === event.id ? t('ui.saving') : t('ui.settleEvent')}
+                        </button>
+                        <button onClick={() => handleCancelEvent(event.id)} disabled={cancellingEventId === event.id} className="bg-c5 px-3 py-2.5 font-black uppercase text-xs disabled:opacity-60">
+                          {cancellingEventId === event.id ? t('ui.saving') : t('ui.cancelAndRefund')}
+                        </button>
+                      </div>
                     )}
                   </div>
                 );

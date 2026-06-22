@@ -408,6 +408,8 @@ export type Database = {
       }
       league_events: {
         Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           ends_at: string
           event_type: string
@@ -415,8 +417,11 @@ export type Database = {
           league_id: string
           matchday: number | null
           max_stake: number
+          metadata: Json
           min_stake: number
           name: string
+          payout_config: Json
+          payout_curve: string
           prize_pool: number
           settled_at: string | null
           starts_at: string
@@ -424,6 +429,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           ends_at: string
           event_type: string
@@ -431,8 +438,11 @@ export type Database = {
           league_id: string
           matchday?: number | null
           max_stake?: number
+          metadata?: Json
           min_stake?: number
           name: string
+          payout_config?: Json
+          payout_curve?: string
           prize_pool?: number
           settled_at?: string | null
           starts_at: string
@@ -440,6 +450,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           ends_at?: string
           event_type?: string
@@ -447,8 +459,11 @@ export type Database = {
           league_id?: string
           matchday?: number | null
           max_stake?: number
+          metadata?: Json
           min_stake?: number
           name?: string
+          payout_config?: Json
+          payout_curve?: string
           prize_pool?: number
           settled_at?: string | null
           starts_at?: string
@@ -456,6 +471,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "league_events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "league_events_league_id_fkey"
             columns: ["league_id"]
