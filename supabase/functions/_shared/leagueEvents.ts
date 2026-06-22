@@ -181,20 +181,29 @@ export async function settleLeagueEvent(supabase: SupabaseClient, eventId: strin
 
   for (const payout of payouts) {
     if (payout.payout <= 0) continue;
-    const { data: wallet, error: walletError } = await supabase
-      .from('point_wallets')
-      .select('balance')
-      .eq('user_id', payout.user_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('points')
+      .eq('id', payout.user_id)
       .single();
 
-    if (walletError) throw walletError;
-    const balanceAfter = (wallet.balance as number) + payout.payout;
+    if (profileError) throw profileError;
+    const pointsAfterPayout = Math.max(0, profile.points ?? 0) + payout.payout;
     const { error: updateError } = await supabase
-      .from('point_wallets')
-      .update({ balance: balanceAfter, updated_at: new Date().toISOString() })
-      .eq('user_id', payout.user_id);
+      .from('profiles')
+      .update({ points: pointsAfterPayout })
+      .eq('id', payout.user_id);
 
     if (updateError) throw updateError;
+
+    const { error: leaderboardError } = await supabase
+      .from('leaderboard_entries')
+      .update({ points: pointsAfterPayout, updated_at: new Date().toISOString() })
+      .eq('scope', 'global')
+      .is('league_id', null)
+      .eq('user_id', payout.user_id);
+
+    if (leaderboardError) throw leaderboardError;
 
     const { error: transactionError } = await supabase.from('point_transactions').insert({
       user_id: payout.user_id,
@@ -202,7 +211,7 @@ export async function settleLeagueEvent(supabase: SupabaseClient, eventId: strin
       event_id: eventId,
       type: 'payout',
       amount: payout.payout,
-      balance_after: balanceAfter,
+      balance_after: pointsAfterPayout,
       description: 'League event payout',
     });
     if (transactionError) throw transactionError;

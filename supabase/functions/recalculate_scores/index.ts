@@ -66,6 +66,11 @@ type DailyRewardRow = {
   points_awarded: number;
 };
 
+type PointTransactionRow = {
+  user_id: string;
+  amount: number;
+};
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -150,17 +155,18 @@ function getBestStreak(scores: CalculatedScore[]) {
   return best;
 }
 
-function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>): UserAggregate[] {
+function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>, pointAdjustmentsByUser: Map<string, number>): UserAggregate[] {
   const scoresByUser = new Map<string, CalculatedScore[]>();
   for (const score of scores) {
     scoresByUser.set(score.user_id, [...(scoresByUser.get(score.user_id) ?? []), score]);
   }
 
-  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys()]);
+  const userIds = new Set([...scoresByUser.keys(), ...rewardPointsByUser.keys(), ...pointAdjustmentsByUser.keys()]);
   const aggregates = [...userIds].map((userId) => {
     const userScores = scoresByUser.get(userId) ?? [];
     const predictionPoints = userScores.reduce((sum, score) => sum + score.total, 0);
     const rewardPoints = rewardPointsByUser.get(userId) ?? 0;
+    const pointAdjustments = pointAdjustmentsByUser.get(userId) ?? 0;
     const exactScores = userScores.filter((score) => score.outcome === 'exact').length;
     const correctScores = userScores.filter((score) => score.outcome !== 'missed').length;
     const accuracy = userScores.length ? Math.round((correctScores / userScores.length) * 100) : 0;
@@ -169,7 +175,7 @@ function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<stri
       userId,
       predictionPoints,
       rewardPoints,
-      points: predictionPoints + rewardPoints,
+      points: Math.max(0, predictionPoints + rewardPoints + pointAdjustments),
       exactScores,
       accuracy,
       currentStreak: getCurrentStreak(userScores),
@@ -251,7 +257,21 @@ Deno.serve(async (req) => {
     rewardPointsByUser.set(reward.user_id, (rewardPointsByUser.get(reward.user_id) ?? 0) + reward.points_awarded);
   }
 
-  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser);
+  const { data: pointTransactions, error: pointTransactionsError } = await supabase
+    .from('point_transactions')
+    .select('user_id, amount')
+    .in('type', ['stake', 'payout', 'refund']);
+
+  if (pointTransactionsError) {
+    return jsonResponse({ error: pointTransactionsError.message }, 500);
+  }
+
+  const pointAdjustmentsByUser = new Map<string, number>();
+  for (const transaction of (pointTransactions ?? []) as PointTransactionRow[]) {
+    pointAdjustmentsByUser.set(transaction.user_id, (pointAdjustmentsByUser.get(transaction.user_id) ?? 0) + transaction.amount);
+  }
+
+  const aggregates = buildAggregates(calculatedScores, rewardPointsByUser, pointAdjustmentsByUser);
   const { data: previousEntries, error: previousError } = await supabase
     .from('leaderboard_entries')
     .select('user_id, rank')

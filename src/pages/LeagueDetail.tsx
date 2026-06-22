@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Check, Copy, Crown, Shield, Trophy, UserMinus, Users, Wallet, X } from 'lucide-react';
+import { Activity, ArrowLeft, Check, Copy, Crown, Shield, Trophy, UserMinus, Users, X } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import RankBadge from '../components/ui/RankBadge';
 import StreakBadge from '../components/ui/StreakBadge';
@@ -9,7 +9,7 @@ import { useAuth } from '../lib/auth';
 import { listLeagueActivity, type ActivityEventRow } from '../services/activity';
 import { listLeagueLeaderboard, type LeaderboardEntryWithProfile } from '../services/leaderboard';
 import { approveJoinRequest, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
-import { enterLeagueEvent, getCurrentPointWallet, listLeagueEventLeaderboard, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventRow } from '../services/leagueEvents';
+import { enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventRow } from '../services/leagueEvents';
 import { getErrorMessage } from '../services/serviceTypes';
 import { getCurrentProfile, type ProfileRow } from '../services/profile';
 import { getPublicDisplayName } from '../utils/displayName';
@@ -35,7 +35,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [leagueActivity, setLeagueActivity] = useState<ActivityEventRow[]>([]);
   const [events, setEvents] = useState<LeagueEventRow[]>([]);
   const [eventStandings, setEventStandings] = useState<Record<string, LeagueEventLeaderboardEntryWithProfile[]>>({});
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [availablePoints, setAvailablePoints] = useState<number | null>(null);
   const [stakeByEventId, setStakeByEventId] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -65,13 +65,13 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
 
     getLeague(leagueId)
       .then(async (nextLeague) => {
-        const [nextStandings, nextCreator, nextMembers, nextActivity, nextEvents, nextWallet] = await Promise.all([
+        const [nextStandings, nextCreator, nextMembers, nextActivity, nextEvents, currentProfile] = await Promise.all([
           listLeagueLeaderboard(nextLeague.id).catch(() => []),
           nextLeague.creator_id ? getCurrentProfile(nextLeague.creator_id).catch(() => null) : Promise.resolve(null),
           listLeagueMembers(nextLeague.id).catch(() => []),
           listLeagueActivity(nextLeague.id).catch(() => []),
           listLeagueEvents(nextLeague.id).catch(() => []),
-          user ? getCurrentPointWallet().catch(() => null) : Promise.resolve(null),
+          user ? getCurrentProfile(user.id).catch(() => null) : Promise.resolve(null),
         ]);
         const nextEventStandings = Object.fromEntries(await Promise.all(nextEvents.map(async (event) => [event.id, await listLeagueEventLeaderboard(event.id).catch(() => [])])));
         setLeague(nextLeague);
@@ -83,7 +83,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         setLeagueActivity(nextActivity);
         setEvents(nextEvents);
         setEventStandings(nextEventStandings);
-        setWalletBalance(nextWallet?.balance ?? null);
+        setAvailablePoints(currentProfile?.points ?? null);
       })
       .catch((nextError) => {
         setError(getErrorMessage(nextError));
@@ -93,7 +93,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         setLeagueActivity([]);
         setEvents([]);
         setEventStandings({});
-        setWalletBalance(null);
+        setAvailablePoints(null);
       })
       .finally(() => setLoading(false));
   }
@@ -307,7 +307,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
           <div className="border-4 border-main bg-card rounded-sm overflow-hidden">
             <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main flex items-center justify-between gap-3">
               <span>{t('ui.miniLeaderboards')}</span>
-              {user && <span className="bg-c1 text-main border-2 border-main px-2 py-0.5 text-[10px] inline-flex items-center gap-1"><Wallet size={12} /> {walletBalance ?? t('ui.notSet')} {t('ui.pointsShort')}</span>}
+              {user && <span className="bg-c1 text-main border-2 border-main px-2 py-0.5 text-[10px] inline-flex items-center gap-1">{t('ui.availablePoints')}: {availablePoints ?? t('ui.notSet')} {t('ui.pointsShort')}</span>}
             </div>
             {events.length === 0 && <div className="p-4 font-black uppercase text-xs">{t('ui.noStandings')}</div>}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 sm:p-4">

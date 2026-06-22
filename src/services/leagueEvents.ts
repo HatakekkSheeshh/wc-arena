@@ -2,7 +2,6 @@ import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
 
 export type LeagueEventRow = Database['public']['Tables']['league_events']['Row'];
-export type PointWalletRow = Database['public']['Tables']['point_wallets']['Row'];
 export type LeagueEventLeaderboardEntryRow = Database['public']['Tables']['league_event_leaderboard_entries']['Row'];
 export type LeagueEventProfile = Pick<Database['public']['Tables']['profiles']['Row'], 'username' | 'display_name' | 'avatar_url' | 'country_code'>;
 export type LeagueEventLeaderboardEntryWithProfile = LeagueEventLeaderboardEntryRow & {
@@ -37,23 +36,8 @@ export async function listLeagueEventLeaderboard(eventId: string) {
   return data as LeagueEventLeaderboardEntryWithProfile[];
 }
 
-export async function getCurrentPointWallet() {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!userData.user) return null;
-
-  const { data, error } = await supabase
-    .from('point_wallets')
-    .select('*')
-    .eq('user_id', userData.user.id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as PointWalletRow | null;
-}
-
 export function enterLeagueEvent(input: { eventId: string; stake: number }) {
-  return invokeLeagueAction<{ status: 'entered'; wallet: PointWalletRow }>({ action: 'enterLeagueEvent', ...input });
+  return invokeLeagueAction<{ status: 'entered'; points: number }>({ action: 'enterLeagueEvent', ...input });
 }
 
 export function settleLeagueEvent(input: { eventId: string }) {

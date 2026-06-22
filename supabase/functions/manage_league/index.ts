@@ -198,28 +198,23 @@ function assertStake(value: unknown, minStake: number, maxStake: number) {
   return stake;
 }
 
-async function ensureWallet(supabase: ReturnType<typeof createClient>, userId: string) {
-  const { data: existing, error: existingError } = await supabase.from('point_wallets').select('*').eq('user_id', userId).maybeSingle();
-  if (existingError) throw existingError;
-  if (existing) return existing;
+async function getUserPoints(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { data: profile, error } = await supabase.from('profiles').select('points').eq('id', userId).single();
+  if (error) throw error;
+  return Math.max(0, profile.points ?? 0);
+}
 
-  const { data: profile, error: profileError } = await supabase.from('profiles').select('points').eq('id', userId).single();
+async function updateDisplayedPoints(supabase: ReturnType<typeof createClient>, userId: string, points: number) {
+  const { error: profileError } = await supabase.from('profiles').update({ points }).eq('id', userId);
   if (profileError) throw profileError;
 
-  const balance = Math.max(0, profile.points ?? 0);
-  const { data: wallet, error: walletError } = await supabase.from('point_wallets').insert({ user_id: userId, balance }).select('*').single();
-  if (walletError) throw walletError;
-
-  const { error: transactionError } = await supabase.from('point_transactions').insert({
-    user_id: userId,
-    type: 'initial',
-    amount: balance,
-    balance_after: balance,
-    description: 'Initial wallet balance from current profile points',
-  });
-  if (transactionError) throw transactionError;
-
-  return wallet;
+  const { error: leaderboardError } = await supabase
+    .from('leaderboard_entries')
+    .update({ points, updated_at: new Date().toISOString() })
+    .eq('scope', 'global')
+    .is('league_id', null)
+    .eq('user_id', userId);
+  if (leaderboardError) throw leaderboardError;
 }
 
 async function createLeague(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
@@ -421,10 +416,10 @@ async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userI
   if (existingError) throw existingError;
   if (existingEntry) throw new Error('You already entered this event.');
 
-  const wallet = await ensureWallet(supabase, userId);
-  if (wallet.balance < stake) throw new Error('Not enough wallet points.');
+  const currentPoints = await getUserPoints(supabase, userId);
+  if (currentPoints < stake) throw new Error('Not enough points.');
 
-  const balanceAfter = wallet.balance - stake;
+  const pointsAfterStake = currentPoints - stake;
   const { data: entry, error: entryError } = await supabase
     .from('league_event_entries')
     .insert({ event_id: event.id, user_id: userId, stake })
@@ -433,25 +428,17 @@ async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userI
 
   if (entryError) throw entryError;
 
-  const { data: updatedWallet, error: walletError } = await supabase
-    .from('point_wallets')
-    .update({ balance: balanceAfter, updated_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .select('*')
-    .single();
-
-  if (walletError) throw walletError;
-
   const { error: transactionError } = await supabase.from('point_transactions').insert({
     user_id: userId,
     league_id: event.league_id,
     event_id: event.id,
     type: 'stake',
     amount: -stake,
-    balance_after: balanceAfter,
+    balance_after: pointsAfterStake,
     description: `Entered ${event.name}`,
   });
   if (transactionError) throw transactionError;
+  await updateDisplayedPoints(supabase, userId, pointsAfterStake);
 
   const { error: poolError } = await supabase
     .from('league_events')
@@ -460,7 +447,7 @@ async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userI
 
   if (poolError) throw poolError;
   await refreshLeagueEventLeaderboards(supabase, [event.id]);
-  return { entry, wallet: updatedWallet, status: 'entered' };
+  return { entry, points: pointsAfterStake, status: 'entered' };
 }
 
 async function settleEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
