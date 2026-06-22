@@ -34,6 +34,8 @@ type EventFormState = {
 
 type PoolTab = 'joinable' | 'active' | 'closed';
 
+const POOL_EVENTS_PER_PAGE = 3;
+
 const defaultEventForm: EventFormState = {
   name: '',
   startsAt: '',
@@ -111,14 +113,18 @@ function getEventPhaseClass(phase: string) {
   return 'bg-muted';
 }
 
-function CompactTeam({ team, fallback }: { team?: TeamRow; fallback: string }) {
+function CompactTeam({ team, fallback, align = 'left' }: { team?: TeamRow; fallback: string; align?: 'left' | 'right' }) {
   const FlagIcon = getTeamFlag(team?.country_code, team?.short_name);
+  const flag = (
+    <span className="w-5 h-5 border-2 border-main rounded-full overflow-hidden bg-elevated flex items-center justify-center shrink-0">
+      {FlagIcon ? <FlagIcon className="w-full h-full object-cover" /> : <span className="font-black text-[8px]">{team?.short_name ?? '?'}</span>}
+    </span>
+  );
+  const label = <span className="truncate">{team?.short_name ?? fallback}</span>;
+
   return (
-    <span className="inline-flex items-center gap-1.5 min-w-0">
-      <span className="w-5 h-5 border-2 border-main rounded-full overflow-hidden bg-elevated flex items-center justify-center shrink-0">
-        {FlagIcon ? <FlagIcon className="w-full h-full object-cover" /> : <span className="font-black text-[8px]">{team?.short_name ?? '?'}</span>}
-      </span>
-      <span className="truncate">{team?.short_name ?? fallback}</span>
+    <span className={`inline-flex items-center gap-1.5 min-w-0 ${align === 'right' ? 'justify-end text-right' : 'justify-start'}`}>
+      {align === 'right' ? <>{label}{flag}</> : <>{flag}{label}</>}
     </span>
   );
 }
@@ -143,6 +149,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [editDescription, setEditDescription] = useState('');
   const [eventForm, setEventForm] = useState<EventFormState>(defaultEventForm);
   const [activePoolTab, setActivePoolTab] = useState<PoolTab>('joinable');
+  const [poolPageByTab, setPoolPageByTab] = useState<Record<PoolTab, number>>({ joinable: 1, active: 1, closed: 1 });
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -170,6 +177,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     { id: 'closed', label: t('ui.closedPools'), description: t('ui.closedPoolsBody'), events: groupedEvents.closed },
   ];
   const activePool = poolTabs.find((tab) => tab.id === activePoolTab) ?? poolTabs[0];
+  const activePoolTotalPages = Math.max(1, Math.ceil(activePool.events.length / POOL_EVENTS_PER_PAGE));
+  const activePoolPage = Math.min(poolPageByTab[activePoolTab], activePoolTotalPages);
+  const activePoolEvents = activePool.events.slice((activePoolPage - 1) * POOL_EVENTS_PER_PAGE, activePoolPage * POOL_EVENTS_PER_PAGE);
   const isOwner = currentMembership?.role === 'owner';
   const isMember = Boolean(currentMembership);
   const inviteLink = league ? `${window.location.origin}/leagues/join/${league.invite_code}` : '';
@@ -403,11 +413,11 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
             <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{eventMatches.length} {t('ui.matches')}</div>
             <div className="grid grid-cols-1 gap-1.5">
               {eventMatches.map((match) => (
-                <Link key={match.id} to={`/matches/${match.id}`} className="grid grid-cols-[64px_1fr] items-center gap-2 border-2 border-line bg-page px-2 py-1.5 text-[10px] font-black uppercase hover:bg-muted rounded-sm">
-                  <span className="text-subtle">{formatDate(match.kickoff_at)}</span>
-                  <span className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 min-w-0">
-                    <CompactTeam team={teams.get(match.home_team_id)} fallback={match.home_team_id} />
-                    <span className="text-subtle">vs</span>
+                <Link key={match.id} to={`/matches/${match.id}`} className="grid grid-cols-[72px_1fr] items-center gap-2 border-2 border-line bg-page px-2.5 py-2 text-[10px] font-black uppercase hover:bg-muted rounded-sm">
+                  <span className="text-subtle leading-tight">{formatDate(match.kickoff_at)}</span>
+                  <span className="grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-2 min-w-0">
+                    <CompactTeam team={teams.get(match.home_team_id)} fallback={match.home_team_id} align="right" />
+                    <span className="text-subtle text-center">vs</span>
                     <CompactTeam team={teams.get(match.away_team_id)} fallback={match.away_team_id} />
                   </span>
                 </Link>
@@ -467,9 +477,24 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         </div>
         {activePool.events.length === 0 && <div className="border-2 border-line bg-page p-4 font-black uppercase text-xs rounded-sm">{t('ui.noPoolsInTab')}</div>}
         {activePool.events.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
-            {activePool.events.map(renderEventCard)}
-          </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
+              {activePoolEvents.map(renderEventCard)}
+            </div>
+            {activePoolTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t-2 border-line pt-3">
+                <div className="font-black uppercase text-[10px] text-subtle">{t('ui.pageCount', { current: activePoolPage, total: activePoolTotalPages })}</div>
+                <div className="grid grid-cols-2 gap-2 sm:w-auto">
+                  <button type="button" onClick={() => setPoolPageByTab((pages) => ({ ...pages, [activePoolTab]: Math.max(1, activePoolPage - 1) }))} disabled={activePoolPage === 1} className="bg-card border-2 border-main px-3 py-2 font-black uppercase text-xs disabled:opacity-50 rounded-sm">
+                    {t('ui.previous')}
+                  </button>
+                  <button type="button" onClick={() => setPoolPageByTab((pages) => ({ ...pages, [activePoolTab]: Math.min(activePoolTotalPages, activePoolPage + 1) }))} disabled={activePoolPage === activePoolTotalPages} className="bg-card border-2 border-main px-3 py-2 font-black uppercase text-xs disabled:opacity-50 rounded-sm">
+                    {t('ui.next')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
