@@ -179,6 +179,17 @@ export default function AppShell({ children, themeControls, fullHeight = false }
   }, []);
 
   useEffect(() => {
+    const updateProfilePoints = (event: Event) => {
+      const points = (event as CustomEvent<{ points?: unknown }>).detail?.points;
+      if (typeof points !== 'number') return;
+      setProfile((currentProfile) => currentProfile ? { ...currentProfile, points } : currentProfile);
+    };
+
+    window.addEventListener('wc26:profile-points-changed', updateProfilePoints);
+    return () => window.removeEventListener('wc26:profile-points-changed', updateProfilePoints);
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setProfile(null);
       setDailyReward(null);

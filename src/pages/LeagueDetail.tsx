@@ -13,6 +13,7 @@ import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEvent
 import { getErrorMessage } from '../services/serviceTypes';
 import { listMatches, type MatchRow } from '../services/matches';
 import { getCurrentProfile, type ProfileRow } from '../services/profile';
+import { listCurrentUserPredictionsForMatches } from '../services/predictions';
 import { getTeamMap, type TeamRow } from '../services/teams';
 import { getPublicDisplayName } from '../utils/displayName';
 import { getTeamFlag } from '../utils/teamFlags';
@@ -154,6 +155,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [eventMatches, setEventMatches] = useState<Record<string, string[]>>({});
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
+  const [predictedMatchIds, setPredictedMatchIds] = useState<Set<string>>(new Set());
   const [availablePoints, setAvailablePoints] = useState<number | null>(null);
   const [stakeByEventId, setStakeByEventId] = useState<Record<string, string>>({});
   const [editName, setEditName] = useState('');
@@ -231,6 +233,14 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
           listLeagueEventMatches(nextEvents.map((event) => event.id)).catch(() => [] as LeagueEventMatchRow[]),
         ]);
         const nextEventMatchesByEvent = nextEventMatches.reduce<Record<string, string[]>>((byEvent, row) => ({ ...byEvent, [row.event_id]: [...(byEvent[row.event_id] ?? []), row.match_id] }), {});
+        const poolMatchIds = new Set<string>();
+        for (const event of nextEvents) {
+          for (const matchId of nextEventMatchesByEvent[event.id] ?? []) poolMatchIds.add(matchId);
+          if (event.event_type === 'matchday' && event.matchday !== null) {
+            for (const match of nextMatches.filter((match) => match.matchday === event.matchday)) poolMatchIds.add(match.id);
+          }
+        }
+        const nextPredictions = user ? await listCurrentUserPredictionsForMatches([...poolMatchIds]).catch(() => []) : [];
         setLeague(nextLeague);
         setEditName(nextLeague.name);
         setEditDescription(nextLeague.description);
@@ -243,6 +253,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         setEventMatches(nextEventMatchesByEvent);
         setMatches(nextMatches);
         setTeams(nextTeams);
+        setPredictedMatchIds(new Set(nextPredictions.map((prediction) => prediction.match_id)));
         setAvailablePoints(currentProfile?.points ?? null);
       })
       .catch((nextError) => {
@@ -256,6 +267,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         setEventMatches({});
         setMatches([]);
         setTeams(new Map());
+        setPredictedMatchIds(new Set());
         setAvailablePoints(null);
       })
       .finally(() => setLoading(false));
@@ -394,7 +406,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     setEnteringEventId(event.id);
     setError(null);
     try {
-      await enterLeagueEvent({ eventId: event.id, stake });
+      const result = await enterLeagueEvent({ eventId: event.id, stake });
+      window.dispatchEvent(new CustomEvent('wc26:profile-points-changed', { detail: { points: result.points } }));
+      setAvailablePoints(result.points);
       loadLeague();
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -455,6 +469,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     const rows = eventStandings[event.id] ?? [];
     const selectedMatchRows = (eventMatches[event.id] ?? []).map((matchId) => matchesById.get(matchId)).filter((match): match is MatchRow => Boolean(match));
     const eventMatchRows = selectedMatchRows.length > 0 ? selectedMatchRows : event.event_type === 'matchday' && event.matchday !== null ? matchesByMatchday.get(event.matchday) ?? [] : [];
+    const predictedCount = eventMatchRows.filter((match) => predictedMatchIds.has(match.id)).length;
     const alreadyEntered = rows.some((row) => row.user_id === user?.id);
     const enterable = !isArchived && isEventEnterable(event);
     const phase = getEventPhase(event);
@@ -479,18 +494,29 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         </div>
         {eventMatchRows.length > 0 && (
           <div className="p-3 border-b-2 border-main bg-card flex flex-col gap-2">
-            <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{eventMatchRows.length} {t('ui.matches')}</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-black uppercase text-[10px] text-subtle tracking-wider">{eventMatchRows.length} {t('ui.matches')}</div>
+              {user && <div className="bg-page border-2 border-main px-2 py-0.5 font-black uppercase text-[10px] rounded-sm">{t('ui.poolPredictionProgress', { completed: predictedCount, total: eventMatchRows.length })}</div>}
+            </div>
             <div className="grid grid-cols-1 gap-1.5">
-              {eventMatchRows.map((match) => (
-                <Link key={match.id} to={`/matches/${match.id}`} className="relative grid items-center border-2 border-line bg-page px-2.5 py-2 text-[10px] font-black uppercase hover:bg-muted rounded-sm min-h-[46px]">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle leading-tight w-[72px]">{formatDate(match.kickoff_at)}</span>
-                  <span className="grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-2 min-w-0 w-full pl-[82px] sm:pl-0">
-                    <CompactTeam team={teams.get(match.home_team_id)} fallback={match.home_team_id} align="right" />
-                    <span className="text-subtle text-center">vs</span>
-                    <CompactTeam team={teams.get(match.away_team_id)} fallback={match.away_team_id} />
-                  </span>
-                </Link>
-              ))}
+              {eventMatchRows.map((match) => {
+                const hasPrediction = predictedMatchIds.has(match.id);
+                return (
+                  <Link key={match.id} to={`/matches/${match.id}`} className="relative grid items-center border-2 border-line bg-page px-2.5 py-2 text-[10px] font-black uppercase hover:bg-muted rounded-sm min-h-[46px]">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle leading-tight w-[72px]">{formatDate(match.kickoff_at)}</span>
+                    <span className="grid grid-cols-[minmax(0,1fr)_34px_minmax(0,1fr)] items-center gap-2 min-w-0 w-full pl-[82px] pr-[76px] sm:pl-0">
+                      <CompactTeam team={teams.get(match.home_team_id)} fallback={match.home_team_id} align="right" />
+                      <span className="text-subtle text-center">vs</span>
+                      <CompactTeam team={teams.get(match.away_team_id)} fallback={match.away_team_id} />
+                    </span>
+                    {user && (
+                      <span className={`absolute right-2 top-1/2 -translate-y-1/2 border-2 border-main px-1.5 py-0.5 text-[9px] rounded-sm ${hasPrediction ? 'bg-c3' : 'bg-c5 text-inv'}`}>
+                        {hasPrediction ? t('ui.predicted') : t('ui.notPredicted')}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

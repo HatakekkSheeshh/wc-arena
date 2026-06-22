@@ -27,6 +27,18 @@ export async function listCurrentUserPredictions() {
   return data as PredictionWithMatch[];
 }
 
+export async function listCurrentUserPredictionsForMatches(matchIds: string[]) {
+  if (matchIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('predictions')
+    .select('*')
+    .in('match_id', matchIds);
+
+  if (error) throw error;
+  return data as PredictionRow[];
+}
+
 export async function getPrediction(predictionId: string) {
   const { data, error } = await supabase
     .from('predictions')
