@@ -14,18 +14,33 @@ function getAuthStorage() {
   return window.localStorage.getItem(rememberAuthKey) === 'false' ? window.sessionStorage : window.localStorage;
 }
 
+function getAuthTokenKeys() {
+  if (typeof window === 'undefined') return [];
+  return [...Object.keys(window.localStorage), ...Object.keys(window.sessionStorage)]
+    .filter((key, index, keys) => key.startsWith('sb-') && key.endsWith('-auth-token') && keys.indexOf(key) === index);
+}
+
 export function setRememberAuth(remember: boolean) {
   if (typeof window === 'undefined') return;
 
   const currentStorage = getAuthStorage();
   const nextStorage = remember ? window.localStorage : window.sessionStorage;
-  const authKey = Object.keys(currentStorage ?? window.localStorage).find((key) => key.startsWith('sb-') && key.endsWith('-auth-token'));
-  const authValue = authKey ? currentStorage?.getItem(authKey) : null;
+  const authKey = getAuthTokenKeys()[0];
+  const authValue = authKey ? currentStorage?.getItem(authKey) ?? window.localStorage.getItem(authKey) ?? window.sessionStorage.getItem(authKey) : null;
 
   window.localStorage.setItem(rememberAuthKey, String(remember));
   if (authKey && authValue) {
     nextStorage.setItem(authKey, authValue);
     if (nextStorage !== currentStorage) currentStorage?.removeItem(authKey);
+  }
+}
+
+export function clearAuthStorage() {
+  if (typeof window === 'undefined') return;
+
+  for (const key of getAuthTokenKeys()) {
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
   }
 }
 

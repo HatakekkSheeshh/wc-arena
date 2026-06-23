@@ -741,25 +741,103 @@ Noticeable for new users. Existing signed-in users mostly unaffected.
 
 ### Objective
 
-Track free-plan usage manually without adding paid monitoring infrastructure.
+Track free-plan usage manually without adding paid monitoring infrastructure, and keep a repeatable response checklist for deploys, incidents, and rollbacks.
+
+### Daily launch checks
+
+- Open production `/`, `/matches`, `/picks`, `/leaderboard`, `/leagues`, and `/profile` with a normal signed-in account.
+- Confirm Vercel deployment status is Ready for the latest expected Git commit.
+- Confirm recent Supabase Edge Function errors do not show new auth, CORS, Redis, or scoring failures.
+- Confirm scheduled jobs are not repeatedly failing or overlapping.
+- Confirm no unexpected spike in Supabase egress, Edge Function invocations, or Upstash Redis command usage.
+- Do not print or commit Supabase secrets, Upstash tokens, or sync secrets.
 
 ### Weekly Supabase checks
 
 - DB size / 500MB.
 - Egress / 5GB.
 - Edge Function invocations / 500k.
-- Auth MAU.
-- Function error logs.
+- Auth MAU / 50k.
+- Supabase Edge Function errors for `submit_prediction`, `claim_daily_login_reward`, `manage_league`, `sync_espn_results`, `sync_fifa_rankings`, `recalculate_scores`, and `league_event_maintenance`.
 - Slow queries / database advisors.
-- Table growth for operational logs.
+- Table growth for `activity_events` and `admin_audit_logs` after retention cleanup.
+- RLS and policy advisor warnings after schema changes.
+
+Recommended command checks:
+
+```bash
+supabase functions list
+supabase db lint --linked --schema public --fail-on error
+```
 
 ### Weekly Vercel checks
 
+- Vercel deployment status for the latest `master` deployment.
 - Bandwidth / 100GB.
 - Edge requests / 1M.
 - Build/deploy errors.
-- Largest build assets.
-- Route health for SPA fallback.
+- Largest build assets from the latest `npm run build` output.
+- Route health for SPA fallback on `/matches`, `/matches/wc2026-063`, `/picks`, `/leagues`, and `/points-guide`.
+- Browser devtools response headers include the configured security headers.
+
+### Weekly Upstash checks
+
+- Upstash Redis command usage is comfortably below the free quota.
+- Upstash Redis bandwidth is comfortably below the free quota.
+- Data size remains small because rate-limit keys and lock keys have TTLs.
+- No long-lived `wc26:lock:*` keys remain after cron/admin jobs complete.
+- No `UPSTASH_REDIS_REST_TOKEN` appears in frontend code, Vite env vars, logs, or committed files.
+
+### Cron and Edge Function health checks
+
+- `sync_espn_results` updates recently completed/live matches and does not overlap under lock.
+- `sync_fifa_rankings` runs on schedule and does not overwrite manual team identity fields.
+- `league_event_maintenance` settles eligible events and calls retention cleanup.
+- `recalculate_scores` only runs manually/admin-triggered and exits cleanly when another run already holds the lock.
+- Cron functions reject requests without `x-cron-secret`.
+- Admin functions reject non-admin users.
+
+### Manual recovery commands
+
+Use these local verification commands before and after production-risk changes:
+
+```bash
+npx tsx scripts/verify-query-hardening.ts
+npx tsx scripts/verify-edge-auth-guards.ts
+npx tsx scripts/verify-upstash-rate-limits.ts
+npx tsx scripts/verify-redis-locks.ts
+npx tsx scripts/verify-client-cache.ts
+npx tsx scripts/verify-vercel-security-headers.ts
+npx tsx scripts/verify-asset-size-budget.ts
+npx tsx scripts/verify-auth-hardening.ts
+npm run lint
+npm run build
+```
+
+Use Supabase CLI inspection commands when backend behavior looks wrong:
+
+```bash
+supabase functions list
+supabase db lint --linked --schema public --fail-on error
+```
+
+### Incident response checklist
+
+1. Identify the affected surface: Vercel static app, Supabase Data API/RLS, Supabase Edge Function, scheduled cron, Upstash Redis, or external ESPN/FIFA source.
+2. Check the latest deployment or migration that touched that surface.
+3. Read the exact browser console, Vercel deploy log, Supabase Edge Function log, or Supabase database error before changing code.
+4. If predictions/scoring are affected, pause non-critical deploys and avoid manual data edits until the root cause is clear.
+5. If a Redis outage affects user mutations, remember rate limits are designed to fail open for normal user actions where safe; verify game state still lives in Supabase.
+6. If a cron sync fails, run it manually only after confirming the lock is not held by another active run.
+7. Document the symptom, root cause, command outputs, and recovery action in the PR/commit message or release note.
+
+### Rollback checklist
+
+1. For frontend-only regressions, revert the Git commit and push a new revert commit so Vercel deploys a clean rollback.
+2. For Edge Function regressions, redeploy the previous known-good function version from the previous Git commit if a forward fix is not ready.
+3. For database migrations, prefer a forward repair migration; do not drop/restore production data unless there is a tested backup/restore plan.
+4. For secret mistakes, rotate the exposed secret first, then remove it from logs/files, then redeploy functions that use it.
+5. After rollback or repair, rerun the relevant regression script plus `npm run lint` and `npm run build` for frontend changes.
 
 ### Optional later admin page
 
@@ -770,6 +848,8 @@ Add an admin-only System Health card showing:
 - latest cleanup time/result.
 - recent Edge Function error count.
 - leaderboard last refreshed time.
+- latest Vercel deployment status if a safe API integration is added later.
+- current Supabase/Upstash usage snapshots if a safe server-only aggregation endpoint is added later.
 
 ### Expected UX impact
 
