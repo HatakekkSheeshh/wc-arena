@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
     away_score: awayScore,
     predicted_outcome: body.predictedOutcome,
     confidence: body.confidence ?? 50,
-    is_risk_pick: body.isRiskPick ?? false,
+    is_risk_pick: body.isRiskPick ?? true,
     status: 'submitted',
     revision: existing ? existing.revision + 1 : 1,
     updated_at: new Date().toISOString(),

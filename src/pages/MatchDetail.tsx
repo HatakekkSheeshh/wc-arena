@@ -526,6 +526,7 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
         homeScore: nextHomeScore,
         awayScore: nextAwayScore,
         predictedOutcome: nextOutcome,
+        isRiskPick: true,
       });
 
       setSubmittedPrediction(toPrediction(prediction));
@@ -836,6 +837,11 @@ export default function MatchDetail({ themeControls }: MatchDetailProps) {
 
                 <div className="border-2 border-main bg-page p-3 text-xs font-bold text-subtle leading-relaxed">
                   {isSaveDisabled ? t('ui.lockedDraftNote') : authUser ? t('ui.predictionPickHelp') : <span>{t('ui.signInPrediction')} <Link to="/login" className="text-c2 underline">{t('ui.goToLogin')}</Link></span>}
+                </div>
+
+                <div className="border-2 border-main bg-c1 p-3 text-xs font-bold leading-relaxed">
+                  <div className="font-black uppercase text-[10px] mb-1">{t('ui.automaticRiskMultiplier')}</div>
+                  <div>{t('ui.automaticRiskMultiplierBody')}</div>
                 </div>
 
                 {submitError && <div className="bg-c5 border-2 border-main p-3 font-black uppercase text-xs">{submitError}</div>}
