@@ -7,11 +7,15 @@ export type UserBadgeWithBadge = UserBadgeRow & {
   badges: BadgeRow | null;
 };
 
+const BADGE_FIELDS = 'id, name, description, category, rarity, icon_path, progress_target';
+const USER_BADGE_FIELDS = `badge_id, user_id, unlocked_at, progress_current, badges(${BADGE_FIELDS})`;
+
 export async function listBadgeCatalog() {
   const { data, error } = await supabase
     .from('badges')
-    .select('*')
-    .order('category');
+    .select(BADGE_FIELDS)
+    .order('category')
+    .limit(100);
 
   if (error) throw error;
   return data as BadgeRow[];
@@ -20,8 +24,9 @@ export async function listBadgeCatalog() {
 export async function listCurrentUserBadges() {
   const { data, error } = await supabase
     .from('user_badges')
-    .select('*, badges(*)')
-    .order('unlocked_at', { ascending: false, nullsFirst: false });
+    .select(USER_BADGE_FIELDS)
+    .order('unlocked_at', { ascending: false, nullsFirst: false })
+    .limit(100);
 
   if (error) throw error;
   return data as UserBadgeWithBadge[];

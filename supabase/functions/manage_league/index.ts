@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireAuthenticatedUser } from '../_shared/authGuards.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PointSplitCurve } from '../_shared/leagueEvents.ts';
 
@@ -47,10 +49,7 @@ type Body = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function normalizeSlug(value: string) {
@@ -823,33 +822,35 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return jsonResponse({ error: 'Missing authorization header' }, 401);
+  const auth = await requireAuthenticatedUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { supabase, user } = auth;
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: 'Missing Supabase server config' }, 500);
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const token = authHeader.replace('Bearer ', '');
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const rateLimit = await checkRateLimit({
+    key: user.id,
+    action: 'manage_league',
+    windowSeconds: 300,
+    maxCount: 80,
+  });
+  if (!rateLimit.allowed) {
+    return jsonResponse({ error: 'Too many requests. Please wait a minute and try again.', resetAt: rateLimit.resetAt }, 429);
+  }
 
   try {
     const body = await req.json() as Body;
-    if (body.action === 'createLeague') return jsonResponse(await createLeague(supabase, userData.user.id, body));
-    if (body.action === 'joinLeague') return jsonResponse(await joinLeague(supabase, userData.user.id, body));
-    if (body.action === 'approveJoinRequest') return jsonResponse(await approveJoinRequest(supabase, userData.user.id, body));
-    if (body.action === 'rejectJoinRequest') return jsonResponse(await rejectJoinRequest(supabase, userData.user.id, body));
-    if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, userData.user.id, body));
-    if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, userData.user.id, body));
-    if (body.action === 'leaveLeague') return jsonResponse(await leaveLeague(supabase, userData.user.id, body));
-    if (body.action === 'archiveLeague') return jsonResponse(await archiveLeague(supabase, userData.user.id, body));
-    if (body.action === 'deleteArchivedLeague') return jsonResponse(await deleteArchivedLeague(supabase, userData.user.id, body));
-    if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, userData.user.id, body));
-    if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, userData.user.id, body));
-    if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, userData.user.id, body));
-    if (body.action === 'cancelLeagueEvent') return jsonResponse(await cancelEvent(supabase, userData.user.id, body));
+    if (body.action === 'createLeague') return jsonResponse(await createLeague(supabase, user.id, body));
+    if (body.action === 'joinLeague') return jsonResponse(await joinLeague(supabase, user.id, body));
+    if (body.action === 'approveJoinRequest') return jsonResponse(await approveJoinRequest(supabase, user.id, body));
+    if (body.action === 'rejectJoinRequest') return jsonResponse(await rejectJoinRequest(supabase, user.id, body));
+    if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, user.id, body));
+    if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, user.id, body));
+    if (body.action === 'leaveLeague') return jsonResponse(await leaveLeague(supabase, user.id, body));
+    if (body.action === 'archiveLeague') return jsonResponse(await archiveLeague(supabase, user.id, body));
+    if (body.action === 'deleteArchivedLeague') return jsonResponse(await deleteArchivedLeague(supabase, user.id, body));
+    if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, user.id, body));
+    if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, user.id, body));
+    if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, user.id, body));
+    if (body.action === 'cancelLeagueEvent') return jsonResponse(await cancelEvent(supabase, user.id, body));
     return jsonResponse({ error: 'Unknown action.' }, 400);
   } catch (error) {
     if (error instanceof Response) return error;

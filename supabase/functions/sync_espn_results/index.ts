@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireSyncSecret } from '../_shared/authGuards.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
 import { buildCommunityDistributions, calculatePredictionScores, type CalculatedScore, type PredictionScoringRow, type TeamSignalRow } from '../_shared/scoringRules.ts';
@@ -156,7 +157,7 @@ type PointTransactionRow = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function normalize(value?: string | null) {
@@ -875,10 +876,8 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
   const body = await req.json().catch(() => ({})) as { dates?: unknown; daysBack?: unknown; daysForward?: unknown };
-  const syncSecret = Deno.env.get('ESPN_SYNC_SECRET');
-  if (syncSecret && req.headers.get('x-sync-secret') !== syncSecret) {
-    return jsonResponse({ error: 'Forbidden' }, 403);
-  }
+  const secretError = requireSyncSecret(req, corsHeaders, 'ESPN_SYNC_SECRET');
+  if (secretError) return secretError;
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

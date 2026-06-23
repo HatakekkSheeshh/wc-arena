@@ -17,11 +17,17 @@ export type SubmitPredictionInput = {
   isRiskPick?: boolean;
 };
 
+const PREDICTION_FIELDS = 'id, user_id, match_id, prediction_type, home_score, away_score, predicted_outcome, confidence, is_risk_pick, created_at, updated_at, locked_at, status, revision';
+const PREDICTION_MATCH_FIELDS = 'id, home_team_id, away_team_id, kickoff_at, lock_at, status, stage, group_code, matchday, stadium, city, home_score, away_score, result_updated_at, espn_state, espn_status, espn_status_detail, espn_display_clock, espn_home_win_pct, espn_draw_pct, espn_away_win_pct';
+const PREDICTION_SCORE_FIELDS = 'prediction_id, exact_score, correct_outcome, goal_difference_bonus, team_score_bonus, streak_bonus, risk_multiplier, underdog_bonus, total, outcome, scoring_version, calculated_at';
+const PREDICTION_WITH_MATCH_FIELDS = `${PREDICTION_FIELDS}, matches(${PREDICTION_MATCH_FIELDS}), prediction_scores(${PREDICTION_SCORE_FIELDS})`;
+
 export async function listCurrentUserPredictions() {
   const { data, error } = await supabase
     .from('predictions')
-    .select('*, matches(*), prediction_scores(*)')
-    .order('created_at', { ascending: false });
+    .select(PREDICTION_WITH_MATCH_FIELDS)
+    .order('created_at', { ascending: false })
+    .limit(128);
 
   if (error) throw error;
   return data as PredictionWithMatch[];
@@ -32,8 +38,9 @@ export async function listCurrentUserPredictionsForMatches(matchIds: string[]) {
 
   const { data, error } = await supabase
     .from('predictions')
-    .select('*')
-    .in('match_id', matchIds);
+    .select(PREDICTION_FIELDS)
+    .in('match_id', matchIds)
+    .limit(500);
 
   if (error) throw error;
   return data as PredictionRow[];
@@ -42,7 +49,7 @@ export async function listCurrentUserPredictionsForMatches(matchIds: string[]) {
 export async function getPrediction(predictionId: string) {
   const { data, error } = await supabase
     .from('predictions')
-    .select('*, matches(*), prediction_scores(*)')
+    .select(PREDICTION_WITH_MATCH_FIELDS)
     .eq('id', predictionId)
     .single();
 

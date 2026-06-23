@@ -21,6 +21,10 @@ export type CreateLeagueEventInput = {
   matchIds?: string[];
 };
 
+const LEAGUE_EVENT_FIELDS = 'id, league_id, event_type, name, starts_at, ends_at, min_stake, max_stake, recognition_pool, prize_pool, point_split_curve, payout_curve, point_split_config, payout_config, matchday, status, settled_at, cancelled_at, cancelled_by, metadata, created_at, updated_at';
+const LEAGUE_EVENT_LEADERBOARD_FIELDS = 'event_id, user_id, rank, previous_rank, points, exact_scores, accuracy, stake, point_split, point_split_factor, payout, payout_factor, updated_at, profiles:user_id(username, display_name, avatar_url, country_code)';
+const LEAGUE_EVENT_MATCH_FIELDS = 'event_id, match_id, created_at';
+
 async function invokeLeagueAction<T>(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke<T>('manage_league', { body });
   if (error) throw error;
@@ -38,9 +42,10 @@ function isDisplayableLeagueEvent(event: LeagueEventRow) {
 export async function listLeagueEvents(leagueId: string) {
   const { data, error } = await supabase
     .from('league_events')
-    .select('*')
+    .select(LEAGUE_EVENT_FIELDS)
     .eq('league_id', leagueId)
-    .order('starts_at', { ascending: false });
+    .order('starts_at', { ascending: false })
+    .limit(100);
 
   if (error) throw error;
   return ((data ?? []) as LeagueEventRow[]).filter(isDisplayableLeagueEvent);
@@ -49,9 +54,10 @@ export async function listLeagueEvents(leagueId: string) {
 export async function listLeagueEventLeaderboard(eventId: string) {
   const { data, error } = await supabase
     .from('league_event_leaderboard_entries')
-    .select('*, profiles:user_id(username, display_name, avatar_url, country_code)')
+    .select(LEAGUE_EVENT_LEADERBOARD_FIELDS)
     .eq('event_id', eventId)
-    .order('rank', { ascending: true });
+    .order('rank', { ascending: true })
+    .limit(100);
 
   if (error) throw error;
   return data as LeagueEventLeaderboardEntryWithProfile[];
@@ -61,8 +67,9 @@ export async function listLeagueEventMatches(eventIds: string[]) {
   if (eventIds.length === 0) return [];
   const { data, error } = await supabase
     .from('league_event_matches')
-    .select('*')
-    .in('event_id', eventIds);
+    .select(LEAGUE_EVENT_MATCH_FIELDS)
+    .in('event_id', eventIds)
+    .limit(500);
 
   if (error) throw error;
   return data as LeagueEventMatchRow[];

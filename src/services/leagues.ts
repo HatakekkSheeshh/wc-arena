@@ -17,6 +17,10 @@ export type CreateLeagueInput = {
   joinPolicy: 'auto' | 'approval';
 };
 
+const LEAGUE_FIELDS = 'id, name, slug, description, creator_id, visibility, invite_code, member_count, scoring_mode, prize_mode, join_policy, status, created_at, updated_at, archived_at, archived_by, archive_reason';
+const LEAGUE_MEMBER_FIELDS = `league_id, user_id, role, joined_at, profiles:user_id(username, display_name, points), leagues(${LEAGUE_FIELDS})`;
+const LEAGUE_JOIN_REQUEST_FIELDS = 'league_id, user_id, status, requested_at, resolved_at, resolved_by, profiles!league_join_requests_user_id_fkey(username, display_name, points)';
+
 async function invokeLeagueAction<T>(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke<T>('manage_league', { body });
   if (error) throw error;
@@ -26,9 +30,10 @@ async function invokeLeagueAction<T>(body: Record<string, unknown>) {
 export async function listLeagues() {
   const { data, error } = await supabase
     .from('leagues')
-    .select('*')
+    .select(LEAGUE_FIELDS)
     .eq('status', 'active')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(100);
 
   if (error) throw error;
   return data;
@@ -61,7 +66,7 @@ export async function getLeagueMemberCount(leagueId: string) {
 export async function getLeague(identifier: string) {
   const byId = await supabase
     .from('leagues')
-    .select('*')
+    .select(LEAGUE_FIELDS)
     .eq('id', identifier)
     .maybeSingle();
 
@@ -70,7 +75,7 @@ export async function getLeague(identifier: string) {
 
   const { data, error } = await supabase
     .from('leagues')
-    .select('*')
+    .select(LEAGUE_FIELDS)
     .eq('slug', identifier)
     .single();
 
@@ -86,7 +91,7 @@ export async function listCurrentUserLeagueMemberships() {
 
   const { data, error } = await supabase
     .from('league_members')
-    .select('*, leagues(*)')
+    .select(`league_id, user_id, role, joined_at, leagues(${LEAGUE_FIELDS})`)
     .eq('user_id', user.id)
     .order('joined_at', { ascending: false });
 
@@ -97,7 +102,7 @@ export async function listCurrentUserLeagueMemberships() {
 export async function listLeagueMembers(leagueId: string) {
   const { data, error } = await supabase
     .from('league_members')
-    .select('*, profiles:user_id(username, display_name, points), leagues(*)')
+    .select(LEAGUE_MEMBER_FIELDS)
     .eq('league_id', leagueId)
     .order('joined_at', { ascending: true });
 
@@ -108,7 +113,7 @@ export async function listLeagueMembers(leagueId: string) {
 export async function listLeagueJoinRequests(leagueId: string) {
   const { data, error } = await supabase
     .from('league_join_requests')
-    .select('*, profiles!league_join_requests_user_id_fkey(username, display_name, points)')
+    .select(LEAGUE_JOIN_REQUEST_FIELDS)
     .eq('league_id', leagueId)
     .eq('status', 'pending')
     .order('requested_at', { ascending: true });
