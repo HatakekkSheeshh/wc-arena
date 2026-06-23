@@ -26,6 +26,7 @@ const MyPredictions = lazy(() => import('./pages/MyPredictions'));
 const PredictionBreakdown = lazy(() => import('./pages/PredictionBreakdown'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Rewards = lazy(() => import('./pages/Rewards'));
+const Statistics = lazy(() => import('./pages/Statistics'));
 
 export type ThemeControls = {
   isVintage: boolean;
@@ -119,6 +120,7 @@ export default function App() {
           <Route path="/badges" element={<Badges themeControls={themeControls} />} />
           <Route path="/achievements" element={<Achievements themeControls={themeControls} />} />
           <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
+          <Route path="/stats" element={<Statistics themeControls={themeControls} />} />
           <Route path="/leagues/create" element={<LeagueCreate themeControls={themeControls} />} />
           <Route path="/leagues/join/:inviteCode" element={<JoinLeague themeControls={themeControls} />} />
           <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />

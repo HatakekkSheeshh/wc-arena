@@ -1,4 +1,4 @@
-import { Activity, Award, ClipboardList, Gift, Medal, ScrollText, ShieldCheck, Star, Trophy, User, Users } from 'lucide-react';
+import { Activity, Award, BarChart3, ClipboardList, Gift, Medal, ScrollText, ShieldCheck, Star, Trophy, User, Users } from 'lucide-react';
 
 export type NavigationItem = {
   labelKey: string;
@@ -35,6 +35,7 @@ export const appNavigationGroups: NavigationGroup[] = [
     labelKey: 'nav.groups.social',
     items: [
       { labelKey: 'nav.items.leagues', to: '/leagues', icon: Users },
+      { labelKey: 'nav.items.statistics', to: '/stats', icon: BarChart3 },
       { labelKey: 'nav.items.activity', to: '/activity', icon: Activity },
       { labelKey: 'nav.items.badges', to: '/badges', icon: Medal },
       { labelKey: 'nav.items.achievements', to: '/achievements', icon: Trophy },

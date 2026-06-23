@@ -73,6 +73,20 @@ export async function listMatches() {
   });
 }
 
+export async function listMatchesWithSummaries() {
+  return cached('matches:list-with-summaries', 300_000, async () => {
+    const { data, error } = await supabase
+      .from('matches')
+      .select(MATCH_DETAIL_FIELDS)
+      .like('id', 'wc2026-%')
+      .order('kickoff_at', { ascending: true })
+      .limit(128);
+
+    if (error) throw error;
+    return data;
+  });
+}
+
 export async function getMatch(matchId: string) {
   return cached(`matches:detail:${matchId}`, 60_000, async () => {
     const query = supabase
