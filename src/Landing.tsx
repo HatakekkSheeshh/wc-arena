@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Clock, ArrowRight, User, Target, CheckCircle, TrendingUp, Pencil, Lock } from 'lucide-react';
 import LegacySettingsMenu from './components/LegacySettingsMenu';
+import { useAuth } from './lib/auth';
 import { listGlobalLeaderboard, type LeaderboardEntryWithProfile } from './services/leaderboard';
 import { getEffectiveMatchStatus, listMatches, type MatchRow } from './services/matches';
 import { getTeamMap, type TeamRow } from './services/teams';
@@ -74,6 +75,7 @@ function getUpcomingMatches(matches: MatchRow[], now: Date) {
 
 export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: LandingProps) {
   const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
   const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
@@ -118,6 +120,13 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
   const nextDeadline = useMemo(() => {
     return matches.find((match) => new Date(match.lock_at) > now && ['open', 'scheduled'].includes(getEffectiveMatchStatus(match, now)));
   }, [matches, now]);
+  const predictionCtaTarget = authLoading ? null : user ? 'picks' : 'register';
+
+  function handlePredictionCta() {
+    if (!predictionCtaTarget) return;
+    onNavigate(predictionCtaTarget);
+  }
+
   const stats = [
     { label: t('landing.stats.pointsGame'), value: t('ui.free'), bgColor: 'bg-c1', textColor: 'text-accent-on', icon: <Trophy size={36} strokeWidth={2.5}/> },
     { label: t('landing.stats.players'), value: totalPlayers ? totalPlayers.toLocaleString() : '—', bgColor: 'bg-c2', textColor: 'text-accent-inv', icon: <Users size={36} strokeWidth={2.5}/> },
@@ -145,7 +154,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
           </div>
           <div className="flex items-center gap-3">
             <LegacySettingsMenu {...themeControls} />
-            <button onClick={() => onNavigate('register')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 md:px-6 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)] uppercase text-xs md:text-sm">
+            <button onClick={handlePredictionCta} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black py-2 px-4 md:px-6 border-2 border-main flex items-center gap-2 transition-transform transform active:scale-95 shadow-[4px_4px_0_0_var(--color-shadow)] uppercase text-xs md:text-sm">
               {t('landing.joinNow')} <ArrowRight size={18} strokeWidth={3} />
             </button>
           </div>
@@ -164,7 +173,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
               {t('landing.heroBody')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button onClick={() => onNavigate('register')} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black px-8 py-3 lg:py-4 uppercase flex items-center justify-center gap-3 border-[3px] border-main shadow-[4px_4px_0px_var(--color-shadow)] focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
+              <button onClick={handlePredictionCta} className="bg-c2 hover:opacity-80 transition-opacity text-inv font-black px-8 py-3 lg:py-4 uppercase flex items-center justify-center gap-3 border-[3px] border-main shadow-[4px_4px_0px_var(--color-shadow)] focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
                 {t('landing.makePredictions')} <ArrowRight size={20} className="mt-0.5" strokeWidth={3} />
               </button>
               <button onClick={() => onNavigate('leaderboard')} className="bg-card hover:bg-muted text-main font-black px-8 py-3 lg:py-4 uppercase flex items-center justify-center border-[3px] border-main shadow-[4px_4px_0px_var(--color-shadow)] focus:translate-y-[2px] focus:translate-x-[2px] focus:shadow-none transition-all">
