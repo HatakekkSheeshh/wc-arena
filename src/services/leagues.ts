@@ -144,3 +144,7 @@ export function kickLeagueMember(input: { leagueId: string; userId: string }) {
 export function archiveLeague(input: { leagueId: string; archiveReason?: string }) {
   return invokeLeagueAction<{ league: LeagueRow; status: 'archived'; cancelledEvents: number; refunds: number }>({ action: 'archiveLeague', ...input });
 }
+
+export function deleteArchivedLeague(input: { leagueId: string }) {
+  return invokeLeagueAction<{ status: 'deleted'; leagueId: string }>({ action: 'deleteArchivedLeague', ...input });
+}

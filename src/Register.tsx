@@ -59,6 +59,27 @@ export default function Register({ onNavigate, ...themeControls }: RegisterProps
     setSubmitting(true);
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedUsername = username.trim();
+
+    if (normalizedUsername) {
+      const { data: existingProfile, error: usernameError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', normalizedUsername)
+        .maybeSingle();
+
+      if (usernameError) {
+        setSubmitting(false);
+        setFormError(usernameError.message);
+        return;
+      }
+
+      if (existingProfile) {
+        setSubmitting(false);
+        setFormError(t('ui.usernameTaken'));
+        return;
+      }
+    }
+
     const emailRedirectTo = getAuthRedirectUrl('/login');
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,

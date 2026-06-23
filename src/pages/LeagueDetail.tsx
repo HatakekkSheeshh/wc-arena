@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Activity, ArrowLeft, Check, Copy, UserMinus, X } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import RankBadge from '../components/ui/RankBadge';
@@ -8,7 +8,7 @@ import StreakBadge from '../components/ui/StreakBadge';
 import { useAuth } from '../lib/auth';
 import { listLeagueActivity, type ActivityEventRow } from '../services/activity';
 import { listLeagueLeaderboard, type LeaderboardEntryWithProfile } from '../services/leaderboard';
-import { approveJoinRequest, archiveLeague, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
+import { approveJoinRequest, archiveLeague, deleteArchivedLeague, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
 import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEventMatches, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventMatchRow, type LeagueEventRow, type PayoutCurve } from '../services/leagueEvents';
 import { getErrorMessage } from '../services/serviceTypes';
 import { listMatches, type MatchRow } from '../services/matches';
@@ -144,6 +144,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { leagueId } = useParams();
+  const navigate = useNavigate();
   const [league, setLeague] = useState<LeagueRow | null>(null);
   const [creator, setCreator] = useState<ProfileRow | null>(null);
   const [standings, setStandings] = useState<LeaderboardEntryWithProfile[]>([]);
@@ -174,7 +175,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [settlingEventId, setSettlingEventId] = useState<string | null>(null);
   const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
   const [archivingLeague, setArchivingLeague] = useState(false);
+  const [deletingLeague, setDeletingLeague] = useState(false);
   const [archiveConfirmName, setArchiveConfirmName] = useState('');
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const currentMembership = useMemo(() => members.find((member) => member.user_id === user?.id) ?? null, [members, user?.id]);
@@ -455,6 +458,21 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
       setError(getErrorMessage(nextError));
     } finally {
       setArchivingLeague(false);
+    }
+  }
+
+  async function handleDeleteArchivedLeague() {
+    if (!league || deleteConfirmName !== league.name) return;
+    setDeletingLeague(true);
+    setError(null);
+    try {
+      await deleteArchivedLeague({ leagueId: league.id });
+      setDeleteConfirmName('');
+      navigate('/leagues');
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setDeletingLeague(false);
     }
   }
 
@@ -856,6 +874,19 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                     <input value={archiveConfirmName} onChange={(event) => setArchiveConfirmName(event.target.value)} placeholder={league.name} className="bg-page border-2 border-main p-2.5 font-bold text-sm rounded-sm" />
                     <button type="button" onClick={handleArchiveLeague} disabled={archiveConfirmName !== league.name || archivingLeague} className="bg-c5 border-2 border-main px-3 py-2.5 font-black uppercase disabled:opacity-60 rounded-sm">
                       {archivingLeague ? t('ui.saving') : t('ui.archiveLeague')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isOwner && isArchived && (
+                <div className="border-4 border-main bg-card rounded-sm overflow-hidden flex flex-col">
+                  <div className="bg-c5 font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main">{t('ui.deleteLeagueTitle')}</div>
+                  <div className="p-3 flex flex-col gap-3">
+                    <div className="font-bold text-xs text-subtle uppercase leading-snug">{t('ui.deleteLeagueBody')}</div>
+                    <input value={deleteConfirmName} onChange={(event) => setDeleteConfirmName(event.target.value)} placeholder={league.name} className="bg-page border-2 border-main p-2.5 font-bold text-sm rounded-sm" />
+                    <button type="button" onClick={handleDeleteArchivedLeague} disabled={deleteConfirmName !== league.name || deletingLeague} className="bg-c5 border-2 border-main px-3 py-2.5 font-black uppercase disabled:opacity-60 rounded-sm">
+                      {deletingLeague ? t('ui.deletingLeague') : t('ui.deleteLeague')}
                     </button>
                   </div>
                 </div>

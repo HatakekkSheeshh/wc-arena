@@ -622,6 +622,39 @@ async function archiveLeague(supabase: ReturnType<typeof createClient>, userId: 
   return { league: archivedLeague, status: 'archived', cancelledEvents: activeEvents?.length ?? 0, refunds };
 }
 
+async function deleteArchivedLeague(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
+  if (!body.leagueId) throw new Error('League is required.');
+  await requireOwner(supabase, body.leagueId, userId);
+
+  const { data: league, error: leagueError } = await supabase
+    .from('leagues')
+    .select('id, status')
+    .eq('id', body.leagueId)
+    .single();
+
+  if (leagueError) throw leagueError;
+  if (league.status !== 'archived') throw new Error('Only archived leagues can be permanently deleted.');
+
+  const { data: unsafeEvents, error: eventsError } = await supabase
+    .from('league_events')
+    .select('id')
+    .eq('league_id', body.leagueId)
+    .in('status', ['open', 'locked']);
+
+  if (eventsError) throw eventsError;
+  if ((unsafeEvents ?? []).length > 0) throw new Error('Cancel or archive open pools before deleting this league.');
+
+  const { data: deletedLeague, error: deleteError } = await supabase
+    .from('leagues')
+    .delete()
+    .eq('id', body.leagueId)
+    .select('id')
+    .single();
+
+  if (deleteError) throw deleteError;
+  return { status: 'deleted', leagueId: deletedLeague.id };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -647,6 +680,7 @@ Deno.serve(async (req) => {
     if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, userData.user.id, body));
     if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, userData.user.id, body));
     if (body.action === 'archiveLeague') return jsonResponse(await archiveLeague(supabase, userData.user.id, body));
+    if (body.action === 'deleteArchivedLeague') return jsonResponse(await deleteArchivedLeague(supabase, userData.user.id, body));
     if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, userData.user.id, body));
     if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, userData.user.id, body));
     if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, userData.user.id, body));
