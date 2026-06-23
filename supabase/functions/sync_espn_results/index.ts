@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse as sharedJsonResponse, requireSyncSecret } from '../_shared/authGuards.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
+import { acquireLock, releaseLock } from '../_shared/redis.ts';
 import { buildCommunityDistributions, calculatePredictionScores, type CalculatedScore, type PredictionScoringRow, type TeamSignalRow } from '../_shared/scoringRules.ts';
 
 const corsHeaders = {
@@ -885,6 +886,31 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+  let lockAcquired = false;
+  try {
+    lockAcquired = await acquireLock('wc26:lock:sync_espn_results', 600);
+  } catch (error) {
+    await supabase.from('admin_audit_logs').insert({
+      action: 'espn_result_sync_lock_unavailable',
+      entity_type: 'system',
+      entity_id: 'espn-result-sync',
+      description: `ESPN sync lock unavailable: ${error instanceof Error ? error.message : String(error)}. Continuing without lock.`,
+      severity: 'warning',
+    });
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    await supabase.from('admin_audit_logs').insert({
+      action: 'sync_espn_results_already_running',
+      entity_type: 'system',
+      entity_id: 'espn-result-sync',
+      description: 'Skipped ESPN sync because another run is already active.',
+      severity: 'warning',
+    });
+    return jsonResponse({ alreadyRunning: true });
+  }
+
   try {
     const dates = getDateWindow(body);
     const scoreboards = await Promise.all(dates.map(fetchScoreboard));
@@ -953,5 +979,9 @@ Deno.serve(async (req) => {
       severity: 'warning',
     });
     return jsonResponse({ error: message }, 500);
+  } finally {
+    await releaseLock('wc26:lock:sync_espn_results').catch((error) => {
+      console.warn(`Failed to release ESPN sync lock: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 });

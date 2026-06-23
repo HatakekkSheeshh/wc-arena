@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse as sharedJsonResponse, requireSyncSecret } from '../_shared/authGuards.ts';
 import { ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, lockStartedEvents, settleEndedEvents } from '../_shared/leagueEvents.ts';
+import { acquireLock, releaseLock } from '../_shared/redis.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +61,19 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+  let lockAcquired = false;
+  try {
+    lockAcquired = await acquireLock('wc26:lock:league_event_maintenance', 600);
+  } catch (error) {
+    await insertAuditLog(supabase, 'league_event_maintenance_lock_unavailable', `League event maintenance lock unavailable: ${error instanceof Error ? error.message : String(error)}. Continuing without lock.`, 'warning');
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    await insertAuditLog(supabase, 'league_event_maintenance_already_running', 'Skipped league event maintenance because another run is already active.', 'warning');
+    return jsonResponse({ alreadyRunning: true });
+  }
+
   try {
     const weekly = await ensureWeeklyLeagueEvents(supabase);
     const matchday = await ensureFutureMatchdayEvents(supabase);
@@ -87,5 +101,9 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : 'Unknown league event maintenance error';
     await insertAuditLog(supabase, 'league_event_maintenance_failed', message, 'warning');
     return jsonResponse({ error: message }, 500);
+  } finally {
+    await releaseLock('wc26:lock:league_event_maintenance').catch((error) => {
+      console.warn(`Failed to release league event maintenance lock: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 });

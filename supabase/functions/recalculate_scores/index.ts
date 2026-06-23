@@ -1,5 +1,6 @@
 import { jsonResponse as sharedJsonResponse, requireAdminUser } from '../_shared/authGuards.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
+import { acquireLock, releaseLock } from '../_shared/redis.ts';
 import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
 import { buildCommunityDistributions, calculatePredictionScores, type CalculatedScore, type PredictionScoringRow, type TeamSignalRow } from '../_shared/scoringRules.ts';
 
@@ -104,7 +105,35 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
   const { supabase, user } = auth;
 
-  const { data: predictions, error: predictionsError } = await supabase
+  let lockAcquired = false;
+  try {
+    lockAcquired = await acquireLock('wc26:lock:recalculate_scores', 600);
+  } catch (error) {
+    await supabase.from('admin_audit_logs').insert({
+      actor_id: user.id,
+      action: 'score_recalculation_lock_unavailable',
+      entity_type: 'leaderboard',
+      entity_id: 'global',
+      description: `Score recalculation lock unavailable: ${error instanceof Error ? error.message : String(error)}. Continuing without lock.`,
+      severity: 'warning',
+    });
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    await supabase.from('admin_audit_logs').insert({
+      actor_id: user.id,
+      action: 'score_recalculation_already_running',
+      entity_type: 'leaderboard',
+      entity_id: 'global',
+      description: 'Skipped score recalculation because another run is already active.',
+      severity: 'warning',
+    });
+    return jsonResponse({ alreadyRunning: true });
+  }
+
+  try {
+    const { data: predictions, error: predictionsError } = await supabase
     .from('predictions')
     .select('id, user_id, match_id, prediction_type, home_score, away_score, predicted_outcome, is_risk_pick, matches!inner(home_score, away_score, status, kickoff_at, home_team_id, away_team_id, espn_home_win_pct, espn_draw_pct, espn_away_win_pct)')
     .eq('matches.status', 'finished');
@@ -228,4 +257,9 @@ Deno.serve(async (req) => {
   });
 
   return jsonResponse({ predictionScores: calculatedScores.length, leaderboardEntries: aggregates.length, ...leagueRefresh, ...eventRefresh });
+  } finally {
+    await releaseLock('wc26:lock:recalculate_scores').catch((error) => {
+      console.warn(`Failed to release score recalculation lock: ${error instanceof Error ? error.message : String(error)}`);
+    });
+  }
 });
