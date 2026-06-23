@@ -374,7 +374,7 @@ export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-line mb-2">
                     <span className="flex items-center gap-2"><div className="w-5 text-center text-base">2</div> {t('ui.secondPlace')}</span>
-                    <span className="text-c2 font-black">{t('ui.sponsorBacked')}</span>
+                    <span className="text-c2 font-black">{t('ui.communityOnly')}</span>
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-line mb-2">
                     <span className="flex items-center gap-2"><div className="w-5 text-center text-base">3</div> {t('ui.thirdPlaceLabel')}</span>

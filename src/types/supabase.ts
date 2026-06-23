@@ -356,6 +356,8 @@ export type Database = {
           exact_scores: number
           payout: number
           payout_factor: number
+          point_split: number
+          point_split_factor: number
           points: number
           previous_rank: number | null
           rank: number
@@ -369,6 +371,8 @@ export type Database = {
           exact_scores?: number
           payout?: number
           payout_factor?: number
+          point_split?: number
+          point_split_factor?: number
           points?: number
           previous_rank?: number | null
           rank: number
@@ -382,6 +386,8 @@ export type Database = {
           exact_scores?: number
           payout?: number
           payout_factor?: number
+          point_split?: number
+          point_split_factor?: number
           points?: number
           previous_rank?: number | null
           rank?: number
@@ -455,7 +461,10 @@ export type Database = {
           name: string
           payout_config: Json
           payout_curve: string
+          point_split_config: Json
+          point_split_curve: string
           prize_pool: number
+          recognition_pool: number
           settled_at: string | null
           starts_at: string
           status: string
@@ -476,7 +485,10 @@ export type Database = {
           name: string
           payout_config?: Json
           payout_curve?: string
+          point_split_config?: Json
+          point_split_curve?: string
           prize_pool?: number
+          recognition_pool?: number
           settled_at?: string | null
           starts_at: string
           status?: string
@@ -497,7 +509,10 @@ export type Database = {
           name?: string
           payout_config?: Json
           payout_curve?: string
+          point_split_config?: Json
+          point_split_curve?: string
           prize_pool?: number
+          recognition_pool?: number
           settled_at?: string | null
           starts_at?: string
           status?: string

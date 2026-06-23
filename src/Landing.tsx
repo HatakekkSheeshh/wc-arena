@@ -5,7 +5,6 @@ import LegacySettingsMenu from './components/LegacySettingsMenu';
 import { listGlobalLeaderboard, type LeaderboardEntryWithProfile } from './services/leaderboard';
 import { getEffectiveMatchStatus, listMatches, type MatchRow } from './services/matches';
 import { getTeamMap, type TeamRow } from './services/teams';
-import { listLeagues, type LeagueRow } from './services/leagues';
 import { getErrorMessage } from './services/serviceTypes';
 import { getPublicDisplayName } from './utils/displayName';
 import { getTeamFlag } from './utils/teamFlags';
@@ -80,7 +79,6 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntryWithProfile[]>([]);
   const [totalPlayers, setTotalPlayers] = useState(0);
-  const [leagues, setLeagues] = useState<LeagueRow[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,14 +93,13 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
     setLoading(true);
     setError(null);
 
-    Promise.all([listMatches(), getTeamMap(), listGlobalLeaderboard(), listLeagues()])
-      .then(([nextMatches, nextTeams, nextLeaderboard, nextLeagues]) => {
+    Promise.all([listMatches(), getTeamMap(), listGlobalLeaderboard()])
+      .then(([nextMatches, nextTeams, nextLeaderboard]) => {
         if (!active) return;
         setMatches(nextMatches);
         setTeams(nextTeams);
         setLeaderboard(nextLeaderboard.slice(0, 5));
         setTotalPlayers(nextLeaderboard.length);
-        setLeagues(nextLeagues);
       })
       .catch((nextError) => {
         if (!active) return;
@@ -121,10 +118,8 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
   const nextDeadline = useMemo(() => {
     return matches.find((match) => new Date(match.lock_at) > now && ['open', 'scheduled'].includes(getEffectiveMatchStatus(match, now)));
   }, [matches, now]);
-  const sponsorLeague = leagues.find((league) => league.prize_mode === 'sponsor');
-
   const stats = [
-    { label: t('landing.stats.prizePool'), value: sponsorLeague ? t('ui.sponsor') : t('ui.manual'), bgColor: 'bg-c1', textColor: 'text-accent-on', icon: <Trophy size={36} strokeWidth={2.5}/> },
+    { label: t('landing.stats.pointsGame'), value: t('ui.free'), bgColor: 'bg-c1', textColor: 'text-accent-on', icon: <Trophy size={36} strokeWidth={2.5}/> },
     { label: t('landing.stats.players'), value: totalPlayers ? totalPlayers.toLocaleString() : '—', bgColor: 'bg-c2', textColor: 'text-accent-inv', icon: <Users size={36} strokeWidth={2.5}/> },
     { label: t('landing.stats.matches'), value: matches.length ? matches.length.toLocaleString() : '—', bgColor: 'bg-c3', textColor: 'text-accent-on', icon: <PitchIcon className="w-9 h-9" /> },
     { label: t('landing.stats.deadline'), value: nextDeadline ? formatDuration(nextDeadline.lock_at, now) : '—', bgColor: 'bg-c5', textColor: 'text-accent-inv', icon: <Clock size={36} strokeWidth={2.5}/> },
@@ -146,7 +141,7 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
             <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('matches')}>{t('nav.public.matches')}</button>
             <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('leaderboard')}>{t('nav.public.leaderboard')}</button>
             <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('rules')}>{t('nav.public.rules')}</button>
-            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('prize-pool')}>{t('nav.public.prizePool')}</button>
+            <button className="hover:text-c2 transition-colors pb-1 text-main" onClick={() => onNavigate('points-guide')}>{t('nav.public.pointsGuide')}</button>
           </div>
           <div className="flex items-center gap-3">
             <LegacySettingsMenu {...themeControls} />

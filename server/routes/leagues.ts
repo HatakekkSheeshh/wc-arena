@@ -39,7 +39,7 @@ leaguesRouter.post('/leagues', (req, res) => {
       inviteCode: slug.slice(0, 8).toUpperCase() || 'LEAGUE26',
       memberCount: 1,
       scoringMode: payload.scoringMode ?? 'global',
-      prizeMode: payload.prizeMode ?? 'none',
+      recognitionMode: payload.recognitionMode ?? payload.prizeMode ?? 'none',
       createdAt: now,
     };
     db.leagues.push(created);

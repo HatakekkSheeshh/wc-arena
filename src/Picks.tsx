@@ -281,9 +281,9 @@ export default function Picks({ onNavigate, isVintage, setIsVintage, isDark, set
             <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-4 border-r-4 border-main p-2 sm:p-4 lg:p-5 bg-c1 text-main min-w-0 text-center sm:text-left">
               <div className="shrink-0"><Trophy size={22} className="sm:w-9 sm:h-9" strokeWidth={2.5}/></div>
               <div className="flex flex-col justify-center min-w-0">
-                <div className="text-[8px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90 truncate">{t('nav.public.prizePool')}</div>
+                <div className="text-[8px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90 truncate">{t('nav.public.pointsGuide')}</div>
                 <div className="text-base sm:text-3xl font-black leading-none">{t('ui.manual')}</div>
-                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('ui.sponsorReview')}</div>
+                <div className="text-[8px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('ui.communityReview')}</div>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-4 border-r-4 border-main p-2 sm:p-4 lg:p-5 bg-c2 text-accent-inv min-w-0 text-center sm:text-left">

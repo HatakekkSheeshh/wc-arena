@@ -15,7 +15,7 @@ type RewardsProps = {
 const statusStyles: Record<RewardStatus, string> = {
   pending: 'bg-c4 text-main',
   approved: 'bg-c3 text-main',
-  paid: 'bg-c2 text-inv',
+  recognized: 'bg-c2 text-inv',
   ineligible: 'bg-muted text-main',
 };
 
@@ -24,10 +24,6 @@ const eligibilityStyles: Record<EligibilityStatus, string> = {
   review: 'bg-c4 text-main',
   blocked: 'bg-c5 text-inv',
 };
-
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
-}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
@@ -40,8 +36,21 @@ function getEligibilityIcon(status: EligibilityStatus) {
 }
 
 function getRewardStatus(status: string): RewardStatus {
-  if (status === 'approved' || status === 'paid' || status === 'ineligible') return status;
+  if (status === 'paid' || status === 'recognized') return 'recognized';
+  if (status === 'approved' || status === 'ineligible') return status;
   return 'pending';
+}
+
+function getRewardStatusLabel(status: RewardStatus) {
+  if (status === 'recognized') return 'recognized';
+  if (status === 'approved') return 'approved';
+  if (status === 'ineligible') return 'not listed';
+  return 'pending';
+}
+
+function getRewardSourceLabel(source: string) {
+  if (source === 'manual') return 'fair-play';
+  return 'community';
 }
 
 export default function Rewards({ themeControls }: RewardsProps) {
@@ -77,9 +86,9 @@ export default function Rewards({ themeControls }: RewardsProps) {
     };
   }, []);
 
-  const approvedCount = rewards.filter((reward) => ['approved', 'paid'].includes(reward.status)).length;
+  const approvedCount = rewards.filter((reward) => ['approved', 'paid', 'recognized'].includes(reward.status)).length;
   const pendingCount = rewards.filter((reward) => reward.status === 'pending').length;
-  const potentialAmount = rewards.reduce((sum, reward) => sum + reward.amount, 0);
+  const recognitionPoints = rewards.reduce((sum, reward) => sum + reward.amount, 0);
   const passedChecks = eligibilityChecks.filter((check) => check.status === 'passed').length;
 
   return (
@@ -106,7 +115,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
               <div className="flex flex-col justify-center">
                 <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('appPages.rewards.rewardTracks')}</div>
                 <div className="text-2xl sm:text-3xl font-black leading-none">{rewards.length}</div>
-                <div className="text-[10px] font-bold uppercase mt-1">{t('appPages.rewards.sponsorCommunity')}</div>
+                <div className="text-[10px] font-bold uppercase mt-1">{t('appPages.rewards.communityGame')}</div>
               </div>
             </div>
             <div className="flex items-center gap-4 border-b-4 sm:border-b-0 sm:border-r-4 border-main p-4 lg:p-5 bg-c3 text-main">
@@ -114,7 +123,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
               <div className="flex flex-col justify-center">
                 <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('appPages.rewards.pendingReview')}</div>
                 <div className="text-2xl sm:text-3xl font-black leading-none">{pendingCount}</div>
-                <div className="text-[10px] font-bold uppercase mt-1">{t('appPages.rewards.noInstantPayout')}</div>
+                <div className="text-[10px] font-bold uppercase mt-1">{t('appPages.rewards.virtualPointsOnly')}</div>
               </div>
             </div>
             <div className="flex items-center gap-4 border-main p-4 lg:p-5 bg-c4 text-main">
@@ -122,7 +131,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
               <div className="flex flex-col justify-center">
                 <div className="text-xs uppercase font-black tracking-widest leading-none mb-1 opacity-90">{t('appPages.rewards.approvedItems')}</div>
                 <div className="text-2xl sm:text-3xl font-black leading-none">{approvedCount}</div>
-                <div className="text-[10px] font-bold uppercase mt-1">{formatCurrency(potentialAmount, 'USD')}</div>
+                <div className="text-[10px] font-bold uppercase mt-1">{recognitionPoints.toLocaleString()} {t('ui.pointsShort')}</div>
               </div>
             </div>
           </div>
@@ -168,11 +177,11 @@ export default function Rewards({ themeControls }: RewardsProps) {
                         <div className="text-xs font-bold mt-2 leading-snug">{reward.note}</div>
                       </div>
                       <div className="p-4 md:border-r-2 border-main flex md:items-center md:justify-center">
-                        <span className={`border-2 border-main px-3 py-2 text-[10px] font-black uppercase ${statusStyles[status]}`}>{reward.status}</span>
+                        <span className={`border-2 border-main px-3 py-2 text-[10px] font-black uppercase ${statusStyles[status]}`}>{getRewardStatusLabel(status)}</span>
                       </div>
                       <div className="p-4 flex flex-col md:items-end justify-center bg-muted">
-                        <span className="font-black text-lg">{formatCurrency(reward.amount, reward.currency)}</span>
-                        <span className="text-[10px] uppercase text-subtle font-black">{reward.source}</span>
+                        <span className="font-black text-lg">+{reward.amount.toLocaleString()} {t('ui.pointsShort')}</span>
+                        <span className="text-[10px] uppercase text-subtle font-black">{getRewardSourceLabel(reward.source)}</span>
                       </div>
                     </div>
                   );
@@ -182,7 +191,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
 
             <div className="w-full xl:w-[380px] bg-card flex flex-col">
               <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
-                {t('appPages.rewards.payoutSafety')}
+                {t('appPages.rewards.freeGameSafety')}
               </div>
               <div className="p-4 bg-card flex flex-col gap-3 font-bold text-sm border-b-4 border-main">
                 <div className="bg-c1 text-main p-4 border-2 border-main">
@@ -190,7 +199,7 @@ export default function Rewards({ themeControls }: RewardsProps) {
                   <p className="text-xs mt-2 leading-snug">{t('appPages.rewards.noWalletBody')}</p>
                 </div>
                 <Link to="/rules" className="bg-c2 text-inv border-2 border-main p-3 font-black uppercase text-xs flex items-center gap-2"><ClipboardCheck size={16} /> {t('appPages.rewards.publicRules')}</Link>
-                <Link to="/prize-pool" className="bg-c2 text-inv border-2 border-main p-3 font-black uppercase text-xs flex items-center gap-2"><Trophy size={16} /> {t('appPages.rewards.viewPrizePool')}</Link>
+                <Link to="/points-guide" className="bg-c2 text-inv border-2 border-main p-3 font-black uppercase text-xs flex items-center gap-2"><Trophy size={16} /> {t('appPages.rewards.viewPointsGuide')}</Link>
                 <Link to="/leaderboard" className="bg-card border-2 border-main p-3 font-black uppercase text-xs flex items-center gap-2"><Users size={16} /> {t('appPages.rewards.checkLeaderboardRank')}</Link>
                 <Link to="/my-predictions" className="bg-card border-2 border-main p-3 font-black uppercase text-xs flex items-center gap-2"><Star size={16} /> {t('appPages.rewards.improvePredictions')}</Link>
               </div>

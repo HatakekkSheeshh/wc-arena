@@ -1,8 +1,7 @@
-import type { ActivityItem, AdminAuditLog, Badge, EligibilityCheck, LeaderboardEntry, League, Match, Prediction, PrizeTier, RewardItem, RewardTrustNote, SuspiciousUserSignal, Team, User } from '../src/types/domain';
+import type { ActivityItem, AdminAuditLog, Badge, EligibilityCheck, LeaderboardEntry, League, Match, Prediction, RecognitionTier, RewardItem, RewardTrustNote, SuspiciousUserSignal, Team, User } from '../src/types/domain';
 
-export type PrizePoolSummary = {
+export type PointsGuideSummary = {
   totalAmount: number;
-  sponsorFundedAmount: number;
   communityBackedAmount: number;
   currency: string;
   eligiblePlayers: number;
@@ -17,8 +16,8 @@ export type PredictDb = {
   leaderboardEntries: LeaderboardEntry[];
   leagues: League[];
   activity: ActivityItem[];
-  prizePoolSummary: PrizePoolSummary;
-  prizeTiers: PrizeTier[];
+  pointsGuideSummary: PointsGuideSummary;
+  recognitionTiers: RecognitionTier[];
   eligibilityChecks: EligibilityCheck[];
   rewards: RewardItem[];
   rewardTrustNotes: RewardTrustNote[];
@@ -54,5 +53,6 @@ export type CreateLeaguePayload = {
   name: string;
   visibility?: League['visibility'];
   scoringMode?: League['scoringMode'];
-  prizeMode?: League['prizeMode'];
+  recognitionMode?: League['recognitionMode'];
+  prizeMode?: League['recognitionMode'];
 };

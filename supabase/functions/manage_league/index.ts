@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
-import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PayoutCurve } from '../_shared/leagueEvents.ts';
+import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PointSplitCurve } from '../_shared/leagueEvents.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +39,8 @@ type Body = {
   matchday?: number;
   minStake?: number;
   maxStake?: number;
-  payoutCurve?: PayoutCurve;
+  payoutCurve?: PointSplitCurve;
+  pointSplitCurve?: PointSplitCurve;
   rankShares?: number[];
   matchIds?: string[];
   archiveReason?: string;
@@ -116,14 +117,14 @@ function assertStakeBounds(minStakeValue: unknown, maxStakeValue: unknown) {
   return { minStake: minStake as number, maxStake: maxStake as number };
 }
 
-function assertPayoutCurve(value: unknown): PayoutCurve {
+function assertPointSplitCurve(value: unknown): PointSplitCurve {
   if (value === undefined || value === null) return 'balanced_top3';
   if (value === 'balanced_top3' || value === 'winner_take_all' || value === 'flat_top3' || value === 'custom_top3') return value;
-  throw new Error('Invalid payout curve.');
+  throw new Error('Invalid point split curve.');
 }
 
-function assertRankShares(payoutCurve: PayoutCurve, value: unknown) {
-  if (payoutCurve !== 'custom_top3') return { rankShares: [50, 30, 20] };
+function assertRankShares(pointSplitCurve: PointSplitCurve, value: unknown) {
+  if (pointSplitCurve !== 'custom_top3') return { rankShares: [50, 30, 20] };
   const validShares = Array.isArray(value)
     && value.length === 3
     && value.every((share) => Number.isInteger(share) && share >= 0)
@@ -427,6 +428,7 @@ type RemovableEventRow = {
   status: 'open' | 'locked' | 'settled' | 'cancelled';
   starts_at: string;
   prize_pool: number;
+  recognition_pool?: number | null;
 };
 
 type RemovableEventEntry = {
@@ -449,7 +451,7 @@ async function getLeagueMembership(supabase: ReturnType<typeof createClient>, le
 async function listRemovableEventEntries(supabase: ReturnType<typeof createClient>, leagueId: string, targetUserId: string) {
   const { data: events, error: eventsError } = await supabase
     .from('league_events')
-    .select('id, name, status, starts_at, prize_pool')
+    .select('id, name, status, starts_at, prize_pool, recognition_pool')
     .eq('league_id', leagueId)
     .in('status', ['open', 'locked']);
 
@@ -523,9 +525,11 @@ async function refundOpenPoolEntriesForUser(supabase: ReturnType<typeof createCl
 
     if (entryError) throw entryError;
 
+    const recognitionPool = event.recognition_pool ?? event.prize_pool ?? 0;
+    const nextPool = Math.max(0, recognitionPool - stake);
     const { error: poolError } = await supabase
       .from('league_events')
-      .update({ prize_pool: Math.max(0, event.prize_pool - stake), updated_at: new Date().toISOString() })
+      .update({ prize_pool: nextPool, recognition_pool: nextPool, updated_at: new Date().toISOString() })
       .eq('id', event.id);
 
     if (poolError) throw poolError;
@@ -597,8 +601,8 @@ async function createLeagueEvent(supabase: ReturnType<typeof createClient>, user
   const name = assertEventName(body.name);
   const matchIds = assertMatchIds(body.matchIds);
   const { minStake, maxStake } = assertStakeBounds(body.minStake, body.maxStake);
-  const payoutCurve = assertPayoutCurve(body.payoutCurve);
-  const payoutConfig = assertRankShares(payoutCurve, body.rankShares);
+  const pointSplitCurve = assertPointSplitCurve(body.pointSplitCurve ?? body.payoutCurve);
+  const pointSplitConfig = assertRankShares(pointSplitCurve, body.rankShares);
   const eventType = body.eventType ?? 'custom';
   if (eventType !== 'custom') throw new Error('Only custom events can be created here.');
 
@@ -638,8 +642,11 @@ async function createLeagueEvent(supabase: ReturnType<typeof createClient>, user
       status: 'open',
       min_stake: minStake,
       max_stake: maxStake,
-      payout_curve: payoutCurve,
-      payout_config: payoutConfig,
+      payout_curve: pointSplitCurve,
+      payout_config: pointSplitConfig,
+      point_split_curve: pointSplitCurve,
+      point_split_config: pointSplitConfig,
+      recognition_pool: 0,
       metadata: matchIds.length > 0 ? { createdBy: userId, scope: 'selected_matches', matchIds } : { createdBy: userId },
     })
     .select('*')
@@ -700,9 +707,11 @@ async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userI
   if (transactionError) throw transactionError;
   await updateDisplayedPoints(supabase, userId, pointsAfterStake);
 
+  const currentPool = event.recognition_pool ?? event.prize_pool ?? 0;
+  const nextPool = currentPool + stake;
   const { error: poolError } = await supabase
     .from('league_events')
-    .update({ prize_pool: event.prize_pool + stake, updated_at: new Date().toISOString() })
+    .update({ prize_pool: nextPool, recognition_pool: nextPool, updated_at: new Date().toISOString() })
     .eq('id', event.id);
 
   if (poolError) throw poolError;

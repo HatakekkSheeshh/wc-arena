@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
 
-export type PayoutCurve = 'balanced_top3' | 'winner_take_all' | 'flat_top3' | 'custom_top3';
+export type PointSplitCurve = 'balanced_top3' | 'winner_take_all' | 'flat_top3' | 'custom_top3';
 export type LeagueEventRow = Database['public']['Tables']['league_events']['Row'];
 export type LeagueEventLeaderboardEntryRow = Database['public']['Tables']['league_event_leaderboard_entries']['Row'];
 export type LeagueEventProfile = Pick<Database['public']['Tables']['profiles']['Row'], 'username' | 'display_name' | 'avatar_url' | 'country_code'>;
@@ -16,7 +16,7 @@ export type CreateLeagueEventInput = {
   endsAt: string;
   minStake: number;
   maxStake: number;
-  payoutCurve: PayoutCurve;
+  pointSplitCurve: PointSplitCurve;
   rankShares?: number[];
   matchIds?: string[];
 };
@@ -69,7 +69,7 @@ export async function listLeagueEventMatches(eventIds: string[]) {
 }
 
 export function createLeagueEvent(input: CreateLeagueEventInput) {
-  return invokeLeagueAction<{ status: 'created'; event: LeagueEventRow }>({ action: 'createLeagueEvent', eventType: 'custom', ...input });
+  return invokeLeagueAction<{ status: 'created'; event: LeagueEventRow }>({ action: 'createLeagueEvent', eventType: 'custom', ...input, payoutCurve: input.pointSplitCurve });
 }
 
 export function enterLeagueEvent(input: { eventId: string; stake: number }) {
@@ -77,7 +77,7 @@ export function enterLeagueEvent(input: { eventId: string; stake: number }) {
 }
 
 export function settleLeagueEvent(input: { eventId: string }) {
-  return invokeLeagueAction<{ status: 'settled'; leagueEventLeaderboardEntries: number; payouts: number }>({ action: 'settleLeagueEvent', ...input });
+  return invokeLeagueAction<{ status: 'settled'; leagueEventLeaderboardEntries: number; pointSplits: number; payouts: number }>({ action: 'settleLeagueEvent', ...input });
 }
 
 export function cancelLeagueEvent(input: { eventId: string }) {

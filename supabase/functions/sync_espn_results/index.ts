@@ -883,7 +883,7 @@ async function recalculateScores(supabase: ReturnType<typeof createClient>) {
   const { data: pointTransactions, error: pointTransactionsError } = await supabase
     .from('point_transactions')
     .select('user_id, amount')
-    .in('type', ['stake', 'payout', 'refund']);
+    .in('type', ['stake', 'payout', 'point_split', 'refund']);
 
   if (pointTransactionsError) throw pointTransactionsError;
 

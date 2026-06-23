@@ -1,9 +1,9 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 type ScoreOutcome = 'exact' | 'correct' | 'missed';
-export type PayoutCurve = 'balanced_top3' | 'winner_take_all' | 'flat_top3' | 'custom_top3';
+export type PointSplitCurve = 'balanced_top3' | 'winner_take_all' | 'flat_top3' | 'custom_top3';
 
-type PayoutConfig = {
+type PointSplitConfig = {
   rankShares?: number[];
 };
 
@@ -16,8 +16,11 @@ type LeagueEvent = {
   matchday: number | null;
   status: 'open' | 'locked' | 'settled' | 'cancelled';
   prize_pool: number;
-  payout_curve: PayoutCurve;
-  payout_config: PayoutConfig;
+  recognition_pool?: number | null;
+  payout_curve: PointSplitCurve;
+  point_split_curve?: PointSplitCurve | null;
+  payout_config: PointSplitConfig;
+  point_split_config?: PointSplitConfig | null;
 };
 
 type EventEntry = {
@@ -51,6 +54,8 @@ type EventLeaderboardEntry = {
   stake: number;
   payout: number;
   payout_factor: number;
+  point_split: number;
+  point_split_factor: number;
   updated_at: string;
 };
 
@@ -78,7 +83,7 @@ function getCurrentUtcWeekWindow() {
   return { startsAt, endsAt };
 }
 
-function getRankShares(curve: PayoutCurve, config: PayoutConfig) {
+function getRankShares(curve: PointSplitCurve, config: PointSplitConfig) {
   if (curve === 'balanced_top3') return [50, 30, 20];
   if (curve !== 'custom_top3') return [];
 
@@ -89,45 +94,57 @@ function getRankShares(curve: PayoutCurve, config: PayoutConfig) {
     && shares.reduce((sum, share) => sum + share, 0) === 100
     && shares[0] > 0;
 
-  if (!validShares) throw new Error('Invalid custom payout shares.');
+  if (!validShares) throw new Error('Invalid custom point split shares.');
   return shares;
 }
 
-export function calculatePayouts(entries: Array<{ user_id: string; rank: number; stake: number }>, prizePool: number, payoutCurve: PayoutCurve = 'balanced_top3', payoutConfig: PayoutConfig = { rankShares: [50, 30, 20] }) {
-  if (prizePool <= 0) return [];
+function getRecognitionPool(event: LeagueEvent) {
+  return event.recognition_pool ?? event.prize_pool ?? 0;
+}
 
-  if (payoutCurve === 'winner_take_all') {
+function getPointSplitCurve(event: LeagueEvent) {
+  return event.point_split_curve ?? event.payout_curve ?? 'balanced_top3';
+}
+
+function getPointSplitConfig(event: LeagueEvent) {
+  return event.point_split_config ?? event.payout_config ?? { rankShares: [50, 30, 20] };
+}
+
+export function calculatePointSplits(entries: Array<{ user_id: string; rank: number; stake: number }>, recognitionPool: number, pointSplitCurve: PointSplitCurve = 'balanced_top3', pointSplitConfig: PointSplitConfig = { rankShares: [50, 30, 20] }) {
+  if (recognitionPool <= 0) return [];
+
+  if (pointSplitCurve === 'winner_take_all') {
     const winner = entries.find((entry) => entry.rank === 1);
-    return winner ? [{ user_id: winner.user_id, payout: prizePool, factor: 1 }] : [];
+    return winner ? [{ user_id: winner.user_id, pointSplit: recognitionPool, factor: 1 }] : [];
   }
 
-  if (payoutCurve === 'flat_top3') {
+  if (pointSplitCurve === 'flat_top3') {
     const winners = entries.filter((entry) => entry.rank <= 3).sort((a, b) => a.rank - b.rank);
     if (winners.length === 0) return [];
-    const basePayout = Math.floor(prizePool / winners.length);
-    let remainder = prizePool - basePayout * winners.length;
+    const basePointSplit = Math.floor(recognitionPool / winners.length);
+    let remainder = recognitionPool - basePointSplit * winners.length;
     return winners.map((entry) => {
-      const payout = basePayout + (remainder > 0 ? remainder : 0);
+      const pointSplit = basePointSplit + (remainder > 0 ? remainder : 0);
       remainder = 0;
-      return { user_id: entry.user_id, payout, factor: 1 };
+      return { user_id: entry.user_id, pointSplit, factor: 1 };
     });
   }
 
-  const shares = getRankShares(payoutCurve, payoutConfig);
+  const shares = getRankShares(pointSplitCurve, pointSplitConfig);
   const winners = entries.filter((entry) => entry.rank >= 1 && entry.rank <= shares.length).sort((a, b) => a.rank - b.rank);
-  const averageStake = entries.length ? prizePool / entries.length : 0;
+  const averageStake = entries.length ? recognitionPool / entries.length : 0;
   const raw = winners.map((entry) => {
     const factor = averageStake > 0 ? clamp(Math.sqrt(entry.stake / averageStake), 0.5, 1.5) : 1;
-    return { user_id: entry.user_id, factor, rawPayout: prizePool * ((shares[entry.rank - 1] ?? 0) / 100) * factor };
+    return { user_id: entry.user_id, factor, rawPointSplit: recognitionPool * ((shares[entry.rank - 1] ?? 0) / 100) * factor };
   });
-  const rawTotal = raw.reduce((sum, item) => sum + item.rawPayout, 0);
+  const rawTotal = raw.reduce((sum, item) => sum + item.rawPointSplit, 0);
   let assigned = 0;
 
   return raw.map((item, index) => {
     const isLast = index === raw.length - 1;
-    const payout = rawTotal > 0 ? (isLast ? prizePool - assigned : Math.round((item.rawPayout / rawTotal) * prizePool)) : 0;
-    assigned += payout;
-    return { user_id: item.user_id, payout, factor: Number(item.factor.toFixed(4)) };
+    const pointSplit = rawTotal > 0 ? (isLast ? recognitionPool - assigned : Math.round((item.rawPointSplit / rawTotal) * recognitionPool)) : 0;
+    assigned += pointSplit;
+    return { user_id: item.user_id, pointSplit, factor: Number(item.factor.toFixed(4)) };
   });
 }
 
@@ -194,6 +211,8 @@ export async function ensureWeeklyLeagueEvents(supabase: SupabaseClient, leagueI
     max_stake: 100,
     payout_curve: 'balanced_top3',
     payout_config: { rankShares: [50, 30, 20] },
+    point_split_curve: 'balanced_top3',
+    point_split_config: { rankShares: [50, 30, 20] },
   }));
 
   if (events.length === 0) return { leagueEvents: 0 };
@@ -250,6 +269,8 @@ export async function ensureFutureMatchdayEvents(supabase: SupabaseClient, leagu
     max_stake: 100,
     payout_curve: 'balanced_top3',
     payout_config: { rankShares: [50, 30, 20] },
+    point_split_curve: 'balanced_top3',
+    point_split_config: { rankShares: [50, 30, 20] },
   })));
 
   if (events.length === 0) return { leagueEvents: 0 };
@@ -354,6 +375,8 @@ async function buildEventEntries(supabase: SupabaseClient, event: LeagueEvent, p
         stake: entry.stake,
         payout: 0,
         payout_factor: 1,
+        point_split: 0,
+        point_split_factor: 1,
         updated_at: now,
         entered_order: eventEntries.findIndex((candidate) => candidate.user_id === entry.user_id),
       };
@@ -409,17 +432,22 @@ export async function settleLeagueEvent(supabase: SupabaseClient, eventId: strin
     .order('rank', { ascending: true });
 
   if (rowsError) throw rowsError;
-  const payouts = calculatePayouts((rows ?? []) as Array<{ user_id: string; rank: number; stake: number }>, leagueEvent.prize_pool, leagueEvent.payout_curve, leagueEvent.payout_config);
+  const pointSplits = calculatePointSplits(
+    (rows ?? []) as Array<{ user_id: string; rank: number; stake: number }>,
+    getRecognitionPool(leagueEvent),
+    getPointSplitCurve(leagueEvent),
+    getPointSplitConfig(leagueEvent),
+  );
 
-  for (const payout of payouts) {
-    if (payout.payout <= 0) continue;
+  for (const pointSplit of pointSplits) {
+    if (pointSplit.pointSplit <= 0) continue;
 
     const { data: existingTransaction, error: existingTransactionError } = await supabase
       .from('point_transactions')
       .select('id')
-      .eq('user_id', payout.user_id)
+      .eq('user_id', pointSplit.user_id)
       .eq('event_id', eventId)
-      .eq('type', 'payout')
+      .in('type', ['payout', 'point_split'])
       .maybeSingle();
 
     if (existingTransactionError) throw existingTransactionError;
@@ -428,31 +456,37 @@ export async function settleLeagueEvent(supabase: SupabaseClient, eventId: strin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('points')
-      .eq('id', payout.user_id)
+      .eq('id', pointSplit.user_id)
       .single();
 
     if (profileError) throw profileError;
-    const pointsAfterPayout = Math.max(0, profile.points ?? 0) + payout.payout;
-    await updateDisplayedPoints(supabase, payout.user_id, pointsAfterPayout);
+    const pointsAfterPointSplit = Math.max(0, profile.points ?? 0) + pointSplit.pointSplit;
+    await updateDisplayedPoints(supabase, pointSplit.user_id, pointsAfterPointSplit);
 
     const { error: transactionError } = await supabase.from('point_transactions').insert({
-      user_id: payout.user_id,
+      user_id: pointSplit.user_id,
       league_id: leagueEvent.league_id,
       event_id: eventId,
-      type: 'payout',
-      amount: payout.payout,
-      balance_after: pointsAfterPayout,
-      description: 'League event payout',
+      type: 'point_split',
+      amount: pointSplit.pointSplit,
+      balance_after: pointsAfterPointSplit,
+      description: 'League event point split',
     });
     if (transactionError) throw transactionError;
 
-    const { error: payoutError } = await supabase
+    const { error: pointSplitError } = await supabase
       .from('league_event_leaderboard_entries')
-      .update({ payout: payout.payout, payout_factor: payout.factor, updated_at: new Date().toISOString() })
+      .update({
+        payout: pointSplit.pointSplit,
+        payout_factor: pointSplit.factor,
+        point_split: pointSplit.pointSplit,
+        point_split_factor: pointSplit.factor,
+        updated_at: new Date().toISOString(),
+      })
       .eq('event_id', eventId)
-      .eq('user_id', payout.user_id);
+      .eq('user_id', pointSplit.user_id);
 
-    if (payoutError) throw payoutError;
+    if (pointSplitError) throw pointSplitError;
   }
 
   const { error: settleError } = await supabase
@@ -461,7 +495,7 @@ export async function settleLeagueEvent(supabase: SupabaseClient, eventId: strin
     .eq('id', eventId);
 
   if (settleError) throw settleError;
-  return { ...refreshed, payouts: payouts.length };
+  return { ...refreshed, pointSplits: pointSplits.length, payouts: pointSplits.length };
 }
 
 export async function cancelLeagueEvent(supabase: SupabaseClient, eventId: string, cancelledBy: string) {
@@ -522,6 +556,7 @@ export async function cancelLeagueEvent(supabase: SupabaseClient, eventId: strin
       cancelled_at: new Date().toISOString(),
       cancelled_by: cancelledBy,
       prize_pool: 0,
+      recognition_pool: 0,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId);
