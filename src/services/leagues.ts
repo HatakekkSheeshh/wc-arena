@@ -138,7 +138,11 @@ export function updateLeague(input: { leagueId: string; name: string; descriptio
 }
 
 export function kickLeagueMember(input: { leagueId: string; userId: string }) {
-  return invokeLeagueAction<{ status: 'removed' }>({ action: 'kickLeagueMember', ...input });
+  return invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'kickLeagueMember', ...input });
+}
+
+export function leaveLeague(input: { leagueId: string }) {
+  return invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'leaveLeague', ...input });
 }
 
 export function archiveLeague(input: { leagueId: string; archiveReason?: string }) {

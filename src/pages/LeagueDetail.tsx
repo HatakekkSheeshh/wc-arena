@@ -8,7 +8,7 @@ import StreakBadge from '../components/ui/StreakBadge';
 import { useAuth } from '../lib/auth';
 import { listLeagueActivity, type ActivityEventRow } from '../services/activity';
 import { listLeagueLeaderboard, type LeaderboardEntryWithProfile } from '../services/leaderboard';
-import { approveJoinRequest, archiveLeague, deleteArchivedLeague, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
+import { approveJoinRequest, archiveLeague, deleteArchivedLeague, getLeague, joinLeague, kickLeagueMember, leaveLeague, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
 import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEventMatches, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventMatchRow, type LeagueEventRow, type PayoutCurve } from '../services/leagueEvents';
 import { getErrorMessage } from '../services/serviceTypes';
 import { listMatches, type MatchRow } from '../services/matches';
@@ -171,6 +171,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [saving, setSaving] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [leavingLeague, setLeavingLeague] = useState(false);
   const [enteringEventId, setEnteringEventId] = useState<string | null>(null);
   const [settlingEventId, setSettlingEventId] = useState<string | null>(null);
   const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
@@ -401,6 +402,24 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
       loadLeague();
     } catch (nextError) {
       setError(getErrorMessage(nextError));
+    }
+  }
+
+  async function handleLeaveLeague() {
+    if (!league || !currentMembership) return;
+    setLeavingLeague(true);
+    setError(null);
+    try {
+      const result = await leaveLeague({ leagueId: league.id });
+      if (typeof result.points === 'number') {
+        window.dispatchEvent(new CustomEvent('wc26:profile-points-changed', { detail: { points: result.points } }));
+        setAvailablePoints(result.points);
+      }
+      navigate('/leagues');
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setLeavingLeague(false);
     }
   }
 
@@ -681,7 +700,16 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                   {joining ? t('ui.joiningLeague') : league.join_policy === 'approval' ? t('ui.requestToJoin') : t('ui.joinLeague')}
                 </button>
               )}
-              {isMember && !isOwner && <div className="bg-c3 border-2 border-main px-4 py-3 font-black uppercase text-sm text-center rounded-sm">{t('ui.joined')}</div>}
+              {isMember && !isOwner && !isArchived && (
+                <div className="bg-c3 border-2 border-main p-3 flex flex-col gap-2 rounded-sm">
+                  <div className="font-black uppercase text-sm text-center">{t('ui.joined')}</div>
+                  <div className="font-bold text-[10px] uppercase text-subtle leading-snug">{t('ui.leaveLeagueBody')}</div>
+                  <button type="button" onClick={handleLeaveLeague} disabled={leavingLeague} className="bg-c5 border-2 border-main px-4 py-2.5 font-black uppercase text-xs shadow-[3px_3px_0_var(--color-shadow)] disabled:opacity-60 rounded-sm">
+                    {leavingLeague ? t('ui.leavingLeague') : t('ui.leaveLeague')}
+                  </button>
+                </div>
+              )}
+              {isMember && !isOwner && isArchived && <div className="bg-c3 border-2 border-main px-4 py-3 font-black uppercase text-sm text-center rounded-sm">{t('ui.joined')}</div>}
               {isOwner && (
                 <button onClick={handleCopyInvite} className="bg-c1 border-2 border-main px-4 py-3 font-black uppercase inline-flex items-center justify-center gap-2 text-sm shadow-[3px_3px_0_var(--color-shadow)] rounded-sm">
                   <Copy size={16} /> {copied ? t('ui.inviteLinkCopied') : t('ui.copyInviteLink')}
@@ -848,7 +876,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                           <span>{member.profiles?.points ?? 0} {t('ui.pointsShort')}</span>
                         </div>
                       </div>
-                      {isOwner && !isArchived && member.role !== 'owner' && <button onClick={() => handleKickMember(member.user_id)} className="bg-c5 border-2 border-main p-2 rounded-sm" aria-label={t('ui.removeMember')}><UserMinus size={14} /></button>}
+                      {isOwner && !isArchived && member.role !== 'owner' && <button onClick={() => handleKickMember(member.user_id)} className="bg-c5 border-2 border-main p-2 rounded-sm" aria-label={t('ui.safeRemoveMember')}><UserMinus size={14} /></button>}
                     </div>
                   ))}
                   {members.length === 0 && <div className="p-3 font-black uppercase text-xs">{t('ui.noMembers')}</div>}
