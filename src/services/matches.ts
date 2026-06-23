@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
+import { cached } from './cache';
 
 export type MatchRow = Database['public']['Tables']['matches']['Row'];
 export type EffectiveMatchStatus = MatchRow['status'];
@@ -59,25 +60,29 @@ export function isMatchPredictionOpen(match: MatchRow, now = new Date()) {
 }
 
 export async function listMatches() {
-  const { data, error } = await supabase
-    .from('matches')
-    .select(MATCH_SUMMARY_FIELDS)
-    .like('id', 'wc2026-%')
-    .order('kickoff_at', { ascending: true })
-    .limit(128);
+  return cached('matches:list', 300_000, async () => {
+    const { data, error } = await supabase
+      .from('matches')
+      .select(MATCH_SUMMARY_FIELDS)
+      .like('id', 'wc2026-%')
+      .order('kickoff_at', { ascending: true })
+      .limit(128);
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  });
 }
 
 export async function getMatch(matchId: string) {
-  const query = supabase
-    .from('matches')
-    .select(MATCH_DETAIL_FIELDS)
-    .eq('id', matchId);
+  return cached(`matches:detail:${matchId}`, 60_000, async () => {
+    const query = supabase
+      .from('matches')
+      .select(MATCH_DETAIL_FIELDS)
+      .eq('id', matchId);
 
-  const { data, error } = await query.single();
+    const { data, error } = await query.single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  });
 }

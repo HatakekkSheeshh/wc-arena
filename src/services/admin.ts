@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
+import { invalidateCache } from './cache';
 
 export type AdminAuditLogRow = Database['public']['Tables']['admin_audit_logs']['Row'];
 export type AdminChecklistItemRow = Database['public']['Tables']['admin_checklist_items']['Row'];
@@ -36,12 +37,15 @@ const ADMIN_PREDICTION_FIELDS = `
 export async function updateMatchResult(input: { matchId: string; homeScore: number; awayScore: number }) {
   const { data, error } = await supabase.functions.invoke('update_match_result', { body: input });
   if (error) throw error;
+  invalidateCache('matches:');
+  invalidateCache('leaderboard:');
   return data;
 }
 
 export async function recalculateScores() {
   const { data, error } = await supabase.functions.invoke('recalculate_scores', { body: {} });
   if (error) throw error;
+  invalidateCache('leaderboard:');
   return data;
 }
 

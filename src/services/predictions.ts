@@ -1,5 +1,6 @@
 import { supabase, supabaseKey, supabaseUrl } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
+import { invalidateCache } from './cache';
 
 export type PredictionRow = Database['public']['Tables']['predictions']['Row'];
 export type PredictionScoreRow = Database['public']['Tables']['prediction_scores']['Row'];
@@ -90,5 +91,7 @@ export async function submitPrediction(input: SubmitPredictionInput) {
   }
 
   if (!body?.prediction) throw new Error('Prediction could not be saved.');
+  invalidateCache('matches:');
+  invalidateCache('leaderboard:');
   return body as { prediction: PredictionRow };
 }

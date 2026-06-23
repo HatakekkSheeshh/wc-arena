@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
+import { cached, invalidateCache } from './cache';
 
 export type LeagueRow = Database['public']['Tables']['leagues']['Row'];
 export type LeagueJoinRequestRow = Database['public']['Tables']['league_join_requests']['Row'] & {
@@ -28,15 +29,17 @@ async function invokeLeagueAction<T>(body: Record<string, unknown>) {
 }
 
 export async function listLeagues() {
-  const { data, error } = await supabase
-    .from('leagues')
-    .select(LEAGUE_FIELDS)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(100);
+  return cached('leagues:list', 300_000, async () => {
+    const { data, error } = await supabase
+      .from('leagues')
+      .select(LEAGUE_FIELDS)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true })
+      .limit(100);
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  });
 }
 
 export async function listLeagueMemberCounts(leagueIds: string[]) {
@@ -122,38 +125,56 @@ export async function listLeagueJoinRequests(leagueId: string) {
   return data as LeagueJoinRequestRow[];
 }
 
-export function createLeague(input: CreateLeagueInput) {
-  return invokeLeagueAction<{ league: LeagueRow }>({ action: 'createLeague', ...input });
+export async function createLeague(input: CreateLeagueInput) {
+  const result = await invokeLeagueAction<{ league: LeagueRow }>({ action: 'createLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function joinLeague(input: { leagueId?: string; inviteCode?: string }) {
-  return invokeLeagueAction<{ league: LeagueRow; status: 'joined' | 'pending'; membership?: Database['public']['Tables']['league_members']['Row']; request?: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'joinLeague', ...input });
+export async function joinLeague(input: { leagueId?: string; inviteCode?: string }) {
+  const result = await invokeLeagueAction<{ league: LeagueRow; status: 'joined' | 'pending'; membership?: Database['public']['Tables']['league_members']['Row']; request?: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'joinLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function approveJoinRequest(input: { leagueId: string; requestUserId: string }) {
-  return invokeLeagueAction<{ status: 'approved'; request: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'approveJoinRequest', ...input });
+export async function approveJoinRequest(input: { leagueId: string; requestUserId: string }) {
+  const result = await invokeLeagueAction<{ status: 'approved'; request: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'approveJoinRequest', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function rejectJoinRequest(input: { leagueId: string; requestUserId: string }) {
-  return invokeLeagueAction<{ status: 'rejected'; request: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'rejectJoinRequest', ...input });
+export async function rejectJoinRequest(input: { leagueId: string; requestUserId: string }) {
+  const result = await invokeLeagueAction<{ status: 'rejected'; request: Database['public']['Tables']['league_join_requests']['Row'] }>({ action: 'rejectJoinRequest', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function updateLeague(input: { leagueId: string; name: string; description: string }) {
-  return invokeLeagueAction<{ league: LeagueRow }>({ action: 'updateLeague', ...input });
+export async function updateLeague(input: { leagueId: string; name: string; description: string }) {
+  const result = await invokeLeagueAction<{ league: LeagueRow }>({ action: 'updateLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function kickLeagueMember(input: { leagueId: string; userId: string }) {
-  return invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'kickLeagueMember', ...input });
+export async function kickLeagueMember(input: { leagueId: string; userId: string }) {
+  const result = await invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'kickLeagueMember', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function leaveLeague(input: { leagueId: string }) {
-  return invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'leaveLeague', ...input });
+export async function leaveLeague(input: { leagueId: string }) {
+  const result = await invokeLeagueAction<{ status: 'removed'; refunds: number; refundedPoints: number; points: number | null }>({ action: 'leaveLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function archiveLeague(input: { leagueId: string; archiveReason?: string }) {
-  return invokeLeagueAction<{ league: LeagueRow; status: 'archived'; cancelledEvents: number; refunds: number }>({ action: 'archiveLeague', ...input });
+export async function archiveLeague(input: { leagueId: string; archiveReason?: string }) {
+  const result = await invokeLeagueAction<{ league: LeagueRow; status: 'archived'; cancelledEvents: number; refunds: number }>({ action: 'archiveLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
 
-export function deleteArchivedLeague(input: { leagueId: string }) {
-  return invokeLeagueAction<{ status: 'deleted'; leagueId: string }>({ action: 'deleteArchivedLeague', ...input });
+export async function deleteArchivedLeague(input: { leagueId: string }) {
+  const result = await invokeLeagueAction<{ status: 'deleted'; leagueId: string }>({ action: 'deleteArchivedLeague', ...input });
+  invalidateCache('leagues:');
+  return result;
 }
