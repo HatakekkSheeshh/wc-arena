@@ -594,8 +594,8 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
               <div className="min-w-0 flex flex-col gap-1">
                 <div className="font-black uppercase truncate">{getPublicDisplayName(row.profiles, row.user_id)}</div>
                 <div className="flex flex-wrap gap-1.5 text-[9px] uppercase">
-                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle">{t('ui.stakePoints')}: {row.stake} {t('ui.pointsShort')}</span>
-                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle">{t('ui.poolScorePoints')}: {row.points} {t('ui.pointsShort')}</span>
+                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle rounded-sm">{t('ui.stakePoints')}: {row.stake} {t('ui.pointsShort')}</span>
+                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle rounded-sm">{t('ui.poolScorePoints')}: {row.points} {t('ui.pointsShort')}</span>
                 </div>
               </div>
               <div className="font-black text-right flex flex-col items-end leading-tight">
