@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "perf:budget": "npm run build && tsx scripts/verify-performance-budget.ts",
+    "perf:lighthouse": "npx lighthouse https://predict-2026.vercel.app --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lighthouse-report.json",
     "data:sync:worldcup": "tsx scripts/sync-openfootball-worldcup.ts",
     "data:sync:espn": "tsx scripts/sync-espn-worldcup.ts",
     "supabase:types": "supabase gen types --linked --lang=typescript > src/types/supabase.ts",

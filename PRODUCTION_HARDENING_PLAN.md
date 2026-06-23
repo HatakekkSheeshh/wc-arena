@@ -810,9 +810,22 @@ npx tsx scripts/verify-client-cache.ts
 npx tsx scripts/verify-vercel-security-headers.ts
 npx tsx scripts/verify-asset-size-budget.ts
 npx tsx scripts/verify-auth-hardening.ts
+npx tsx scripts/verify-performance-budget.ts
 npm run lint
 npm run build
+npm run perf:budget
 ```
+
+Use Lighthouse for real page-speed baselines after a production deploy:
+
+```bash
+npm run perf:lighthouse
+npx lighthouse https://predict-2026.vercel.app/matches --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lighthouse-matches-report.json
+npx lighthouse https://predict-2026.vercel.app/picks --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lighthouse-picks-report.json
+npx lighthouse https://predict-2026.vercel.app/leaderboard --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lighthouse-leaderboard-report.json
+```
+
+Track the Lighthouse metrics that matter most for speed regressions: performance score, FCP, LCP, TBT, CLS, Speed Index, total JS transfer size, and total image transfer size.
 
 Use Supabase CLI inspection commands when backend behavior looks wrong:
 
