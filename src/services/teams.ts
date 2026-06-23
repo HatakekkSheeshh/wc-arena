@@ -12,7 +12,7 @@ export async function listTeams() {
       .from('teams')
       .select(TEAM_FIELDS)
       .order('name')
-      .limit(64);
+      .limit(256);
 
     if (error) throw error;
     return data;
