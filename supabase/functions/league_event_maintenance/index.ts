@@ -11,6 +11,11 @@ function jsonResponse(body: unknown, status = 200) {
   return sharedJsonResponse(corsHeaders, body, status);
 }
 
+type CleanupResult = {
+  activity_deleted: number;
+  audit_deleted: number;
+};
+
 async function insertAuditLog(supabase: ReturnType<typeof createClient>, action: string, description: string, severity: 'info' | 'warning') {
   await supabase.from('admin_audit_logs').insert({
     action,
@@ -19,6 +24,20 @@ async function insertAuditLog(supabase: ReturnType<typeof createClient>, action:
     description,
     severity,
   });
+}
+
+async function cleanupOldOperationalData(supabase: ReturnType<typeof createClient>) {
+  const { data, error } = await supabase.rpc('cleanup_old_operational_data');
+  if (error) {
+    await insertAuditLog(supabase, 'operational_retention_cleanup_failed', error.message, 'warning');
+    return { activityDeleted: 0, auditDeleted: 0, error: error.message };
+  }
+
+  const cleanupResult = data as CleanupResult | null;
+  return {
+    activityDeleted: cleanupResult?.activity_deleted ?? 0,
+    auditDeleted: cleanupResult?.audit_deleted ?? 0,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -46,12 +65,13 @@ Deno.serve(async (req) => {
     const matchday = await ensureFutureMatchdayEvents(supabase);
     const locked = await lockStartedEvents(supabase);
     const settled = await settleEndedEvents(supabase);
-    const hasErrors = settled.settlementErrors.length > 0;
+    const cleanupResult = await cleanupOldOperationalData(supabase);
+    const hasErrors = settled.settlementErrors.length > 0 || Boolean(cleanupResult.error);
 
     await insertAuditLog(
       supabase,
       hasErrors ? 'league_event_maintenance_completed_with_errors' : 'league_event_maintenance_completed',
-      `League event maintenance upserted ${weekly.leagueEvents} weekly events and ${matchday.leagueEvents} matchday events, locked ${locked.lockedEvents} events, settled ${settled.settledEvents} events, with ${settled.settlementErrors.length} settlement errors.`,
+      `League event maintenance upserted ${weekly.leagueEvents} weekly events and ${matchday.leagueEvents} matchday events, locked ${locked.lockedEvents} events, settled ${settled.settledEvents} events, deleted ${cleanupResult.activityDeleted} activity events and ${cleanupResult.auditDeleted} audit logs, with ${settled.settlementErrors.length} settlement errors${cleanupResult.error ? ` and cleanup error: ${cleanupResult.error}` : ''}.`,
       hasErrors ? 'warning' : 'info',
     );
 
@@ -61,6 +81,7 @@ Deno.serve(async (req) => {
       lockedEvents: locked.lockedEvents,
       settledEvents: settled.settledEvents,
       settlementErrors: settled.settlementErrors,
+      cleanupResult,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown league event maintenance error';
