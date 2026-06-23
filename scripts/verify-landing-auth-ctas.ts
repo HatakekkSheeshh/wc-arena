@@ -4,10 +4,11 @@ import { strict as assert } from 'node:assert';
 const landing = readFileSync('src/Landing.tsx', 'utf8');
 
 assert.match(landing, /import \{ useAuth \} from '\.\/lib\/auth'/, 'Landing must use the shared auth state instead of blindly sending CTAs to register.');
-assert.match(landing, /const \{ user, loading: authLoading \} = useAuth\(\)/, 'Landing must read user and auth loading state.');
-assert.match(landing, /const predictionCtaTarget = authLoading \? null : user \? 'picks' : 'register'/, 'Landing must resolve prediction CTAs to picks for authenticated users and register for guests.');
-assert.match(landing, /function handlePredictionCta\(\)/, 'Landing must centralize prediction CTA navigation.');
-assert.match(landing, /if \(!predictionCtaTarget\) return/, 'Landing must avoid routing to auth while the session is still loading.');
+assert.match(landing, /import \{ supabase \} from '\.\/lib\/supabaseClient'/, 'Landing CTA must be able to check the current Supabase session at click time.');
+assert.match(landing, /const \{ user \} = useAuth\(\)/, 'Landing must read shared auth state for the rendered session.');
+assert.match(landing, /async function handlePredictionCta\(\)/, 'Landing must centralize prediction CTA navigation in an async handler.');
+assert.match(landing, /const \{ data \} = await supabase\.auth\.getSession\(\)/, 'Landing CTA must refresh the current session at click time before deciding where to route.');
+assert.match(landing, /onNavigate\(data\.session\?\.user \? 'picks' : user \? 'picks' : 'register'\)/, 'Landing prediction CTAs must route any authenticated session to picks and guests to register.');
 
 const registerButtonMatches = landing.match(/onClick=\{\(\) => onNavigate\('register'\)\}/g) ?? [];
 assert.equal(registerButtonMatches.length, 0, 'Landing primary CTAs must not hardcode register navigation.');

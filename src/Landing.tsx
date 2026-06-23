@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Trophy, Users, Clock, ArrowRight, User, Target, CheckCircle, TrendingUp, Pencil, Lock } from 'lucide-react';
 import LegacySettingsMenu from './components/LegacySettingsMenu';
 import { useAuth } from './lib/auth';
+import { supabase } from './lib/supabaseClient';
 import { listGlobalLeaderboard, type LeaderboardEntryWithProfile } from './services/leaderboard';
 import { getEffectiveMatchStatus, listMatches, type MatchRow } from './services/matches';
 import { getTeamMap, type TeamRow } from './services/teams';
@@ -75,7 +76,7 @@ function getUpcomingMatches(matches: MatchRow[], now: Date) {
 
 export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: LandingProps) {
   const { t } = useTranslation();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const themeControls = { isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame };
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [teams, setTeams] = useState<Map<string, TeamRow>>(new Map());
@@ -120,11 +121,9 @@ export default function Landing({ onNavigate, isVintage, setIsVintage, isDark, s
   const nextDeadline = useMemo(() => {
     return matches.find((match) => new Date(match.lock_at) > now && ['open', 'scheduled'].includes(getEffectiveMatchStatus(match, now)));
   }, [matches, now]);
-  const predictionCtaTarget = authLoading ? null : user ? 'picks' : 'register';
-
-  function handlePredictionCta() {
-    if (!predictionCtaTarget) return;
-    onNavigate(predictionCtaTarget);
+  async function handlePredictionCta() {
+    const { data } = await supabase.auth.getSession();
+    onNavigate(data.session?.user ? 'picks' : user ? 'picks' : 'register');
   }
 
   const stats = [
