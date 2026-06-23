@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trophy, Users, Crosshair, Clock, CheckCircle2, TrendingUp, Lock, BookOpen, PenTool, BarChart2, Target } from 'lucide-react';
+import { Trophy, Users, Crosshair, Clock, CheckCircle2, TrendingUp, Lock, Target, Gauge, ShieldPlus, PlusCircle } from 'lucide-react';
 import AppShell from './components/layout/AppShell';
 import { listGlobalLeaderboard } from './services/leaderboard';
 
@@ -97,7 +97,7 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                                <span className="font-black text-sm uppercase">{t('ui.exactScore')}</span>
                                <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.exactScoreRuleBody')}</span>
                             </div>
-                            <div className="font-black text-2xl text-c3 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">3 {t('ui.pointsShort')}</div>
+                            <div className="font-black text-2xl text-c3 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">5 {t('ui.pointsShort')}</div>
                          </div>
 
                          <div className="flex p-3 border-b-2 border-line gap-3 items-center">
@@ -106,7 +106,25 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                                <span className="font-black text-sm uppercase">{t('ui.correctOutcome')}</span>
                                <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.correctOutcomeRuleBody')}</span>
                             </div>
-                            <div className="font-black text-2xl text-c2 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)] text-stroke">1 {t('ui.pointsShort')}</div>
+                            <div className="font-black text-2xl text-c2 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)] text-stroke">2 {t('ui.pointsShort')}</div>
+                         </div>
+
+                         <div className="flex p-3 border-b-2 border-line gap-3 items-center">
+                            <div className="w-12 h-12 bg-c1 rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-main"><PlusCircle size={24} /></div>
+                            <div className="flex flex-col flex-1">
+                               <span className="font-black text-sm uppercase">{t('ui.goalDifferenceBonus')}</span>
+                               <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.goalDifferenceBonusRuleBody')}</span>
+                            </div>
+                            <div className="font-black text-2xl text-c1 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">+1</div>
+                         </div>
+
+                         <div className="flex p-3 border-b-2 border-line gap-3 items-center">
+                            <div className="w-12 h-12 bg-muted rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-main"><PlusCircle size={24} /></div>
+                            <div className="flex flex-col flex-1">
+                               <span className="font-black text-sm uppercase">{t('ui.teamScoreBonus')}</span>
+                               <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.teamScoreBonusRuleBody')}</span>
+                            </div>
+                            <div className="font-black text-2xl text-main pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-shadow)]">+1</div>
                          </div>
 
                          <div className="flex p-3 border-b-2 border-line gap-3 items-center">
@@ -115,25 +133,34 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                                <span className="font-black text-sm uppercase">{t('ui.streakBonus')}</span>
                                <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.streakBonusRuleBody')}</span>
                             </div>
-                            <div className="font-black text-2xl text-c4 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">+2 {t('ui.pointsShort')}</div>
+                            <div className="font-black text-2xl text-c4 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">{t('ui.streakBonusRuleValue')}</div>
                          </div>
 
                          <div className="flex p-3 border-b-2 border-line gap-3 items-center">
-                            <div className="w-12 h-12 bg-[#B14EFF] rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><Trophy size={24} /></div>
+                            <div className="w-12 h-12 bg-[#B14EFF] rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><Gauge size={24} /></div>
                             <div className="flex flex-col flex-1">
-                               <span className="font-black text-sm uppercase">{t('ui.knockoutBonus')}</span>
-                               <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.knockoutBonusRuleBody')}</span>
+                               <span className="font-black text-sm uppercase">{t('ui.riskMultiplier')}</span>
+                               <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.riskMultiplierRuleBody')}</span>
                             </div>
-                            <div className="font-black text-2xl text-[#B14EFF] pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">+1 {t('ui.pointsShort')}</div>
+                            <div className="font-black text-2xl text-[#B14EFF] pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">{t('ui.riskMultiplierRuleValue')}</div>
+                         </div>
+
+                         <div className="flex p-3 border-b-2 border-line gap-3 items-center">
+                            <div className="w-12 h-12 bg-c5 rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><ShieldPlus size={24} /></div>
+                            <div className="flex flex-col flex-1">
+                               <span className="font-black text-sm uppercase">{t('ui.underdogBonus')}</span>
+                               <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.underdogBonusRuleBody')}</span>
+                            </div>
+                            <div className="font-black text-2xl text-c5 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">{t('ui.underdogBonusRuleValue')}</div>
                          </div>
 
                          <div className="flex p-3 gap-3 items-center bg-muted">
-                            <div className="w-12 h-12 bg-c5 rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><Lock size={24} /></div>
+                            <div className="w-12 h-12 bg-main rounded-sm border-2 border-main flex items-center justify-center shrink-0 shadow-[2px_2px_0_0_var(--color-shadow)] text-inv"><Lock size={24} /></div>
                             <div className="flex flex-col flex-1">
                                <span className="font-black text-sm uppercase">{t('ui.noPointsAfterDeadline')}</span>
                                <span className="text-[11px] font-bold text-subtle leading-snug">{t('ui.noPointsAfterDeadlineBody')}</span>
                             </div>
-                            <div className="font-black text-2xl text-c5 pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-main)]">0 {t('ui.pointsShort')}</div>
+                            <div className="font-black text-2xl text-main pl-1 shrink-0 drop-shadow-[1px_1px_0_var(--color-shadow)]">0 {t('ui.pointsShort')}</div>
                          </div>
 
                       </div>
@@ -299,19 +326,31 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                    <div className="p-4 flex flex-col gap-3 font-bold text-[13px]">
                       <div className="flex items-center gap-3">
                          <div className="w-6 h-6 flex items-center justify-center bg-c1 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-main"><Target size={14} strokeWidth={3}/></div>
-                         <span>{t('ui.exactScore')} = <span className="font-black">3 {t('ui.pointsShort')}</span></span>
+                         <span>{t('ui.exactScore')} = <span className="font-black">5 {t('ui.pointsShort')}</span></span>
                       </div>
                       <div className="flex items-center gap-3">
                          <div className="w-6 h-6 flex items-center justify-center bg-c2 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-inv"><CheckCircle2 size={14} strokeWidth={3}/></div>
-                         <span>{t('ui.correctOutcome')} = <span className="font-black">1 {t('ui.pointsShort')}</span></span>
+                         <span>{t('ui.correctOutcome')} = <span className="font-black">2 {t('ui.pointsShort')}</span></span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <div className="w-6 h-6 flex items-center justify-center bg-c1 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-main"><PlusCircle size={14} strokeWidth={3}/></div>
+                         <span>{t('ui.goalDifferenceBonus')} = <span className="font-black">+1</span></span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <div className="w-6 h-6 flex items-center justify-center bg-muted border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-main"><PlusCircle size={14} strokeWidth={3}/></div>
+                         <span>{t('ui.teamScoreBonus')} = <span className="font-black">+1</span></span>
                       </div>
                       <div className="flex items-center gap-3">
                          <div className="w-6 h-6 flex items-center justify-center bg-c4 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-main"><TrendingUp size={14} strokeWidth={3}/></div>
-                         <span>{t('ui.streakBonus')} <span className="font-black">+2 {t('ui.pointsShort')}</span></span>
+                         <span>{t('ui.streakBonus')} = <span className="font-black">{t('ui.streakBonusRuleValue')}</span></span>
                       </div>
                       <div className="flex items-center gap-3">
-                         <div className="w-6 h-6 flex items-center justify-center bg-[#B14EFF] border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-inv"><Trophy size={14} strokeWidth={3}/></div>
-                         <span>{t('ui.knockoutBonus')} = <span className="font-black">+1 {t('ui.pointsShort')}</span></span>
+                         <div className="w-6 h-6 flex items-center justify-center bg-[#B14EFF] border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-inv"><Gauge size={14} strokeWidth={3}/></div>
+                         <span>{t('ui.riskMultiplier')} = <span className="font-black">{t('ui.riskMultiplierRuleValue')}</span></span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <div className="w-6 h-6 flex items-center justify-center bg-c5 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-inv"><ShieldPlus size={14} strokeWidth={3}/></div>
+                         <span>{t('ui.underdogBonus')} = <span className="font-black">{t('ui.underdogBonusRuleValue')}</span></span>
                       </div>
                       <div className="flex items-center gap-3">
                          <div className="w-6 h-6 flex items-center justify-center bg-c5 border-2 border-main shadow-[2px_2px_0_var(--color-main)] shrink-0 rounded-sm text-inv"><Lock size={14} strokeWidth={3}/></div>
@@ -341,20 +380,20 @@ export default function Rules({ onNavigate, isVintage, setIsVintage, isDark, set
                          <span className="text-[10px] font-black uppercase text-subtle mb-1 tracking-wider">{t('ui.scoreBreakdown')}</span>
                          <div className="flex justify-between items-center text-xs">
                            <span className="flex items-center gap-2"><CheckCircle2 size={12} className="text-c3" strokeWidth={3}/> {t('ui.exactScore')}</span>
-                           <span className="font-black">+3 {t('ui.pointsShort')}</span>
-                         </div>
-                         <div className="flex justify-between items-center text-xs">
-                           <span className="flex items-center gap-2"><CheckCircle2 size={12} className="text-c3" strokeWidth={3}/> {t('ui.correctOutcome')}</span>
-                           <span className="font-black">+1 {t('ui.pointsShort')}</span>
+                           <span className="font-black">+5 {t('ui.pointsShort')}</span>
                          </div>
                          <div className="flex justify-between items-center text-xs">
                            <span className="flex items-center gap-2 text-c4"><TrendingUp size={12} strokeWidth={3}/> {t('ui.twoMatchStreak')}</span>
-                           <span className="font-black">+2 {t('ui.pointsShort')}</span>
+                           <span className="font-black">+1 {t('ui.pointsShort')}</span>
+                         </div>
+                         <div className="flex justify-between items-center text-xs">
+                           <span className="flex items-center gap-2"><ShieldPlus size={12} className="text-c5" strokeWidth={3}/> {t('ui.underdogBonus')}</span>
+                           <span className="font-black">+0–+3 {t('ui.pointsShort')}</span>
                          </div>
                       </div>
                       <div className="flex justify-between items-center py-3 px-4 border-t-2 border-main text-main text-sm uppercase font-black bg-card">
                          <span>{t('ui.totalPointsEarned')}</span>
-                         <span className="text-lg text-c3 drop-shadow-[1px_1px_0_var(--color-main)]">6 {t('ui.pointsShort')}</span>
+                         <span className="text-lg text-c3 drop-shadow-[1px_1px_0_var(--color-main)]">6+ {t('ui.pointsShort')}</span>
                       </div>
                    </div>
                 </div>
