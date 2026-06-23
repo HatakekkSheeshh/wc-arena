@@ -14,7 +14,7 @@ assert.ok(globalHeaderRule, 'vercel.json must define security headers for all ro
 const headers = new Map(globalHeaderRule.headers?.map((header) => [header.key, header.value]));
 
 const expectedHeaders = new Map([
-  ['Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://api.upstash.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"],
+  ['Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://*.supabase.in https://api.upstash.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"],
   ['X-Content-Type-Options', 'nosniff'],
   ['X-Frame-Options', 'DENY'],
   ['Referrer-Policy', 'strict-origin-when-cross-origin'],
