@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Medal, Star, Trophy, User, Users } from 'lucide-react';
 import AppShell from './components/layout/AppShell';
@@ -45,6 +46,10 @@ function getInitials(entry?: LeaderboardEntryWithProfile) {
   return getPublicInitials(entry?.profiles, entry?.user_id ?? '—');
 }
 
+function getProfilePath(entry: Pick<LeaderboardEntryWithProfile, 'user_id'>) {
+  return `/users/${entry.user_id}`;
+}
+
 function getRankChange(entry: LeaderboardEntryWithProfile) {
   return entry.previous_rank ? entry.previous_rank - entry.rank : 0;
 }
@@ -67,9 +72,9 @@ function Avatar({ entry, size = 'w-8 h-8' }: { entry?: LeaderboardEntryWithProfi
 
 function PodiumCard({ item, heightClass, primary, t }: { item?: PodiumItem; heightClass: string; primary?: boolean; t: TranslationFn }) {
   const rank = item?.rank ?? (primary ? 1 : 0);
-
-  return (
-    <div className={`w-full ${primary ? 'sm:w-[40%] xl:w-[38%] pt-12 pb-6 px-4 z-20 shadow-[0px_-2px_0_0_var(--color-shadow)] transform sm:-translate-y-4' : 'sm:w-1/3 pt-10 pb-4 px-3 z-10'} border-4 border-main border-b-0 rounded-t-lg flex flex-col items-center relative ${item?.color ?? 'bg-card'} ${item?.textColor ?? 'text-main'} ${heightClass}`}>
+  const className = `w-full ${primary ? 'sm:w-[40%] xl:w-[38%] pt-12 pb-6 px-4 z-20 shadow-[0px_-2px_0_0_var(--color-shadow)] transform sm:-translate-y-4' : 'sm:w-1/3 pt-10 pb-4 px-3 z-10'} border-4 border-main border-b-0 rounded-t-lg flex flex-col items-center relative ${item?.color ?? 'bg-card'} ${item?.textColor ?? 'text-main'} ${heightClass} ${item ? 'hover:brightness-105 transition' : ''}`;
+  const content = (
+    <>
       <div className={`${primary ? 'absolute -top-7 w-14 h-14 text-3xl bg-c1' : 'absolute -top-6 w-12 h-12 text-xl bg-card'} rounded-full border-4 border-main flex items-center justify-center font-black text-main shadow-[2px_2px_0_0_var(--color-shadow)]`}>
         {rank || '—'}
       </div>
@@ -82,8 +87,10 @@ function PodiumCard({ item, heightClass, primary, t }: { item?: PodiumItem; heig
       <div className="bg-card text-main border-2 border-main rounded-sm px-2 py-1 flex items-center gap-1 text-[9px] md:text-[10px] font-black uppercase text-center justify-center shadow-[2px_2px_0_0_var(--color-shadow)]">
         <Star size={12} fill="currentColor" /> {t('ui.exactScores')}: {item?.exact_scores ?? 0}
       </div>
-    </div>
+    </>
   );
+
+  return item ? <Link to={getProfilePath(item)} className={className}>{content}</Link> : <div className={className}>{content}</div>;
 }
 
 export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark, isRounded, setIsRounded, hasShadow, setHasShadow, hasFrame, setHasFrame }: LeaderboardProps) {
@@ -223,7 +230,7 @@ export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark
                       {[topRank, secondRank, thirdRank].filter(Boolean).map((item) => {
                         const entry = item as LeaderboardEntryWithProfile;
                         return (
-                          <div key={entry.user_id} className="bg-card border-2 border-main p-2.5 shadow-[2px_2px_0_var(--color-shadow)] flex items-center gap-3 rounded-sm">
+                          <Link key={entry.user_id} to={getProfilePath(entry)} className="bg-card border-2 border-main p-2.5 shadow-[2px_2px_0_var(--color-shadow)] flex items-center gap-3 rounded-sm hover:bg-muted transition-colors">
                             <div className="w-8 h-8 border-2 border-main bg-c1 flex items-center justify-center font-black shrink-0 rounded-sm">{entry.rank}</div>
                             <Avatar entry={entry} size="w-9 h-9" />
                             <div className="min-w-0 flex-1">
@@ -231,7 +238,7 @@ export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark
                               <div className="text-[9px] font-black uppercase text-subtle">{t('ui.exact')} {entry.exact_scores} · {entry.accuracy}%</div>
                             </div>
                             <div className="font-black text-base flex items-center gap-1 shrink-0"><PointsCoin size="sm" />{formatPoints(entry.points)}</div>
-                          </div>
+                          </Link>
                         );
                       })}
                     </div>
@@ -260,13 +267,13 @@ export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark
                           const change = getRankChange(item);
                           return (
                             <div key={item.user_id} className="flex flex-col sm:flex-row sm:items-center p-2.5 sm:p-3 lg:p-3 border-b-2 border-line hover:bg-muted transition-colors bg-card sm:bg-transparent">
-                              <div className="flex items-center flex-1 sm:w-auto mb-2 sm:mb-0 min-w-0">
+                              <Link to={getProfilePath(item)} className="flex items-center flex-1 sm:w-auto mb-2 sm:mb-0 min-w-0 hover:text-c2 transition-colors">
                                 <div className="w-8 sm:w-16 font-black text-base sm:text-lg text-center shrink-0">{item.rank}</div>
                                 <Avatar entry={item} />
                                 <div className="flex-1 font-bold text-sm lg:text-base leading-tight truncate">{getDisplayName(item)}</div>
                                 <div className="sm:hidden"><RankBadge points={item.points} size="sm" showLabel={false} /></div>
                               <div className="font-black text-base sm:hidden flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(item.points)}</div>
-                              </div>
+                              </Link>
 
                               <div className="grid grid-cols-4 sm:flex items-start sm:items-center justify-between sm:justify-start w-full sm:w-auto text-xs sm:text-sm pl-8 sm:pl-0 font-bold gap-2 sm:gap-0">
                                 <div className="hidden sm:flex w-28 justify-center"><RankBadge points={item.points} size="sm" showLabel={false} /></div>
@@ -299,13 +306,13 @@ export default function Leaderboard({ isVintage, setIsVintage, isDark, setIsDark
 
                         {currentEntry && (
                           <div className="flex flex-col sm:flex-row sm:items-center p-2.5 sm:p-3 lg:p-3 bg-c1 border-y-4 border-main hover:opacity-90">
-                            <div className="flex items-center flex-1 sm:w-auto mb-2 sm:mb-0 text-main min-w-0">
+                            <Link to={getProfilePath(currentEntry)} className="flex items-center flex-1 sm:w-auto mb-2 sm:mb-0 text-main min-w-0 hover:text-c2 transition-colors">
                               <div className="w-8 sm:w-16 font-black text-lg text-center shrink-0">{currentRank}</div>
                               <Avatar entry={currentEntry} />
                               <div className="flex-1 font-black text-sm lg:text-base leading-tight truncate">{getDisplayName(currentEntry)}</div>
                               <div className="sm:hidden"><RankBadge points={currentEntry.points} size="sm" showLabel={false} /></div>
                               <div className="font-black text-base sm:hidden flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(currentEntry.points)}</div>
-                            </div>
+                            </Link>
 
                             <div className="grid grid-cols-4 sm:flex items-start sm:items-center justify-between sm:justify-start w-full sm:w-auto text-xs sm:text-sm pl-8 sm:pl-0 font-black text-main gap-2 sm:gap-0">
                               <div className="hidden sm:flex w-28 justify-center"><RankBadge points={currentEntry.points} size="sm" showLabel={false} /></div>

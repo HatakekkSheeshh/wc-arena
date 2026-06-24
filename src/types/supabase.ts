@@ -1665,6 +1665,65 @@ export type Database = {
           total_predictions: number
         }[]
       }
+      get_public_user_prediction_history: {
+        Args: { row_limit?: number; target_user_id: string }
+        Returns: {
+          match_away_score: number
+          match_away_team_id: string
+          match_city: string
+          match_espn_display_clock: string
+          match_espn_state: string
+          match_espn_status: string
+          match_espn_status_detail: string
+          match_group_code: string
+          match_home_score: number
+          match_home_team_id: string
+          match_kickoff_at: string
+          match_lock_at: string
+          match_matchday: number
+          match_result_updated_at: string
+          match_stadium: string
+          match_stage: string
+          match_status: string
+          prediction_away_score: number
+          prediction_confidence: number
+          prediction_created_at: string
+          prediction_home_score: number
+          prediction_id: string
+          prediction_is_risk_pick: boolean
+          prediction_locked_at: string
+          prediction_match_id: string
+          prediction_predicted_outcome: string
+          prediction_revision: number
+          prediction_status: string
+          prediction_type: string
+          prediction_updated_at: string
+          profile_accuracy: number
+          profile_avatar_url: string
+          profile_best_streak: number
+          profile_country_code: string
+          profile_created_at: string
+          profile_current_streak: number
+          profile_display_name: string
+          profile_exact_scores: number
+          profile_fan_club_team_id: string
+          profile_id: string
+          profile_points: number
+          profile_rank: number
+          profile_username: string
+          score_calculated_at: string
+          score_correct_outcome: number
+          score_exact_score: number
+          score_goal_difference_bonus: number
+          score_outcome: string
+          score_risk_multiplier: number
+          score_scoring_version: string
+          score_streak_bonus: number
+          score_team_score_bonus: number
+          score_total: number
+          score_underdog_bonus: number
+        }[]
+      }
       refresh_global_leaderboard_entries: { Args: never; Returns: undefined }
       refresh_league_member_count: {
         Args: { target_league_id: string }

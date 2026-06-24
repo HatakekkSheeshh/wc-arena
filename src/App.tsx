@@ -25,6 +25,7 @@ const MatchDetail = lazy(() => import('./pages/MatchDetail'));
 const MyPredictions = lazy(() => import('./pages/MyPredictions'));
 const PredictionBreakdown = lazy(() => import('./pages/PredictionBreakdown'));
 const Profile = lazy(() => import('./pages/Profile'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const Rewards = lazy(() => import('./pages/Rewards'));
 const Statistics = lazy(() => import('./pages/Statistics'));
 
@@ -117,6 +118,7 @@ export default function App() {
           <Route path="/points-guide" element={<LegacyRoute Component={PointsGuide} themeControls={themeControls} />} />
           <Route path="/prize-pool" element={<Navigate to="/points-guide" replace />} />
           <Route path="/profile" element={<Profile themeControls={themeControls} />} />
+          <Route path="/users/:userId" element={<PublicProfile themeControls={themeControls} />} />
           <Route path="/badges" element={<Badges themeControls={themeControls} />} />
           <Route path="/achievements" element={<Achievements themeControls={themeControls} />} />
           <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
