@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BarChart2, ListChecks, Star, Trophy } from 'lucide-react';
+import { BarChart2, ListChecks, Shield, Star, Trophy } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import PointsCoin from '../components/ui/PointsCoin';
 import RankBadge from '../components/ui/RankBadge';
@@ -121,8 +121,11 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
   if (loading) {
     return (
       <AppShell themeControls={themeControls}>
-        <div className="relative z-10 flex flex-col p-3 sm:p-4 lg:p-6 gap-3 lg:gap-6 min-h-0">
-          <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] font-black uppercase text-sm">
+        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+            <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">Player Profile</h1>
+          </div>
+          <div className="bg-card border-4 border-main p-4 lg:p-6 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm font-black uppercase text-sm">
             Loading public profile...
           </div>
         </div>
@@ -133,8 +136,11 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
   if (error || !profile) {
     return (
       <AppShell themeControls={themeControls}>
-        <div className="relative z-10 flex flex-col p-3 sm:p-4 lg:p-6 gap-3 lg:gap-6 min-h-0">
-          <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 flex flex-col gap-3 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] font-black uppercase text-sm">
+        <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+            <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main">Player Profile</h1>
+          </div>
+          <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-3 shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm font-black uppercase text-sm">
             <span>{error ?? 'Profile not found.'}</span>
             <Link to="/leaderboard" className="text-c2 underline">Back to leaderboard</Link>
           </div>
@@ -149,28 +155,37 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
 
   return (
     <AppShell themeControls={themeControls}>
-      <div className="relative z-10 flex flex-col p-3 sm:p-4 lg:p-6 gap-3 lg:gap-6 min-h-0">
-        <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 flex flex-col gap-4 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)]">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-main bg-elevated overflow-hidden flex items-center justify-center font-black text-2xl shrink-0 shadow-[4px_4px_0_var(--color-shadow)]">
-              {profile.avatar_url ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" /> : initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest text-subtle">Public profile</div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tighter text-main leading-none truncate">{displayName}</h1>
-              <div className="mt-2 flex flex-wrap gap-2 text-[10px] sm:text-xs font-black uppercase">
-                <span className="border-2 border-main bg-c1 text-main px-2 py-1">Rank #{profile.rank ?? '—'}</span>
-                <span className="border-2 border-main bg-c2 text-inv px-2 py-1 flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(profile.points)} pts</span>
-                {favoriteTeam && <span className="border-2 border-main bg-card text-main px-2 py-1">Fan club: {favoriteTeam.short_name}</span>}
-              </div>
-            </div>
-            <Link to="/leaderboard" className="bg-card hover:bg-muted text-main font-black text-[10px] sm:text-xs px-3 py-2 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center">
-              Leaderboard
-            </Link>
-          </div>
+      <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+          <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest text-subtle mb-1">Public player profile</div>
+          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main leading-none truncate">{displayName}</h1>
         </div>
 
-        <div className="bg-card border-4 border-main flex flex-col gap-0 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm overflow-hidden">
+        <div className="bg-card border-4 border-main flex flex-col shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm overflow-hidden">
+          <div className="flex flex-col lg:flex-row border-b-4 border-main bg-card">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 lg:p-6 flex-1 border-b-4 lg:border-b-0 lg:border-r-4 border-main min-w-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-main bg-elevated overflow-hidden flex items-center justify-center font-black text-2xl shrink-0 shadow-[4px_4px_0_var(--color-shadow)]">
+                {profile.avatar_url ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" /> : initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest text-subtle">Prediction history viewer</div>
+                <div className="font-black uppercase text-2xl sm:text-3xl tracking-tight text-main truncate">{displayName}</div>
+                <div className="mt-2 flex flex-wrap gap-2 text-[10px] sm:text-xs font-black uppercase">
+                  <span className="border-2 border-main bg-c1 text-main px-2 py-1">Rank #{profile.rank ?? '—'}</span>
+                  <span className="border-2 border-main bg-c2 text-inv px-2 py-1 flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(profile.points)} pts</span>
+                  {favoriteTeam && <span className="border-2 border-main bg-card text-main px-2 py-1">Fan club: {favoriteTeam.short_name}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="w-full lg:w-[300px] bg-c1 text-main p-4 lg:p-6 flex flex-col justify-center gap-3">
+              <div className="flex items-center gap-2 font-black uppercase text-sm"><Shield size={18} /> Privacy safe</div>
+              <div className="text-xs font-bold uppercase leading-relaxed text-subtle">Only finished matches with calculated score rows are shown here. Future and live predictions stay private.</div>
+              <Link to="/leaderboard" className="bg-card hover:bg-muted text-main font-black text-[10px] sm:text-xs px-3 py-2 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center w-max">
+                Leaderboard
+              </Link>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 xl:grid-cols-4 border-b-4 border-main">
             <div className="flex items-center gap-2 sm:gap-4 border-b-4 border-r-4 xl:border-b-0 border-main p-2.5 sm:p-4 lg:p-5 bg-c1 text-main min-w-0">
               <ListChecks size={24} className="sm:w-9 sm:h-9 shrink-0" strokeWidth={2.5} />
@@ -191,7 +206,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
           </div>
 
           <div className="flex flex-col xl:flex-row flex-1">
-            <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-card min-w-0">
+            <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
               <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
                 Finished prediction history
               </div>
@@ -204,9 +219,9 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
                 <div className="p-3 text-center">Points</div>
               </div>
 
-              <div className="flex flex-col bg-card gap-3 lg:gap-0 p-3 lg:p-0">
+              <div className="flex flex-col bg-muted">
                 {history.length === 0 && (
-                  <div className="p-6 font-black uppercase text-sm">No finished scored predictions are public yet.</div>
+                  <div className="p-6 bg-card font-black uppercase text-sm border-b-4 border-main">No finished scored predictions are public yet.</div>
                 )}
                 {history.map((row) => {
                   const prediction = toPrediction(row);
@@ -218,7 +233,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
                   const status = getStatusFromScore(row);
 
                   return (
-                    <div key={row.prediction_id} className="border-4 lg:border-0 lg:border-b-4 border-main last:border-b-4 lg:last:border-b-0 font-bold text-sm hover:bg-muted transition-colors bg-card shadow-[4px_4px_0_var(--color-shadow)] lg:shadow-none">
+                    <div key={row.prediction_id} className="border-b-4 border-main font-bold text-sm hover:bg-muted transition-colors bg-card">
                       <div className="lg:hidden flex flex-col">
                         <div className="flex items-start justify-between gap-3 bg-main text-inv p-3 border-b-4 border-main">
                           <div className="min-w-0">
@@ -245,7 +260,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-[1fr_auto] border-b-4 border-main">
+                        <div className="grid grid-cols-[1fr_auto]">
                           <div className="p-3">
                             <div className="text-[10px] uppercase font-black tracking-widest text-subtle">Pick</div>
                             <div className="font-black uppercase text-lg leading-tight mt-1">{pickText}</div>
@@ -275,27 +290,52 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
               </div>
             </div>
 
-            <div className="w-full xl:w-[360px] bg-card flex flex-col">
+            <div className="w-full xl:w-[360px] bg-card flex flex-col border-t-4 xl:border-t-0 border-main">
               <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
                 Points breakdown
               </div>
-              <div className="p-4 bg-card flex flex-col gap-3 text-sm font-bold">
+              <div className="p-4 bg-card flex flex-col gap-3 text-sm font-bold border-b-4 border-main">
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Exact score points</span><span className="font-black">{totals.exactPoints}</span></div>
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Outcome points</span><span className="font-black">{totals.outcome}</span></div>
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Goal difference bonus</span><span className="font-black">{totals.goalDifference}</span></div>
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Team score bonus</span><span className="font-black">{totals.teamScore}</span></div>
                 <div className="flex justify-between text-lg uppercase"><span>Total public points</span><span className="font-black">{totals.points} pts</span></div>
               </div>
-              <div className="bg-c1 text-main border-t-4 border-main p-4 font-black uppercase text-xs leading-relaxed">
-                Only finished matches with calculated score rows are shown here. Future and live predictions stay private.
+              <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
+                Player snapshot
               </div>
-              <div className="bg-card border-t-4 border-main p-4 flex flex-col gap-3 font-bold text-sm">
+              <div className="bg-card p-4 flex flex-col gap-3 font-bold text-sm border-b-4 border-main">
                 <div className="flex justify-between items-center pb-2 border-b-2 border-line"><span>Global rank</span><span className="font-black">#{profile.rank ?? '—'}</span></div>
                 <div className="flex justify-between items-center pb-2 border-b-2 border-line"><span>Tier</span><RankBadge points={profile.points} size="sm" /></div>
                 <div className="flex justify-between items-center"><span>Best streak</span><span className="font-black"><StreakBadge streak={profile.best_streak} size="sm" /></span></div>
                 <div className="text-[10px] uppercase text-subtle font-black pt-2">Joined {formatShortDate(profile.created_at)}</div>
               </div>
+              <div className="flex flex-row flex-1 min-h-[120px]">
+                <div className="flex-1 flex flex-col border-r-4 border-main">
+                  <div className="bg-main text-inv font-black px-3 py-2 uppercase tracking-wide text-[11px]">Visible data</div>
+                  <div className="p-3 flex flex-col gap-2 font-bold text-xs bg-card text-subtle">
+                    <div>Finished matches</div>
+                    <div>Calculated scores</div>
+                    <div>Contact hidden</div>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col bg-muted">
+                  <div className="bg-main text-inv font-black px-3 py-2 uppercase tracking-wide text-[11px]">Private data</div>
+                  <div className="p-3 flex flex-col gap-2 font-bold text-xs text-subtle">
+                    <div>Future picks</div>
+                    <div>Live picks</div>
+                    <div>Unscored picks</div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row bg-card border-t-4 border-main flex-shrink-0">
+            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl">1</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c1"><Shield size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Finished only</div><div className="font-medium text-[10px] text-subtle leading-tight">Rows require match status finished.</div></div></div>
+            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl text-accent-inv bg-c2">2</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c2"><ListChecks size={20} className="text-accent-inv" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Scored only</div><div className="font-medium text-[10px] text-subtle leading-tight">Each row needs a calculated score.</div></div></div>
+            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl">3</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c3"><Star size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Detailed picks</div><div className="font-medium text-[10px] text-subtle leading-tight">Pick, result, status, and points are visible.</div></div></div>
+            <div className="flex items-stretch flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl bg-c4">4</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c4"><Trophy size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Leaderboard link</div><div className="font-medium text-[10px] text-subtle leading-tight">Open profiles from leaderboard rows.</div></div></div>
           </div>
         </div>
       </div>
