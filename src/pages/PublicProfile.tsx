@@ -152,6 +152,8 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
   const displayName = getPublicDisplayName(profile, profile.id);
   const initials = getPublicInitials(profile, profile.id);
   const favoriteTeam = profile.fan_club_team_id ? teams.get(profile.fan_club_team_id) : undefined;
+  const predictionPoints = totals.points;
+  const rewardPoints = Math.max(profile.points - predictionPoints, 0);
 
   return (
     <AppShell themeControls={themeControls}>
@@ -195,7 +197,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
             </div>
             <div className="flex items-center gap-2 sm:gap-4 border-b-4 xl:border-b-0 xl:border-r-4 border-main p-2.5 sm:p-4 lg:p-5 bg-c2 text-inv min-w-0">
               <Trophy size={24} className="sm:w-9 sm:h-9 shrink-0" strokeWidth={2.5} />
-              <div className="min-w-0"><div className="text-[9px] sm:text-xs uppercase font-black tracking-widest opacity-90 truncate">Public points</div><div className="text-lg sm:text-3xl font-black leading-none flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(totals.points)}</div></div>
+              <div className="min-w-0"><div className="text-[9px] sm:text-xs uppercase font-black tracking-widest opacity-90 truncate">Total points</div><div className="text-lg sm:text-3xl font-black leading-none flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(profile.points)}</div></div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 border-r-4 xl:border-r-4 border-main p-2.5 sm:p-4 lg:p-5 bg-c3 text-main min-w-0">
               <BarChart2 size={24} className="sm:w-9 sm:h-9 shrink-0" strokeWidth={2.5} />
@@ -203,7 +205,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
             </div>
             <div className="flex items-center gap-2 sm:gap-4 border-main p-2.5 sm:p-4 lg:p-5 bg-c4 text-main min-w-0">
               <Star size={24} className="sm:w-9 sm:h-9 shrink-0" strokeWidth={2.5} fill="currentColor" />
-              <div className="min-w-0"><div className="text-[9px] sm:text-xs uppercase font-black tracking-widest opacity-90 truncate">Exact scores</div><div className="text-lg sm:text-3xl font-black leading-none">{totals.exact || profile.exact_scores}</div></div>
+              <div className="min-w-0"><div className="text-[9px] sm:text-xs uppercase font-black tracking-widest opacity-90 truncate">Rewards / bonus</div><div className="text-lg sm:text-3xl font-black leading-none flex items-center gap-1"><PointsCoin size="sm" />{formatPoints(rewardPoints)}</div></div>
             </div>
           </div>
 
@@ -301,7 +303,9 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Outcome points</span><span className="font-black">{totals.outcome}</span></div>
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Goal difference bonus</span><span className="font-black">{totals.goalDifference}</span></div>
                 <div className="flex justify-between border-b-2 border-line pb-2"><span>Team score bonus</span><span className="font-black">{totals.teamScore}</span></div>
-                <div className="flex justify-between text-lg uppercase"><span>Total public points</span><span className="font-black">{totals.points} pts</span></div>
+                <div className="flex justify-between border-b-2 border-line pb-2"><span>Public prediction points</span><span className="font-black">{predictionPoints} pts</span></div>
+                <div className="flex justify-between border-b-2 border-line pb-2"><span>Rewards / other points</span><span className="font-black">{rewardPoints} pts</span></div>
+                <div className="flex justify-between text-lg uppercase"><span>Total profile points</span><span className="font-black">{profile.points} pts</span></div>
               </div>
               <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
                 Player snapshot
