@@ -440,6 +440,7 @@ export type Database = {
           player_name: string
           team_id: string
           updated_at: string
+          yellow_cards: number
         }
         Insert: {
           assists?: number
@@ -450,6 +451,7 @@ export type Database = {
           player_name: string
           team_id: string
           updated_at?: string
+          yellow_cards?: number
         }
         Update: {
           assists?: number
@@ -460,6 +462,7 @@ export type Database = {
           player_name?: string
           team_id?: string
           updated_at?: string
+          yellow_cards?: number
         }
         Relationships: [
           {

@@ -111,6 +111,7 @@ export type PlayerTournamentStat = {
   team_id: string | null;
   goals: number;
   assists: number;
+  yellow_cards: number;
   latest_match_id: string | null;
   latest_clock: string | null;
   updated_at: string;
@@ -211,6 +212,11 @@ function getParticipantRole(participant: SummaryParticipant, index: number) {
 function isGoalEvent(event: SummaryKeyEvent) {
   const text = `${event.type ?? ''} ${event.typeText ?? ''} ${event.text ?? ''}`.toLowerCase();
   return Boolean(event.scoringPlay) || text.includes('goal');
+}
+
+function isYellowCardEvent(event: Pick<NormalizedMatchEvent, 'event_type' | 'type_text' | 'text'>) {
+  const text = `${event.event_type ?? ''} ${event.type_text ?? ''} ${event.text ?? ''}`.toLowerCase();
+  return event.event_type === '94' || text.includes('yellow card');
 }
 
 function getPlayerId(participant: SummaryParticipant, teamId: string | null) {
@@ -332,8 +338,11 @@ export function buildPlayerTournamentStats(events: NormalizedMatchEvent[], parti
 
   participants.forEach((participant) => {
     const event = eventMap.get(`${participant.match_id}|${participant.event_key}`);
-    if (!event?.scoring_play || !participant.player_id) return;
-    if (participant.role !== 'scorer' && participant.role !== 'assist') return;
+    if (!event?.team_id || !participant.player_id) return;
+    const isScoringParticipant = event.scoring_play && (participant.role === 'scorer' || participant.role === 'assist' || participant.role === 'participant-0' || participant.role === 'participant-1');
+    const isYellowCardParticipant = isYellowCardEvent(event) && (participant.role === 'participant-0' || participant.role === 'scorer');
+    if (!isScoringParticipant && !isYellowCardParticipant) return;
+
     const key = `${participant.player_id}|${event.team_id ?? ''}`;
     const current = rows.get(key) ?? {
       player_id: participant.player_id,
@@ -341,19 +350,21 @@ export function buildPlayerTournamentStats(events: NormalizedMatchEvent[], parti
       team_id: event.team_id,
       goals: 0,
       assists: 0,
+      yellow_cards: 0,
       latest_match_id: event.match_id,
       latest_clock: event.clock,
       updated_at: now,
     };
 
-    if (participant.role === 'scorer') current.goals += 1;
-    if (participant.role === 'assist') current.assists += 1;
+    if (event.scoring_play && (participant.role === 'scorer' || participant.role === 'participant-0')) current.goals += 1;
+    if (event.scoring_play && (participant.role === 'assist' || participant.role === 'participant-1')) current.assists += 1;
+    if (isYellowCardParticipant) current.yellow_cards += 1;
     current.latest_match_id = event.match_id;
     current.latest_clock = event.clock;
     rows.set(key, current);
   });
 
-  return Array.from(rows.values()).sort((first, second) => second.goals - first.goals || second.assists - first.assists || first.player_name.localeCompare(second.player_name));
+  return Array.from(rows.values()).sort((first, second) => second.goals - first.goals || second.assists - first.assists || second.yellow_cards - first.yellow_cards || first.player_name.localeCompare(second.player_name));
 }
 
 export function buildTeamTournamentStats(teamStats: NormalizedMatchTeamStat[], now = new Date().toISOString()): TeamTournamentStat[] {

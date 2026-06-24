@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Goal, Handshake, ListOrdered, Trophy, Users } from 'lucide-react';
+import { BarChart3, Goal, Handshake, ListOrdered, ShieldAlert, Trophy, Users } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import { buildGroupStandings } from '../lib/groupStandings';
 import { listMatchesWithSummaries, type MatchRow } from '../services/matches';
-import { getStatisticsCoverage, listTopAssists, listTopGoalContributions, listTopScorers, type PlayerTournamentStatRow, type StatisticsCoverage } from '../services/statistics';
+import { getStatisticsCoverage, listTopAssists, listTopGoalContributions, listTopScorers, listTopYellowCards, type PlayerTournamentStatRow, type StatisticsCoverage } from '../services/statistics';
 import { getTeamMap, listTeams, type TeamRow } from '../services/teams';
 import { getErrorMessage } from '../services/serviceTypes';
 import { getTeamFlag } from '../utils/teamFlags';
@@ -51,6 +51,7 @@ type PlayerLeaderRow = {
   teamName: string;
   goals: number;
   assists: number;
+  yellowCards: number;
   total: number;
   latestMinute: string;
 };
@@ -67,6 +68,11 @@ function getParticipantName(event: EspnSummaryKeyEvent, type: string) {
 function isGoalEvent(event: EspnSummaryKeyEvent) {
   const text = `${event.type ?? ''} ${event.typeText ?? ''} ${event.text ?? ''}`.toLowerCase();
   return event.scoringPlay || text.includes('goal');
+}
+
+function isYellowCardEvent(event: EspnSummaryKeyEvent) {
+  const text = `${event.type ?? ''} ${event.typeText ?? ''} ${event.text ?? ''}`.toLowerCase();
+  return event.type === '94' || text.includes('yellow card');
 }
 
 function normalizeTeamText(value?: string | null) {
@@ -108,31 +114,45 @@ function getEventTeamId(event: EspnSummaryKeyEvent, match: MatchRow, teams: Map<
 function buildPlayerLeaders(matches: MatchRow[], teams: Map<string, TeamRow>): PlayerLeaderRow[] {
   const rows = new Map<string, PlayerLeaderRow>();
 
+  function getRow(name: string, teamId: string | null, teamName: string) {
+    const key = `${name}|${teamId ?? teamName}`;
+    const current = rows.get(key) ?? { name, teamId, teamName, goals: 0, assists: 0, yellowCards: 0, total: 0, latestMinute: '—' };
+    rows.set(key, current);
+    return current;
+  }
+
   matches.forEach((match) => {
     const summary = getSummary(match);
     (summary.keyEvents ?? []).forEach((event) => {
-      if (!isGoalEvent(event)) return;
       const teamId = getEventTeamId(event, match, teams);
       const teamName = teamId ? teams.get(teamId)?.short_name ?? teams.get(teamId)?.name ?? teamId : event.team?.abbreviation ?? event.team?.name ?? '—';
-      const scorer = getParticipantName(event, 'scorer') ?? event.participants?.[0]?.name;
-      const assist = getParticipantName(event, 'assist') ?? event.participants?.[1]?.name ?? event.text?.match(/Assisted by ([^.]+)\./i)?.[1] ?? null;
 
-      if (scorer) {
-        const scorerKey = `${scorer}|${teamId ?? teamName}`;
-        const current = rows.get(scorerKey) ?? { name: scorer, teamId, teamName, goals: 0, assists: 0, total: 0, latestMinute: '—' };
-        current.goals += 1;
-        current.total += 1;
-        current.latestMinute = event.clock ?? current.latestMinute;
-        rows.set(scorerKey, current);
+      if (isGoalEvent(event)) {
+        const scorer = getParticipantName(event, 'scorer') ?? event.participants?.[0]?.name;
+        const assist = getParticipantName(event, 'assist') ?? event.participants?.[1]?.name ?? event.text?.match(/Assisted by ([^.]+)\./i)?.[1] ?? null;
+
+        if (scorer) {
+          const current = getRow(scorer, teamId, teamName);
+          current.goals += 1;
+          current.total += 1;
+          current.latestMinute = event.clock ?? current.latestMinute;
+        }
+
+        if (assist && assist !== scorer) {
+          const current = getRow(assist, teamId, teamName);
+          current.assists += 1;
+          current.total += 1;
+          current.latestMinute = event.clock ?? current.latestMinute;
+        }
       }
 
-      if (assist && assist !== scorer) {
-        const assistKey = `${assist}|${teamId ?? teamName}`;
-        const current = rows.get(assistKey) ?? { name: assist, teamId, teamName, goals: 0, assists: 0, total: 0, latestMinute: '—' };
-        current.assists += 1;
-        current.total += 1;
-        current.latestMinute = event.clock ?? current.latestMinute;
-        rows.set(assistKey, current);
+      if (isYellowCardEvent(event)) {
+        const player = event.participants?.[0]?.name;
+        if (player) {
+          const current = getRow(player, teamId, teamName);
+          current.yellowCards += 1;
+          current.latestMinute = event.clock ?? current.latestMinute;
+        }
       }
     });
   });
@@ -143,19 +163,25 @@ function buildPlayerLeaders(matches: MatchRow[], teams: Map<string, TeamRow>): P
 function sortTopScorers(rows: PlayerLeaderRow[]) {
   return [...rows]
     .sort((first, second) => second.goals - first.goals || second.assists - first.assists || first.name.localeCompare(second.name))
-    .slice(0, 5);
+    .slice(0, 10);
 }
 
 function sortTopAssists(rows: PlayerLeaderRow[]) {
   return [...rows]
     .sort((first, second) => second.assists - first.assists || second.goals - first.goals || first.name.localeCompare(second.name))
-    .slice(0, 5);
+    .slice(0, 10);
 }
 
 function sortTopGoalContributions(rows: PlayerLeaderRow[]) {
   return [...rows]
     .sort((first, second) => second.total - first.total || second.goals - first.goals || first.name.localeCompare(second.name))
-    .slice(0, 5);
+    .slice(0, 10);
+}
+
+function sortTopYellowCards(rows: PlayerLeaderRow[]) {
+  return [...rows]
+    .sort((first, second) => second.yellowCards - first.yellowCards || first.name.localeCompare(second.name))
+    .slice(0, 10);
 }
 
 function mapNormalizedPlayerLeaders(rows: PlayerTournamentStatRow[], teams: Map<string, TeamRow>): PlayerLeaderRow[] {
@@ -167,6 +193,7 @@ function mapNormalizedPlayerLeaders(rows: PlayerTournamentStatRow[], teams: Map<
       teamName: team?.short_name ?? team?.name ?? row.team_id ?? '—',
       goals: row.goals,
       assists: row.assists,
+      yellowCards: row.yellow_cards,
       total: row.goals + row.assists,
       latestMinute: row.latest_clock ?? '—',
     };
@@ -185,7 +212,7 @@ function PlayerLeaderTable({ title, icon, rows, teamMap, metricLabel, getMetric,
       <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main flex items-center gap-2">
         {icon} {title}
       </div>
-      <div>
+      <div className="max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-main/30 hover:[&::-webkit-scrollbar-thumb]:bg-main/50">
         {rows.map((row, index) => {
           const team = row.teamId ? teamMap.get(row.teamId) : undefined;
           return (
@@ -219,6 +246,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
   const [normalizedTopScorers, setNormalizedTopScorers] = useState<PlayerTournamentStatRow[]>([]);
   const [normalizedTopAssists, setNormalizedTopAssists] = useState<PlayerTournamentStatRow[]>([]);
   const [normalizedTopGoalContributions, setNormalizedTopGoalContributions] = useState<PlayerTournamentStatRow[]>([]);
+  const [normalizedTopYellowCards, setNormalizedTopYellowCards] = useState<PlayerTournamentStatRow[]>([]);
   const [coverage, setCoverage] = useState<StatisticsCoverage>({ normalizedMatches: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -228,8 +256,8 @@ export default function Statistics({ themeControls }: StatisticsProps) {
     setLoading(true);
     setError(null);
 
-    Promise.all([listMatchesWithSummaries(), listTeams(), getTeamMap(), listTopScorers(), listTopAssists(), listTopGoalContributions(), getStatisticsCoverage()])
-      .then(([nextMatches, nextTeams, nextTeamMap, nextTopScorers, nextTopAssists, nextTopGoalContributions, nextCoverage]) => {
+    Promise.all([listMatchesWithSummaries(), listTeams(), getTeamMap(), listTopScorers(), listTopAssists(), listTopGoalContributions(), listTopYellowCards(), getStatisticsCoverage()])
+      .then(([nextMatches, nextTeams, nextTeamMap, nextTopScorers, nextTopAssists, nextTopGoalContributions, nextTopYellowCards, nextCoverage]) => {
         if (!active) return;
         setMatches(nextMatches);
         setTeams(nextTeams);
@@ -237,6 +265,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
         setNormalizedTopScorers(nextTopScorers);
         setNormalizedTopAssists(nextTopAssists);
         setNormalizedTopGoalContributions(nextTopGoalContributions);
+        setNormalizedTopYellowCards(nextTopYellowCards);
         setCoverage(nextCoverage);
       })
       .catch((nextError) => {
@@ -262,9 +291,11 @@ export default function Statistics({ themeControls }: StatisticsProps) {
   const normalizedScorers = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopScorers, teamMap), [normalizedTopScorers, teamMap]);
   const normalizedAssists = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopAssists, teamMap), [normalizedTopAssists, teamMap]);
   const normalizedGoalContributions = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopGoalContributions, teamMap), [normalizedTopGoalContributions, teamMap]);
+  const normalizedYellowCards = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopYellowCards, teamMap), [normalizedTopYellowCards, teamMap]);
   const topScorers = normalizedScorers.length ? normalizedScorers : sortTopScorers(fallbackPlayerLeaders);
   const topAssists = normalizedAssists.length ? normalizedAssists : sortTopAssists(fallbackPlayerLeaders);
   const topGoalContributions = normalizedGoalContributions.length ? normalizedGoalContributions : sortTopGoalContributions(fallbackPlayerLeaders);
+  const topYellowCards = normalizedYellowCards.length ? normalizedYellowCards : sortTopYellowCards(fallbackPlayerLeaders);
   const summaryMatches = coverage.normalizedMatches || matches.filter((match) => match.espn_summary_updated_at).length;
 
   return (
@@ -377,6 +408,15 @@ export default function Statistics({ themeControls }: StatisticsProps) {
                   metricLabel={t('appPages.statistics.total')}
                   getMetric={(row) => row.total}
                   emptyLabel={t('appPages.statistics.noGoalContributions')}
+                />
+                <PlayerLeaderTable
+                  title={t('appPages.statistics.yellowCards')}
+                  icon={<ShieldAlert size={18} strokeWidth={2.5} />}
+                  rows={topYellowCards}
+                  teamMap={teamMap}
+                  metricLabel={t('appPages.statistics.cards')}
+                  getMetric={(row) => row.yellowCards}
+                  emptyLabel={t('appPages.statistics.noYellowCards')}
                 />
               </div>
             </div>

@@ -31,6 +31,16 @@ assert.match(migrationSource, /add column if not exists espn_stats_normalized_at
 assert.match(migrationSource, /espn_player_tournament_stats_rank_idx/, 'Migration must add a top-scorer ranking index.');
 assert.match(migrationSource, /espn_team_tournament_stats_rank_idx/, 'Migration must add a team stat ranking index.');
 
+const yellowCardsMigration = readdirSync('supabase/migrations')
+  .filter((file) => file.endsWith('_add_yellow_cards_to_player_stats.sql'))
+  .sort()
+  .at(-1);
+
+assert.ok(yellowCardsMigration, 'A yellow-card player stats migration must exist.');
+const yellowCardsMigrationSource = readFileSync(`supabase/migrations/${yellowCardsMigration}`, 'utf8');
+assert.match(yellowCardsMigrationSource, /add column if not exists yellow_cards integer not null default 0/, 'Yellow-card migration must add espn_player_tournament_stats.yellow_cards.');
+assert.match(yellowCardsMigrationSource, /espn_player_tournament_stats_yellow_cards_idx/, 'Yellow-card migration must add a yellow-card ranking index.');
+
 assert.ok(existsSync('supabase/functions/_shared/espnStatistics.ts'), 'Shared ESPN statistics normalizer must exist.');
 const normalizer = readFileSync('supabase/functions/_shared/espnStatistics.ts', 'utf8');
 assert.match(normalizer, /buildNormalizedStatistics/, 'Shared normalizer must export buildNormalizedStatistics.');
@@ -58,9 +68,11 @@ assert.ok(existsSync('src/services/statistics.ts'), 'Frontend statistics service
 const statisticsService = readFileSync('src/services/statistics.ts', 'utf8');
 assert.doesNotMatch(statisticsService, /\.select\(['"]\*['"]\)/, 'Statistics service must not use select("*").');
 assert.match(statisticsService, /TOP_SCORER_FIELDS/, 'Statistics service must define explicit top scorer fields.');
-assert.match(statisticsService, /listTopScorers\(limit = 5\)[\s\S]*\.limit\(limit\)/, 'Statistics service must bound top scorer reads to a top-5 default.');
-assert.match(statisticsService, /listTopAssists\(limit = 5\)[\s\S]*\.limit\(limit\)/, 'Statistics service must expose bounded top assists reads with a top-5 default.');
-assert.match(statisticsService, /listTopGoalContributions\(limit = 5\)/, 'Statistics service must expose goals plus assists reads with a top-5 default.');
+assert.match(statisticsService, /yellow_cards/, 'Statistics service must read yellow-card aggregates explicitly.');
+assert.match(statisticsService, /listTopScorers\(limit = 10\)[\s\S]*\.limit\(limit\)/, 'Statistics service must bound top scorer reads to a top-10 default.');
+assert.match(statisticsService, /listTopAssists\(limit = 10\)[\s\S]*\.limit\(limit\)/, 'Statistics service must expose bounded top assists reads with a top-10 default.');
+assert.match(statisticsService, /listTopGoalContributions\(limit = 10\)/, 'Statistics service must expose goals plus assists reads with a top-10 default.');
+assert.match(statisticsService, /listTopYellowCards\(limit = 10\)[\s\S]*\.order\('yellow_cards'/, 'Statistics service must expose bounded top yellow-card reads with a top-10 default.');
 assert.match(statisticsService, /GOAL_CONTRIBUTION_FETCH_LIMIT/, 'Statistics service must bound the goals plus assists source read.');
 assert.match(statisticsService, /getStatisticsCoverage/, 'Statistics service must expose normalized coverage.');
 
@@ -69,6 +81,9 @@ assert.match(statisticsPage, /from '..\/services\/statistics'/, 'Statistics page
 assert.match(statisticsPage, /listTopScorers/, 'Statistics page must load normalized top scorers.');
 assert.match(statisticsPage, /listTopAssists/, 'Statistics page must load normalized top assists.');
 assert.match(statisticsPage, /listTopGoalContributions/, 'Statistics page must load normalized goals plus assists.');
+assert.match(statisticsPage, /listTopYellowCards/, 'Statistics page must load normalized yellow-card leaders.');
+assert.match(statisticsPage, /yellowCards/, 'Statistics page must render yellow-card player metrics.');
+assert.match(statisticsPage, /max-h-\[320px\][\s\S]*overflow-y-auto[\s\S]*\[&::-webkit-scrollbar\]:w-1\.5/, 'Statistics player leader tables must show five rows by default with a small scrollbar.');
 assert.doesNotMatch(statisticsPage, /listTeamTournamentStats|teamStats|TeamTournamentStatRow/, 'Statistics page must replace team stats with player leader tables.');
 assert.match(statisticsPage, /buildPlayerLeaders\(completedMatches, teamMap\)/, 'Statistics page must keep JSON player leader fallback.');
 assert.doesNotMatch(statisticsPage, /buildTeamStats\(completedMatches, teamMap\)/, 'Statistics page must not use the JSON team-stat fallback on the player leader layout.');

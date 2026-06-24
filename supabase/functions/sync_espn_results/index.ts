@@ -809,7 +809,7 @@ async function normalizeMatchStatistics(supabase: ReturnType<typeof createClient
 
 async function rebuildStatisticsAggregates(supabase: ReturnType<typeof createClient>) {
   const [eventsResult, participantsResult, teamStatsResult] = await Promise.all([
-    supabase.from('espn_match_events').select('match_id, event_key, team_id, clock, scoring_play'),
+    supabase.from('espn_match_events').select('match_id, event_key, team_id, event_type, type_text, clock, text, scoring_play'),
     supabase.from('espn_match_event_participants').select('match_id, event_key, role, player_id, player_name'),
     supabase.from('espn_match_team_stats').select('match_id, team_id, stat_key, label, numeric_value'),
   ]);
