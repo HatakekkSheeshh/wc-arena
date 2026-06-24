@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BarChart2, ListChecks, Shield, Star, Trophy } from 'lucide-react';
+import { ArrowLeft, BarChart2, ListChecks, Shield, Star, Trophy } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import PointsCoin from '../components/ui/PointsCoin';
 import RankBadge from '../components/ui/RankBadge';
@@ -156,12 +156,17 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
   return (
     <AppShell themeControls={themeControls}>
       <div className="relative z-10 flex flex-col p-4 lg:p-6 gap-4 lg:gap-6 min-h-0">
-        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
-          <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest text-subtle mb-1">Public player profile</div>
-          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main leading-none truncate">{displayName}</h1>
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col gap-4 w-full xl:w-1/2 shadow-[8px_8px_0_0_var(--color-shadow)]">
+          <Link to="/leaderboard" className="inline-flex w-max items-center gap-2 bg-main text-inv border-2 border-main px-3 py-2 text-[10px] sm:text-xs font-black uppercase shadow-[2px_2px_0_var(--color-shadow)] hover:bg-c2 transition-colors">
+            <ArrowLeft size={14} /> Back to leaderboard
+          </Link>
+          <div>
+            <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest text-subtle mb-1">Public player profile</div>
+            <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main leading-none truncate">{displayName}</h1>
+          </div>
         </div>
 
-        <div className="bg-card border-4 border-main flex flex-col shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm overflow-hidden">
+        <div className="bg-card border-4 border-main p-4 lg:p-6 flex flex-col shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm overflow-hidden">
           <div className="flex flex-col lg:flex-row border-b-4 border-main bg-card">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 lg:p-6 flex-1 border-b-4 lg:border-b-0 lg:border-r-4 border-main min-w-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-main bg-elevated overflow-hidden flex items-center justify-center font-black text-2xl shrink-0 shadow-[4px_4px_0_var(--color-shadow)]">
@@ -180,9 +185,6 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
             <div className="w-full lg:w-[300px] bg-c1 text-main p-4 lg:p-6 flex flex-col justify-center gap-3">
               <div className="flex items-center gap-2 font-black uppercase text-sm"><Shield size={18} /> Privacy safe</div>
               <div className="text-xs font-bold uppercase leading-relaxed text-subtle">Only finished matches with calculated score rows are shown here. Future and live predictions stay private.</div>
-              <Link to="/leaderboard" className="bg-card hover:bg-muted text-main font-black text-[10px] sm:text-xs px-3 py-2 border-2 border-main uppercase shadow-[2px_2px_0_var(--color-shadow)] text-center w-max">
-                Leaderboard
-              </Link>
             </div>
           </div>
 
@@ -310,32 +312,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
                 <div className="flex justify-between items-center"><span>Best streak</span><span className="font-black"><StreakBadge streak={profile.best_streak} size="sm" /></span></div>
                 <div className="text-[10px] uppercase text-subtle font-black pt-2">Joined {formatShortDate(profile.created_at)}</div>
               </div>
-              <div className="flex flex-row flex-1 min-h-[120px]">
-                <div className="flex-1 flex flex-col border-r-4 border-main">
-                  <div className="bg-main text-inv font-black px-3 py-2 uppercase tracking-wide text-[11px]">Visible data</div>
-                  <div className="p-3 flex flex-col gap-2 font-bold text-xs bg-card text-subtle">
-                    <div>Finished matches</div>
-                    <div>Calculated scores</div>
-                    <div>Contact hidden</div>
-                  </div>
-                </div>
-                <div className="flex-1 flex flex-col bg-muted">
-                  <div className="bg-main text-inv font-black px-3 py-2 uppercase tracking-wide text-[11px]">Private data</div>
-                  <div className="p-3 flex flex-col gap-2 font-bold text-xs text-subtle">
-                    <div>Future picks</div>
-                    <div>Live picks</div>
-                    <div>Unscored picks</div>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row bg-card border-t-4 border-main flex-shrink-0">
-            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl">1</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c1"><Shield size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Finished only</div><div className="font-medium text-[10px] text-subtle leading-tight">Rows require match status finished.</div></div></div>
-            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl text-accent-inv bg-c2">2</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c2"><ListChecks size={20} className="text-accent-inv" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Scored only</div><div className="font-medium text-[10px] text-subtle leading-tight">Each row needs a calculated score.</div></div></div>
-            <div className="flex items-stretch border-b-4 md:border-b-0 md:border-r-4 border-main flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl">3</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c3"><Star size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Detailed picks</div><div className="font-medium text-[10px] text-subtle leading-tight">Pick, result, status, and points are visible.</div></div></div>
-            <div className="flex items-stretch flex-1"><div className="w-12 flex items-center justify-center border-r-4 border-main font-black text-3xl bg-c4">4</div><div className="w-12 flex items-center justify-center border-r-4 border-main bg-c4"><Trophy size={20} className="text-accent-on" /></div><div className="p-2 sm:p-3 flex flex-col justify-center"><div className="font-black uppercase text-xs mb-0.5">Leaderboard link</div><div className="font-medium text-[10px] text-subtle leading-tight">Open profiles from leaderboard rows.</div></div></div>
           </div>
         </div>
       </div>
