@@ -343,7 +343,7 @@ export function buildPlayerTournamentStats(events: NormalizedMatchEvent[], parti
     const isYellowCardParticipant = isYellowCardEvent(event) && (participant.role === 'participant-0' || participant.role === 'scorer');
     if (!isScoringParticipant && !isYellowCardParticipant) return;
 
-    const key = `${participant.player_id}|${event.team_id ?? ''}`;
+    const key = `${normalizeName(participant.player_name)}|${event.team_id}`;
     const current = rows.get(key) ?? {
       player_id: participant.player_id,
       player_name: participant.player_name,
@@ -356,6 +356,7 @@ export function buildPlayerTournamentStats(events: NormalizedMatchEvent[], parti
       updated_at: now,
     };
 
+    if (participant.player_id.startsWith('espn:')) current.player_id = participant.player_id;
     if (event.scoring_play && (participant.role === 'scorer' || participant.role === 'participant-0')) current.goals += 1;
     if (event.scoring_play && (participant.role === 'assist' || participant.role === 'participant-1')) current.assists += 1;
     if (isYellowCardParticipant) current.yellow_cards += 1;
