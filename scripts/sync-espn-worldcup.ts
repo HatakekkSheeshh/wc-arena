@@ -732,6 +732,56 @@ async function enrichPlansWithSummaries(plans: MatchUpdatePlan[]) {
 
 const MATCH_FIELDS = 'id, home_team_id, away_team_id, kickoff_at, lock_at, status, home_score, away_score, espn_attendance, espn_away_color, espn_away_logo, espn_away_record, espn_away_win_pct, espn_away_winner, espn_competition_id, espn_display_clock, espn_draw_pct, espn_event_id, espn_home_color, espn_home_logo, espn_home_record, espn_home_win_pct, espn_home_winner, espn_play_by_play_available, espn_prediction_updated_at, espn_state, espn_status, espn_status_detail, espn_summary, espn_stats_normalized_at, espn_summary_updated_at, espn_updated_at, group_code, matchday, result_updated_at, stage, stadium, city';
 const TEAM_FIELDS = 'id, name, short_name, country_code, fifa_rank, group_code';
+const SELECT_PAGE_SIZE = 1000;
+
+async function loadAggregateEvents(supabase: Supabase) {
+  const rows: NormalizedMatchEvent[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_events')
+      .select('match_id, event_key, espn_event_id, event_index, team_id, side, event_type, type_text, clock, period, minute, text, scoring_play, home_score, away_score, source_payload, updated_at')
+      .order('match_id')
+      .order('event_index')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchEvent[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateParticipants(supabase: Supabase) {
+  const rows: NormalizedEventParticipant[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_event_participants')
+      .select('match_id, event_key, role, sort_order, player_id, player_name')
+      .order('match_id')
+      .order('event_key')
+      .order('sort_order')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedEventParticipant[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateTeamStats(supabase: Supabase) {
+  const rows: NormalizedMatchTeamStat[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_team_stats')
+      .select('match_id, team_id, side, stat_key, label, source_name, display_value, numeric_value, updated_at')
+      .order('match_id')
+      .order('team_id')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchTeamStat[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
 
 async function loadSupabaseData() {
   const supabase = getSupabase();
@@ -831,19 +881,15 @@ async function normalizeMatchStatistics(supabase: Supabase, match: MatchRow, tea
 }
 
 async function rebuildStatisticsAggregates(supabase: Supabase) {
-  const [eventsResult, participantsResult, teamStatsResult] = await Promise.all([
-    supabase.from('espn_match_events').select('match_id, event_key, team_id, event_type, type_text, clock, text, scoring_play'),
-    supabase.from('espn_match_event_participants').select('match_id, event_key, role, player_id, player_name'),
-    supabase.from('espn_match_team_stats').select('match_id, team_id, stat_key, label, numeric_value'),
+  const [events, participants, teamStats] = await Promise.all([
+    loadAggregateEvents(supabase),
+    loadAggregateParticipants(supabase),
+    loadAggregateTeamStats(supabase),
   ]);
 
-  if (eventsResult.error) throw eventsResult.error;
-  if (participantsResult.error) throw participantsResult.error;
-  if (teamStatsResult.error) throw teamStatsResult.error;
-
   const now = new Date().toISOString();
-  const playerAggregates = buildPlayerTournamentStats((eventsResult.data ?? []) as NormalizedMatchEvent[], (participantsResult.data ?? []) as NormalizedEventParticipant[], now);
-  const teamAggregates = buildTeamTournamentStats((teamStatsResult.data ?? []) as NormalizedMatchTeamStat[], now);
+  const playerAggregates = buildPlayerTournamentStats(events, participants, now);
+  const teamAggregates = buildTeamTournamentStats(teamStats, now);
 
   const { error: deletePlayerError } = await supabase.from('espn_player_tournament_stats').delete().neq('player_id', '');
   if (deletePlayerError) throw deletePlayerError;
