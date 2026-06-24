@@ -38,13 +38,13 @@ values
   ('m-esp-fra', 'group', 'A', 3, 'esp', 'fra', '2026-06-18T19:00:00Z', '2026-06-18T18:45:00Z', 'Mercedes-Benz Stadium', 'Atlanta, USA', 'scheduled', null, null, null)
 on conflict (id) do nothing;
 
-insert into public.predictions (id, user_id, match_id, home_score, away_score, confidence, is_risk_pick, status, revision, created_at, updated_at, locked_at)
+insert into public.predictions (id, user_id, match_id, home_score, away_score, predicted_outcome, confidence, is_risk_pick, status, revision, created_at, updated_at, locked_at)
 values
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', 2, 1, 82, false, 'scored', 2, '2026-06-10T10:00:00Z', '2026-06-12T12:15:00Z', '2026-06-12T17:45:00Z'),
-  ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'm-fra-arg', 2, 1, 61, false, 'scored', 1, '2026-06-10T11:00:00Z', '2026-06-12T14:30:00Z', '2026-06-12T20:45:00Z'),
-  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'm-jpn-mex', 0, 2, 74, true, 'scored', 3, '2026-06-11T08:00:00Z', '2026-06-13T09:20:00Z', '2026-06-13T14:45:00Z'),
-  ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', 2, 0, 68, false, 'locked', 1, '2026-06-13T13:00:00Z', '2026-06-14T08:15:00Z', '2026-06-14T17:45:00Z'),
-  ('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'm-usa-kor', 3, 1, 70, false, 'submitted', 1, '2026-06-14T10:00:00Z', '2026-06-14T10:00:00Z', null)
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', 2, 1, 'home', 82, false, 'scored', 2, '2026-06-10T10:00:00Z', '2026-06-12T12:15:00Z', '2026-06-12T17:45:00Z'),
+  ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'm-fra-arg', 2, 1, 'home', 61, false, 'scored', 1, '2026-06-10T11:00:00Z', '2026-06-12T14:30:00Z', '2026-06-12T20:45:00Z'),
+  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'm-jpn-mex', 0, 2, 'away', 74, true, 'scored', 3, '2026-06-11T08:00:00Z', '2026-06-13T09:20:00Z', '2026-06-13T14:45:00Z'),
+  ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', 2, 0, 'home', 68, false, 'locked', 1, '2026-06-13T13:00:00Z', '2026-06-14T08:15:00Z', '2026-06-14T17:45:00Z'),
+  ('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000001', 'm-usa-kor', 3, 1, 'home', 70, false, 'submitted', 1, '2026-06-14T10:00:00Z', '2026-06-14T10:00:00Z', null)
 on conflict (id) do nothing;
 
 insert into public.prediction_scores (prediction_id, exact_score, correct_outcome, streak_bonus, risk_multiplier, underdog_bonus, total, outcome, scoring_version, calculated_at)
@@ -104,13 +104,14 @@ values
   ('00000000-0000-0000-0000-000000000001', 'risk-taker', 1, null)
 on conflict (user_id, badge_id) do nothing;
 
-insert into public.activity_events (type, title, description, user_id, match_id, prediction_id, badge_id, league_id, href, created_at)
+insert into public.activity_events (id, type, title, description, user_id, match_id, prediction_id, badge_id, league_id, href, created_at)
 values
-  ('score_calculated', 'Exact score confirmed', 'Brazil 2-1 Spain matched your prediction and added 3 points to your run.', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', '10000000-0000-0000-0000-000000000001', null, null, '/predictions/10000000-0000-0000-0000-000000000001', '2026-06-12T20:05:00Z'),
-  ('badge_unlocked', 'Badge unlocked: Hot Streak', 'Three correct outcomes in a row unlocked a new streak badge.', '00000000-0000-0000-0000-000000000001', null, null, 'hot-streak', null, '/badges', '2026-06-13T17:05:00Z'),
-  ('prediction_locked', 'Germany vs Morocco locked', 'Your prediction is locked and waiting for the final result.', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', '10000000-0000-0000-0000-000000000004', null, null, '/matches/m-ger-mar', '2026-06-14T17:45:00Z'),
-  ('rank_changed', 'Rank moved up', 'Your exact score pushed you to rank #124 in the global arena.', '00000000-0000-0000-0000-000000000001', null, null, null, 'league-global', '/leagues/league-global', '2026-06-14T18:10:00Z'),
-  ('league_joined', 'Joined Friday Football Crew', 'You joined a private league with global scoring and symbolic rewards.', '00000000-0000-0000-0000-000000000001', null, null, null, 'league-friends', '/leagues/league-friends', '2026-05-20T18:05:00Z');
+  ('30000000-0000-0000-0000-000000000001', 'score_calculated', 'Exact score confirmed', 'Brazil 2-1 Spain matched your prediction and added 3 points to your run.', '00000000-0000-0000-0000-000000000001', 'm-bra-esp', '10000000-0000-0000-0000-000000000001', null, null, '/predictions/10000000-0000-0000-0000-000000000001', '2026-06-12T20:05:00Z'),
+  ('30000000-0000-0000-0000-000000000002', 'badge_unlocked', 'Badge unlocked: Hot Streak', 'Three correct outcomes in a row unlocked a new streak badge.', '00000000-0000-0000-0000-000000000001', null, null, 'hot-streak', null, '/badges', '2026-06-13T17:05:00Z'),
+  ('30000000-0000-0000-0000-000000000003', 'prediction_locked', 'Germany vs Morocco locked', 'Your prediction is locked and waiting for the final result.', '00000000-0000-0000-0000-000000000001', 'm-ger-mar', '10000000-0000-0000-0000-000000000004', null, null, '/matches/m-ger-mar', '2026-06-14T17:45:00Z'),
+  ('30000000-0000-0000-0000-000000000004', 'rank_changed', 'Rank moved up', 'Your exact score pushed you to rank #124 in the global arena.', '00000000-0000-0000-0000-000000000001', null, null, null, 'league-global', '/leagues/league-global', '2026-06-14T18:10:00Z'),
+  ('30000000-0000-0000-0000-000000000005', 'league_joined', 'Joined Friday Football Crew', 'You joined a private league with global scoring and symbolic rewards.', '00000000-0000-0000-0000-000000000001', null, null, null, 'league-friends', '/leagues/league-friends', '2026-05-20T18:05:00Z')
+on conflict (id) do nothing;
 
 insert into public.reward_reviews (id, user_id, title, period, placement, amount, currency, source, status, updated_at, note)
 values
@@ -119,10 +120,11 @@ values
   ('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Overall leaderboard prize track', 'Full Tournament', 'Outside paid tier', 0, 'USD', 'sponsor', 'ineligible', '2026-06-13T20:00:00Z', 'Reach the published leaderboard tiers to enter manual reward review.')
 on conflict (id) do nothing;
 
-insert into public.admin_audit_logs (actor_id, action, entity_type, entity_id, description, severity, created_at)
+insert into public.admin_audit_logs (id, actor_id, action, entity_type, entity_id, description, severity, created_at)
 values
-  ('00000000-0000-0000-0000-000000000001', 'score_recalculation_preview', 'leaderboard', 'global', 'Generated a leaderboard recalculation preview without changing stored standings.', 'info', '2026-06-15T22:20:00Z'),
-  (null, 'prediction_revision_recorded', 'prediction', '10000000-0000-0000-0000-000000000005', 'Prediction revision count increased before lock time.', 'info', '2026-06-15T20:10:00Z'),
-  ('00000000-0000-0000-0000-000000000001', 'reward_review_queued', 'reward', '20000000-0000-0000-0000-000000000001', 'Sponsor reward track queued for manual eligibility review.', 'warning', '2026-06-15T19:45:00Z'),
-  (null, 'match_result_imported', 'match', 'm-jpn-mex', 'Finished match result imported and made available for scoring.', 'info', '2026-06-13T17:04:00Z'),
-  (null, 'suspicious_user_review', 'user', '00000000-0000-0000-0000-000000000003', 'Similar pick timing pattern flagged for admin review.', 'warning', '2026-06-13T16:15:00Z');
+  ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'score_recalculation_preview', 'leaderboard', 'global', 'Generated a leaderboard recalculation preview without changing stored standings.', 'info', '2026-06-15T22:20:00Z'),
+  ('40000000-0000-0000-0000-000000000002', null, 'prediction_revision_recorded', 'prediction', '10000000-0000-0000-0000-000000000005', 'Prediction revision count increased before lock time.', 'info', '2026-06-15T20:10:00Z'),
+  ('40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'reward_review_queued', 'reward', '20000000-0000-0000-0000-000000000001', 'Sponsor reward track queued for manual eligibility review.', 'warning', '2026-06-15T19:45:00Z'),
+  ('40000000-0000-0000-0000-000000000004', null, 'match_result_imported', 'match', 'm-jpn-mex', 'Finished match result imported and made available for scoring.', 'info', '2026-06-13T17:04:00Z'),
+  ('40000000-0000-0000-0000-000000000005', null, 'suspicious_user_review', 'user', '00000000-0000-0000-0000-000000000003', 'Similar pick timing pattern flagged for admin review.', 'warning', '2026-06-13T16:15:00Z')
+on conflict (id) do nothing;
