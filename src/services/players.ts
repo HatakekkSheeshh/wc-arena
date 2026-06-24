@@ -28,36 +28,27 @@ type SquadPlayerRow = {
   player: PlayerRow | PlayerRow[] | null;
 };
 
+type SquadSummaryRow = {
+  team_id: string;
+  coach_name: string | null;
+};
+
 export type TournamentSquadPlayer = Omit<SquadPlayerRow, 'player'> & {
   player: PlayerRow;
 };
 
-export type TeamSquad = {
+export type TeamSquadSummary = {
   team: TeamRow;
   coachName: string | null;
+  playerCount: number;
+};
+
+export type TeamSquad = TeamSquadSummary & {
   players: TournamentSquadPlayer[];
 };
 
+const SQUAD_SUMMARY_FIELDS = 'team_id, coach_name';
 const SQUAD_PLAYER_FIELDS = 'team_id, squad_number, position, caps, international_goals, club, captain, coach_name, group_code, player:players(id, slug, display_name, normalized_name, date_of_birth, primary_position, primary_team_id, club, image_url, source_player_name)';
-const SQUAD_PAGE_SIZE = 500;
-
-async function listTournamentSquadRows() {
-  const rows: SquadPlayerRow[] = [];
-
-  for (let from = 0; ; from += SQUAD_PAGE_SIZE) {
-    const { data, error } = await (supabase as any)
-      .from('tournament_squad_players')
-      .select(SQUAD_PLAYER_FIELDS)
-      .eq('tournament_id', 'wc2026')
-      .order('team_id', { ascending: true })
-      .order('squad_number', { ascending: true })
-      .range(from, from + SQUAD_PAGE_SIZE - 1);
-
-    if (error) throw error;
-    rows.push(...((data ?? []) as SquadPlayerRow[]));
-    if (!data || data.length < SQUAD_PAGE_SIZE) return rows;
-  }
-}
 
 function normalizePlayer(player: SquadPlayerRow['player']) {
   if (Array.isArray(player)) return player[0] ?? null;
@@ -73,36 +64,68 @@ function sortSquadPlayers(players: TournamentSquadPlayer[]) {
   });
 }
 
-export async function listTournamentSquads() {
-  return cached('players:tournament-squads:wc2026', 300_000, async (): Promise<TeamSquad[]> => {
-    const [teams, squadRows] = await Promise.all([
+function sortSquadSummaries(squads: TeamSquadSummary[]) {
+  return [...squads].sort((first, second) => (first.team.group_code ?? '').localeCompare(second.team.group_code ?? '') || first.team.name.localeCompare(second.team.name));
+}
+
+export async function listTournamentSquadSummaries() {
+  return cached('players:tournament-squad-summaries:wc2026', 300_000, async (): Promise<TeamSquadSummary[]> => {
+    const [teams, squadResult] = await Promise.all([
       listTeams(),
-      listTournamentSquadRows(),
+      (supabase as any)
+        .from('tournament_squad_players')
+        .select(SQUAD_SUMMARY_FIELDS)
+        .eq('tournament_id', 'wc2026')
+        .order('team_id', { ascending: true }),
     ]);
 
-    const teamsById = new Map(teams.map((team) => [team.id, team]));
-    const squadsByTeam = new Map<string, TournamentSquadPlayer[]>();
+    if (squadResult.error) throw squadResult.error;
 
-    for (const row of squadRows) {
-      const player = normalizePlayer(row.player);
-      if (!player) continue;
-      const squadPlayer: TournamentSquadPlayer = { ...row, player };
-      const current = squadsByTeam.get(row.team_id) ?? [];
-      current.push(squadPlayer);
-      squadsByTeam.set(row.team_id, current);
+    const teamsById = new Map(teams.map((team) => [team.id, team]));
+    const summariesByTeam = new Map<string, { coachName: string | null; playerCount: number }>();
+
+    for (const row of (squadResult.data ?? []) as SquadSummaryRow[]) {
+      const current = summariesByTeam.get(row.team_id) ?? { coachName: null, playerCount: 0 };
+      summariesByTeam.set(row.team_id, {
+        coachName: current.coachName ?? row.coach_name,
+        playerCount: current.playerCount + 1,
+      });
     }
 
-    return Array.from(squadsByTeam.entries())
-      .map(([teamId, players]) => {
-        const team = teamsById.get(teamId);
-        if (!team) return null;
-        return {
-          team,
-          coachName: players.find((player) => player.coach_name)?.coach_name ?? null,
-          players: sortSquadPlayers(players),
-        };
-      })
-      .filter((squad): squad is TeamSquad => Boolean(squad))
-      .sort((first, second) => (first.team.group_code ?? '').localeCompare(second.team.group_code ?? '') || first.team.name.localeCompare(second.team.name));
+    return sortSquadSummaries(Array.from(summariesByTeam.entries()).flatMap(([teamId, summary]) => {
+      const team = teamsById.get(teamId);
+      return team ? [{ team, ...summary }] : [];
+    }));
+  });
+}
+
+export async function getTournamentTeamSquad(teamId: string) {
+  return cached(`players:tournament-team-squad:wc2026:${teamId}`, 300_000, async (): Promise<TeamSquad | null> => {
+    const [teams, squadResult] = await Promise.all([
+      listTeams(),
+      (supabase as any)
+        .from('tournament_squad_players')
+        .select(SQUAD_PLAYER_FIELDS)
+        .eq('tournament_id', 'wc2026')
+        .eq('team_id', teamId)
+        .order('squad_number', { ascending: true }),
+    ]);
+
+    if (squadResult.error) throw squadResult.error;
+
+    const team = teams.find((nextTeam) => nextTeam.id === teamId);
+    if (!team) return null;
+
+    const players = ((squadResult.data ?? []) as SquadPlayerRow[]).flatMap((row) => {
+      const player = normalizePlayer(row.player);
+      return player ? [{ ...row, player }] : [];
+    });
+
+    return {
+      team,
+      coachName: players.find((player) => player.coach_name)?.coach_name ?? null,
+      playerCount: players.length,
+      players: sortSquadPlayers(players),
+    };
   });
 }
