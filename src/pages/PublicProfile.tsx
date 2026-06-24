@@ -207,7 +207,7 @@ export default function PublicProfile({ themeControls }: PublicProfileProps) {
             </div>
           </div>
 
-          <div className="flex flex-col xl:flex-row flex-1">
+          <div className="flex flex-col xl:flex-row flex-1 mt-4 lg:mt-6">
             <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
               <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main">
                 Finished prediction history
