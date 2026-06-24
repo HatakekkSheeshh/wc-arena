@@ -49,6 +49,24 @@ export type TeamSquad = TeamSquadSummary & {
 
 const SQUAD_SUMMARY_FIELDS = 'team_id, coach_name';
 const SQUAD_PLAYER_FIELDS = 'team_id, squad_number, position, caps, international_goals, club, captain, coach_name, group_code, player:players(id, slug, display_name, normalized_name, date_of_birth, primary_position, primary_team_id, club, image_url, source_player_name)';
+const SQUAD_SUMMARY_PAGE_SIZE = 500;
+
+async function listTournamentSquadSummaryRows() {
+  const rows: SquadSummaryRow[] = [];
+
+  for (let from = 0; ; from += SQUAD_SUMMARY_PAGE_SIZE) {
+    const { data, error } = await (supabase as any)
+      .from('tournament_squad_players')
+      .select(SQUAD_SUMMARY_FIELDS)
+      .eq('tournament_id', 'wc2026')
+      .order('team_id', { ascending: true })
+      .range(from, from + SQUAD_SUMMARY_PAGE_SIZE - 1);
+
+    if (error) throw error;
+    rows.push(...((data ?? []) as SquadSummaryRow[]));
+    if (!data || data.length < SQUAD_SUMMARY_PAGE_SIZE) return rows;
+  }
+}
 
 function normalizePlayer(player: SquadPlayerRow['player']) {
   if (Array.isArray(player)) return player[0] ?? null;
@@ -70,21 +88,15 @@ function sortSquadSummaries(squads: TeamSquadSummary[]) {
 
 export async function listTournamentSquadSummaries() {
   return cached('players:tournament-squad-summaries:wc2026', 300_000, async (): Promise<TeamSquadSummary[]> => {
-    const [teams, squadResult] = await Promise.all([
+    const [teams, squadRows] = await Promise.all([
       listTeams(),
-      (supabase as any)
-        .from('tournament_squad_players')
-        .select(SQUAD_SUMMARY_FIELDS)
-        .eq('tournament_id', 'wc2026')
-        .order('team_id', { ascending: true }),
+      listTournamentSquadSummaryRows(),
     ]);
-
-    if (squadResult.error) throw squadResult.error;
 
     const teamsById = new Map(teams.map((team) => [team.id, team]));
     const summariesByTeam = new Map<string, { coachName: string | null; playerCount: number }>();
 
-    for (const row of (squadResult.data ?? []) as SquadSummaryRow[]) {
+    for (const row of squadRows) {
       const current = summariesByTeam.get(row.team_id) ?? { coachName: null, playerCount: 0 };
       summariesByTeam.set(row.team_id, {
         coachName: current.coachName ?? row.coach_name,
