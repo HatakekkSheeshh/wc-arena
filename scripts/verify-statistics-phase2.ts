@@ -58,17 +58,19 @@ assert.ok(existsSync('src/services/statistics.ts'), 'Frontend statistics service
 const statisticsService = readFileSync('src/services/statistics.ts', 'utf8');
 assert.doesNotMatch(statisticsService, /\.select\(['"]\*['"]\)/, 'Statistics service must not use select("*").');
 assert.match(statisticsService, /TOP_SCORER_FIELDS/, 'Statistics service must define explicit top scorer fields.');
-assert.match(statisticsService, /TEAM_TOURNAMENT_STAT_FIELDS/, 'Statistics service must define explicit team tournament stat fields.');
-assert.match(statisticsService, /listTopScorers[\s\S]*\.limit\(limit\)/, 'Statistics service must bound top scorer reads.');
-assert.match(statisticsService, /listTeamTournamentStats[\s\S]*\.limit\(limit\)/, 'Statistics service must bound team stat reads.');
+assert.match(statisticsService, /listTopScorers\(limit = 5\)[\s\S]*\.limit\(limit\)/, 'Statistics service must bound top scorer reads to a top-5 default.');
+assert.match(statisticsService, /listTopAssists\(limit = 5\)[\s\S]*\.limit\(limit\)/, 'Statistics service must expose bounded top assists reads with a top-5 default.');
+assert.match(statisticsService, /listTopGoalContributions\(limit = 5\)/, 'Statistics service must expose goals plus assists reads with a top-5 default.');
+assert.match(statisticsService, /GOAL_CONTRIBUTION_FETCH_LIMIT/, 'Statistics service must bound the goals plus assists source read.');
 assert.match(statisticsService, /getStatisticsCoverage/, 'Statistics service must expose normalized coverage.');
 
 const statisticsPage = readFileSync('src/pages/Statistics.tsx', 'utf8');
 assert.match(statisticsPage, /from '..\/services\/statistics'/, 'Statistics page must import the normalized statistics service.');
 assert.match(statisticsPage, /listTopScorers/, 'Statistics page must load normalized top scorers.');
-assert.match(statisticsPage, /listTeamTournamentStats/, 'Statistics page must load normalized team tournament stats.');
-assert.match(statisticsPage, /getStatisticsCoverage/, 'Statistics page must load normalized coverage.');
-assert.match(statisticsPage, /buildTopScorers\(completedMatches, teamMap\)/, 'Statistics page must keep JSON top-scorer fallback.');
-assert.match(statisticsPage, /buildTeamStats\(completedMatches, teamMap\)/, 'Statistics page must keep JSON team-stat fallback.');
+assert.match(statisticsPage, /listTopAssists/, 'Statistics page must load normalized top assists.');
+assert.match(statisticsPage, /listTopGoalContributions/, 'Statistics page must load normalized goals plus assists.');
+assert.doesNotMatch(statisticsPage, /listTeamTournamentStats|teamStats|TeamTournamentStatRow/, 'Statistics page must replace team stats with player leader tables.');
+assert.match(statisticsPage, /buildPlayerLeaders\(completedMatches, teamMap\)/, 'Statistics page must keep JSON player leader fallback.');
+assert.doesNotMatch(statisticsPage, /buildTeamStats\(completedMatches, teamMap\)/, 'Statistics page must not use the JSON team-stat fallback on the player leader layout.');
 
 console.log('Statistics Phase 2 verified.');

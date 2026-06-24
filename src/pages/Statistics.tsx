@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Goal, ListOrdered, Shield, Trophy, Users } from 'lucide-react';
+import { BarChart3, Goal, Handshake, ListOrdered, Trophy, Users } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import { buildGroupStandings } from '../lib/groupStandings';
 import { listMatchesWithSummaries, type MatchRow } from '../services/matches';
-import { getStatisticsCoverage, listTeamTournamentStats, listTopScorers, type StatisticsCoverage, type TeamTournamentStatRow, type TopScorerStatRow } from '../services/statistics';
+import { getStatisticsCoverage, listTopAssists, listTopGoalContributions, listTopScorers, type PlayerTournamentStatRow, type StatisticsCoverage } from '../services/statistics';
 import { getTeamMap, listTeams, type TeamRow } from '../services/teams';
 import { getErrorMessage } from '../services/serviceTypes';
 import { getTeamFlag } from '../utils/teamFlags';
@@ -45,54 +45,18 @@ type EspnSummaryPayload = {
   keyEvents?: EspnSummaryKeyEvent[];
 };
 
-type TopScorerRow = {
+type PlayerLeaderRow = {
   name: string;
   teamId: string | null;
   teamName: string;
   goals: number;
   assists: number;
+  total: number;
   latestMinute: string;
 };
 
-type TeamStatRow = {
-  teamId: string;
-  teamName: string;
-  statKey: string;
-  label: string;
-  total: number;
-  matches: number;
-};
-
-const teamStatDefinitions = [
-  { key: 'shots', label: 'Total Shots', aliases: ['totalshots', 'shots'] },
-  { key: 'shotsOnTarget', label: 'Shots On Target', aliases: ['shotsontarget'] },
-  { key: 'corners', label: 'Corners', aliases: ['woncorners', 'corners'] },
-  { key: 'saves', label: 'Saves', aliases: ['saves'] },
-  { key: 'fouls', label: 'Fouls', aliases: ['foulscommitted', 'fouls'] },
-  { key: 'yellowCards', label: 'Yellow Cards', aliases: ['yellowcards'] },
-];
-
 function getSummary(match: MatchRow): EspnSummaryPayload {
   return (match.espn_summary ?? {}) as EspnSummaryPayload;
-}
-
-function normalizeStatName(value?: string | null) {
-  return (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function parseStatNumber(value?: string | null) {
-  if (!value) return null;
-  const match = value.match(/-?\d+(?:\.\d+)?/);
-  return match ? Number(match[0]) : null;
-}
-
-function getStatValue(summary: EspnSummaryPayload, side: 'home' | 'away', aliases: string[]) {
-  const stats = summary.teams?.[side]?.statistics ?? [];
-  const normalizedAliases = aliases.map(normalizeStatName);
-  return stats.find((stat) => {
-    const keys = [stat.name, stat.label].map(normalizeStatName);
-    return keys.some((key) => normalizedAliases.includes(key));
-  })?.value ?? null;
 }
 
 function getParticipantName(event: EspnSummaryKeyEvent, type: string) {
@@ -141,65 +105,60 @@ function getEventTeamId(event: EspnSummaryKeyEvent, match: MatchRow, teams: Map<
   return null;
 }
 
-function buildTopScorers(matches: MatchRow[], teams: Map<string, TeamRow>): TopScorerRow[] {
-  const rows = new Map<string, TopScorerRow>();
+function buildPlayerLeaders(matches: MatchRow[], teams: Map<string, TeamRow>): PlayerLeaderRow[] {
+  const rows = new Map<string, PlayerLeaderRow>();
 
   matches.forEach((match) => {
     const summary = getSummary(match);
     (summary.keyEvents ?? []).forEach((event) => {
       if (!isGoalEvent(event)) return;
-      const scorer = getParticipantName(event, 'scorer') ?? event.participants?.[0]?.name;
-      if (!scorer) return;
       const teamId = getEventTeamId(event, match, teams);
       const teamName = teamId ? teams.get(teamId)?.short_name ?? teams.get(teamId)?.name ?? teamId : event.team?.abbreviation ?? event.team?.name ?? '—';
-      const key = `${scorer}|${teamId ?? teamName}`;
-      const current = rows.get(key) ?? { name: scorer, teamId, teamName, goals: 0, assists: 0, latestMinute: '—' };
+      const scorer = getParticipantName(event, 'scorer') ?? event.participants?.[0]?.name;
       const assist = getParticipantName(event, 'assist') ?? event.participants?.[1]?.name ?? event.text?.match(/Assisted by ([^.]+)\./i)?.[1] ?? null;
-      current.goals += 1;
-      current.assists += assist && assist !== scorer ? 1 : 0;
-      current.latestMinute = event.clock ?? current.latestMinute;
-      rows.set(key, current);
+
+      if (scorer) {
+        const scorerKey = `${scorer}|${teamId ?? teamName}`;
+        const current = rows.get(scorerKey) ?? { name: scorer, teamId, teamName, goals: 0, assists: 0, total: 0, latestMinute: '—' };
+        current.goals += 1;
+        current.total += 1;
+        current.latestMinute = event.clock ?? current.latestMinute;
+        rows.set(scorerKey, current);
+      }
+
+      if (assist && assist !== scorer) {
+        const assistKey = `${assist}|${teamId ?? teamName}`;
+        const current = rows.get(assistKey) ?? { name: assist, teamId, teamName, goals: 0, assists: 0, total: 0, latestMinute: '—' };
+        current.assists += 1;
+        current.total += 1;
+        current.latestMinute = event.clock ?? current.latestMinute;
+        rows.set(assistKey, current);
+      }
     });
   });
 
-  return Array.from(rows.values())
+  return Array.from(rows.values());
+}
+
+function sortTopScorers(rows: PlayerLeaderRow[]) {
+  return [...rows]
     .sort((first, second) => second.goals - first.goals || second.assists - first.assists || first.name.localeCompare(second.name))
-    .slice(0, 10);
+    .slice(0, 5);
 }
 
-function buildTeamStats(matches: MatchRow[], teams: Map<string, TeamRow>): TeamStatRow[] {
-  const rows = new Map<string, TeamStatRow>();
-
-  matches.forEach((match) => {
-    const summary = getSummary(match);
-    (['home', 'away'] as const).forEach((side) => {
-      const teamId = side === 'home' ? match.home_team_id : match.away_team_id;
-      const team = teams.get(teamId);
-      teamStatDefinitions.forEach((definition) => {
-        const value = parseStatNumber(getStatValue(summary, side, definition.aliases));
-        if (value === null) return;
-        const key = `${teamId}|${definition.key}`;
-        const current = rows.get(key) ?? {
-          teamId,
-          teamName: team?.short_name ?? team?.name ?? teamId,
-          statKey: definition.key,
-          label: definition.label,
-          total: 0,
-          matches: 0,
-        };
-        current.total += value;
-        current.matches += 1;
-        rows.set(key, current);
-      });
-    });
-  });
-
-  return Array.from(rows.values())
-    .sort((first, second) => second.total - first.total || first.teamName.localeCompare(second.teamName))
-    .slice(0, 12);
+function sortTopAssists(rows: PlayerLeaderRow[]) {
+  return [...rows]
+    .sort((first, second) => second.assists - first.assists || second.goals - first.goals || first.name.localeCompare(second.name))
+    .slice(0, 5);
 }
 
-function mapNormalizedTopScorers(rows: TopScorerStatRow[], teams: Map<string, TeamRow>): TopScorerRow[] {
+function sortTopGoalContributions(rows: PlayerLeaderRow[]) {
+  return [...rows]
+    .sort((first, second) => second.total - first.total || second.goals - first.goals || first.name.localeCompare(second.name))
+    .slice(0, 5);
+}
+
+function mapNormalizedPlayerLeaders(rows: PlayerTournamentStatRow[], teams: Map<string, TeamRow>): PlayerLeaderRow[] {
   return rows.map((row) => {
     const team = row.team_id ? teams.get(row.team_id) : undefined;
     return {
@@ -208,21 +167,8 @@ function mapNormalizedTopScorers(rows: TopScorerStatRow[], teams: Map<string, Te
       teamName: team?.short_name ?? team?.name ?? row.team_id ?? '—',
       goals: row.goals,
       assists: row.assists,
+      total: row.goals + row.assists,
       latestMinute: row.latest_clock ?? '—',
-    };
-  });
-}
-
-function mapNormalizedTeamStats(rows: TeamTournamentStatRow[], teams: Map<string, TeamRow>): TeamStatRow[] {
-  return rows.map((row) => {
-    const team = teams.get(row.team_id);
-    return {
-      teamId: row.team_id,
-      teamName: team?.short_name ?? team?.name ?? row.team_id,
-      statKey: row.stat_key,
-      label: row.label,
-      total: row.total_numeric,
-      matches: row.matches_sampled,
     };
   });
 }
@@ -233,13 +179,46 @@ function TeamFlag({ team }: { team?: TeamRow }) {
   return <Flag className="w-full h-full object-cover" title={team?.name} />;
 }
 
+function PlayerLeaderTable({ title, icon, rows, teamMap, metricLabel, getMetric, emptyLabel }: { title: string; icon: ReactNode; rows: PlayerLeaderRow[]; teamMap: Map<string, TeamRow>; metricLabel: string; getMetric: (row: PlayerLeaderRow) => number; emptyLabel: string }) {
+  return (
+    <div className="border-b-4 border-main last:border-b-0">
+      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main flex items-center gap-2">
+        {icon} {title}
+      </div>
+      <div>
+        {rows.map((row, index) => {
+          const team = row.teamId ? teamMap.get(row.teamId) : undefined;
+          return (
+            <div key={`${title}-${row.name}-${row.teamName}`} className="grid grid-cols-[38px_1fr_auto] items-center gap-3 p-3 border-b-2 border-line last:border-b-0 bg-card min-w-0">
+              <div className="font-black text-lg text-c2">#{index + 1}</div>
+              <div className="min-w-0">
+                <div className="font-black uppercase text-sm truncate">{row.name}</div>
+                <div className="font-bold uppercase text-[10px] text-subtle flex items-center gap-1.5 min-w-0">
+                  <span className="w-5 h-4 border border-main rounded-sm overflow-hidden bg-muted shrink-0 flex items-center justify-center"><TeamFlag team={team} /></span>
+                  <span className="truncate">{row.teamName}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-black text-lg leading-none">{getMetric(row)}</div>
+                <div className="font-black uppercase text-[9px] text-subtle">{metricLabel}</div>
+              </div>
+            </div>
+          );
+        })}
+        {rows.length === 0 && <div className="p-4 font-black uppercase text-xs text-subtle">{emptyLabel}</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function Statistics({ themeControls }: StatisticsProps) {
   const { t } = useTranslation();
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [teamMap, setTeamMap] = useState<Map<string, TeamRow>>(new Map());
-  const [normalizedTopScorers, setNormalizedTopScorers] = useState<TopScorerStatRow[]>([]);
-  const [normalizedTeamStats, setNormalizedTeamStats] = useState<TeamTournamentStatRow[]>([]);
+  const [normalizedTopScorers, setNormalizedTopScorers] = useState<PlayerTournamentStatRow[]>([]);
+  const [normalizedTopAssists, setNormalizedTopAssists] = useState<PlayerTournamentStatRow[]>([]);
+  const [normalizedTopGoalContributions, setNormalizedTopGoalContributions] = useState<PlayerTournamentStatRow[]>([]);
   const [coverage, setCoverage] = useState<StatisticsCoverage>({ normalizedMatches: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,14 +228,15 @@ export default function Statistics({ themeControls }: StatisticsProps) {
     setLoading(true);
     setError(null);
 
-    Promise.all([listMatchesWithSummaries(), listTeams(), getTeamMap(), listTopScorers(), listTeamTournamentStats(), getStatisticsCoverage()])
-      .then(([nextMatches, nextTeams, nextTeamMap, nextTopScorers, nextTeamStats, nextCoverage]) => {
+    Promise.all([listMatchesWithSummaries(), listTeams(), getTeamMap(), listTopScorers(), listTopAssists(), listTopGoalContributions(), getStatisticsCoverage()])
+      .then(([nextMatches, nextTeams, nextTeamMap, nextTopScorers, nextTopAssists, nextTopGoalContributions, nextCoverage]) => {
         if (!active) return;
         setMatches(nextMatches);
         setTeams(nextTeams);
         setTeamMap(nextTeamMap);
         setNormalizedTopScorers(nextTopScorers);
-        setNormalizedTeamStats(nextTeamStats);
+        setNormalizedTopAssists(nextTopAssists);
+        setNormalizedTopGoalContributions(nextTopGoalContributions);
         setCoverage(nextCoverage);
       })
       .catch((nextError) => {
@@ -278,12 +258,13 @@ export default function Statistics({ themeControls }: StatisticsProps) {
     group,
     rows: buildGroupStandings(matches, group, teams.filter((team) => team.group_code === group)),
   })), [groups, matches, teams]);
-  const fallbackTopScorers = useMemo(() => buildTopScorers(completedMatches, teamMap), [completedMatches, teamMap]);
-  const fallbackTeamStats = useMemo(() => buildTeamStats(completedMatches, teamMap), [completedMatches, teamMap]);
-  const normalizedScorers = useMemo(() => mapNormalizedTopScorers(normalizedTopScorers, teamMap), [normalizedTopScorers, teamMap]);
-  const normalizedStats = useMemo(() => mapNormalizedTeamStats(normalizedTeamStats, teamMap), [normalizedTeamStats, teamMap]);
-  const topScorers = normalizedScorers.length ? normalizedScorers : fallbackTopScorers;
-  const teamStats = normalizedStats.length ? normalizedStats : fallbackTeamStats;
+  const fallbackPlayerLeaders = useMemo(() => buildPlayerLeaders(completedMatches, teamMap), [completedMatches, teamMap]);
+  const normalizedScorers = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopScorers, teamMap), [normalizedTopScorers, teamMap]);
+  const normalizedAssists = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopAssists, teamMap), [normalizedTopAssists, teamMap]);
+  const normalizedGoalContributions = useMemo(() => mapNormalizedPlayerLeaders(normalizedTopGoalContributions, teamMap), [normalizedTopGoalContributions, teamMap]);
+  const topScorers = normalizedScorers.length ? normalizedScorers : sortTopScorers(fallbackPlayerLeaders);
+  const topAssists = normalizedAssists.length ? normalizedAssists : sortTopAssists(fallbackPlayerLeaders);
+  const topGoalContributions = normalizedGoalContributions.length ? normalizedGoalContributions : sortTopGoalContributions(fallbackPlayerLeaders);
   const summaryMatches = coverage.normalizedMatches || matches.filter((match) => match.espn_summary_updated_at).length;
 
   return (
@@ -317,11 +298,11 @@ export default function Statistics({ themeControls }: StatisticsProps) {
               </div>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 border-main p-3 sm:p-4 lg:p-5 bg-c3 text-main min-w-0">
-              <BarChart3 size={30} className="shrink-0" strokeWidth={2.5} />
+              <Handshake size={30} className="shrink-0" strokeWidth={2.5} />
               <div className="min-w-0">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.espnSummaries')}</div>
-                <div className="text-2xl sm:text-3xl font-black leading-none">{summaryMatches}</div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('ui.matchStats')}</div>
+                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.topAssists')}</div>
+                <div className="text-2xl sm:text-3xl font-black leading-none">{topAssists.length}</div>
+                <div className="text-[9px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('appPages.statistics.goalsPlusAssists')}</div>
               </div>
             </div>
           </div>
@@ -370,53 +351,33 @@ export default function Statistics({ themeControls }: StatisticsProps) {
               </div>
 
               <div className="w-full xl:w-[420px] bg-card flex flex-col">
-                <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main flex items-center gap-2">
-                  <Trophy size={18} strokeWidth={2.5} /> {t('appPages.statistics.topScorers')}
-                </div>
-                <div className="border-b-4 border-main">
-                  {topScorers.map((row, index) => {
-                    const team = row.teamId ? teamMap.get(row.teamId) : undefined;
-                    return (
-                      <div key={`${row.name}-${row.teamName}`} className="grid grid-cols-[38px_1fr_auto] items-center gap-3 p-3 border-b-2 border-line last:border-b-0 bg-card min-w-0">
-                        <div className="font-black text-lg text-c2">#{index + 1}</div>
-                        <div className="min-w-0">
-                          <div className="font-black uppercase text-sm truncate">{row.name}</div>
-                          <div className="font-bold uppercase text-[10px] text-subtle flex items-center gap-1.5 min-w-0">
-                            <span className="w-5 h-4 border border-main rounded-sm overflow-hidden bg-muted shrink-0 flex items-center justify-center"><TeamFlag team={team} /></span>
-                            <span className="truncate">{row.teamName}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-black text-lg leading-none">{row.goals}</div>
-                          <div className="font-black uppercase text-[9px] text-subtle">{t('appPages.statistics.goals')}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {topScorers.length === 0 && <div className="p-4 font-black uppercase text-xs text-subtle">{t('appPages.statistics.noTopScorers')}</div>}
-                </div>
-
-                <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main flex items-center gap-2">
-                  <Shield size={18} strokeWidth={2.5} /> {t('appPages.statistics.teamStats')}
-                </div>
-                <div className="flex flex-col flex-1">
-                  {teamStats.map((row) => {
-                    const team = teamMap.get(row.teamId);
-                    return (
-                      <div key={`${row.teamId}-${row.statKey}`} className="grid grid-cols-[1fr_auto] gap-3 p-3 border-b-2 border-line bg-card min-w-0">
-                        <div className="min-w-0">
-                          <div className="font-black uppercase text-sm flex items-center gap-2 min-w-0">
-                            <span className="w-6 h-4 border border-main rounded-sm overflow-hidden bg-muted shrink-0 flex items-center justify-center"><TeamFlag team={team} /></span>
-                            <span className="truncate">{row.teamName}</span>
-                          </div>
-                          <div className="font-bold uppercase text-[10px] text-subtle truncate">{row.label} · {t('appPages.statistics.matchesSampled', { count: row.matches })}</div>
-                        </div>
-                        <div className="font-black text-lg">{row.total}</div>
-                      </div>
-                    );
-                  })}
-                  {teamStats.length === 0 && <div className="p-4 font-black uppercase text-xs text-subtle">{t('appPages.statistics.noTeamStats')}</div>}
-                </div>
+                <PlayerLeaderTable
+                  title={t('appPages.statistics.topScorers')}
+                  icon={<Trophy size={18} strokeWidth={2.5} />}
+                  rows={topScorers}
+                  teamMap={teamMap}
+                  metricLabel={t('appPages.statistics.goals')}
+                  getMetric={(row) => row.goals}
+                  emptyLabel={t('appPages.statistics.noTopScorers')}
+                />
+                <PlayerLeaderTable
+                  title={t('appPages.statistics.topAssists')}
+                  icon={<Handshake size={18} strokeWidth={2.5} />}
+                  rows={topAssists}
+                  teamMap={teamMap}
+                  metricLabel={t('appPages.statistics.assists')}
+                  getMetric={(row) => row.assists}
+                  emptyLabel={t('appPages.statistics.noTopAssists')}
+                />
+                <PlayerLeaderTable
+                  title={t('appPages.statistics.goalsPlusAssists')}
+                  icon={<BarChart3 size={18} strokeWidth={2.5} />}
+                  rows={topGoalContributions}
+                  teamMap={teamMap}
+                  metricLabel={t('appPages.statistics.total')}
+                  getMetric={(row) => row.total}
+                  emptyLabel={t('appPages.statistics.noGoalContributions')}
+                />
               </div>
             </div>
           )}

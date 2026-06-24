@@ -2,20 +2,19 @@ import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
 import { cached } from './cache';
 
-export type TopScorerStatRow = Database['public']['Tables']['espn_player_tournament_stats']['Row'];
-export type TeamTournamentStatRow = Database['public']['Tables']['espn_team_tournament_stats']['Row'];
+export type PlayerTournamentStatRow = Database['public']['Tables']['espn_player_tournament_stats']['Row'];
 
 export type StatisticsCoverage = {
   normalizedMatches: number;
 };
 
-export const TOP_SCORER_FIELDS = 'player_id, player_name, team_id, goals, assists, latest_match_id, latest_clock, updated_at';
-export const TEAM_TOURNAMENT_STAT_FIELDS = 'team_id, stat_key, label, total_numeric, matches_sampled, average_numeric, updated_at';
+export const PLAYER_TOURNAMENT_STAT_FIELDS = 'player_id, player_name, team_id, goals, assists, latest_match_id, latest_clock, updated_at';
+export const TOP_SCORER_FIELDS = PLAYER_TOURNAMENT_STAT_FIELDS;
+export const GOAL_CONTRIBUTION_FETCH_LIMIT = 50;
 
 const MATCH_COVERAGE_FIELDS = 'id, espn_stats_normalized_at';
-const displayedTeamStatKeys = ['shots', 'shotsOnTarget', 'corners', 'saves', 'fouls', 'yellowCards'];
 
-export async function listTopScorers(limit = 10) {
+export async function listTopScorers(limit = 5) {
   return cached(`statistics:top-scorers:${limit}`, 300_000, async () => {
     const { data, error } = await supabase
       .from('espn_player_tournament_stats')
@@ -30,18 +29,35 @@ export async function listTopScorers(limit = 10) {
   });
 }
 
-export async function listTeamTournamentStats(limit = 12) {
-  return cached(`statistics:team-tournament-stats:${limit}`, 300_000, async () => {
+export async function listTopAssists(limit = 5) {
+  return cached(`statistics:top-assists:${limit}`, 300_000, async () => {
     const { data, error } = await supabase
-      .from('espn_team_tournament_stats')
-      .select(TEAM_TOURNAMENT_STAT_FIELDS)
-      .in('stat_key', displayedTeamStatKeys)
-      .order('total_numeric', { ascending: false })
-      .order('label', { ascending: true })
+      .from('espn_player_tournament_stats')
+      .select(PLAYER_TOURNAMENT_STAT_FIELDS)
+      .order('assists', { ascending: false })
+      .order('goals', { ascending: false })
+      .order('player_name', { ascending: true })
       .limit(limit);
 
     if (error) throw error;
     return data;
+  });
+}
+
+export async function listTopGoalContributions(limit = 5) {
+  return cached(`statistics:top-goal-contributions:${limit}`, 300_000, async () => {
+    const { data, error } = await supabase
+      .from('espn_player_tournament_stats')
+      .select(PLAYER_TOURNAMENT_STAT_FIELDS)
+      .order('goals', { ascending: false })
+      .order('assists', { ascending: false })
+      .order('player_name', { ascending: true })
+      .limit(GOAL_CONTRIBUTION_FETCH_LIMIT);
+
+    if (error) throw error;
+    return [...data]
+      .sort((first, second) => (second.goals + second.assists) - (first.goals + first.assists) || second.goals - first.goals || first.player_name.localeCompare(second.player_name))
+      .slice(0, limit);
   });
 }
 
