@@ -313,8 +313,8 @@ export default function Statistics({ themeControls }: StatisticsProps) {
         </div>
 
         <div className="bg-card border-4 border-main p-2.5 sm:p-4 lg:p-6 flex flex-col gap-3 lg:gap-6 shadow-[4px_4px_0_0_var(--color-shadow)] sm:shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
-          <div className="grid grid-cols-3 gap-2 lg:gap-0 lg:border-b-4 lg:border-main">
-            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 lg:border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c1 text-main min-w-0">
+          <div className="grid grid-cols-3 border-b-4 border-main">
+            <div className="flex items-center gap-2 lg:gap-4 border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c1 text-main min-w-0">
               <ListOrdered size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
               <ListOrdered size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
@@ -323,7 +323,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
                 <div className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase mt-0.5 lg:mt-1 truncate">{t('ui.groupStandings')}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 lg:border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c2 text-inv min-w-0">
+            <div className="flex items-center gap-2 lg:gap-4 border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c2 text-inv min-w-0">
               <Goal size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
               <Goal size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
@@ -332,7 +332,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
                 <div className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase mt-0.5 lg:mt-1 truncate">{t('appPages.statistics.goals')}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 border-main p-2 sm:p-3 lg:p-5 bg-c3 text-main min-w-0">
+            <div className="flex items-center gap-2 lg:gap-4 border-main p-2 sm:p-3 lg:p-5 bg-c3 text-main min-w-0">
               <Handshake size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
               <Handshake size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
@@ -347,8 +347,8 @@ export default function Statistics({ themeControls }: StatisticsProps) {
           {error && <div className="p-6 bg-c5 text-main font-black uppercase text-sm border-b-4 border-main">{error}</div>}
 
           {!loading && !error && (
-            <div className="flex flex-col xl:flex-row flex-1 gap-3 xl:gap-0">
-              <div className="order-2 xl:order-1 flex-1 border-4 xl:border-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0 shadow-[3px_3px_0_var(--color-shadow)] xl:shadow-none">
+            <div className="flex flex-col xl:flex-row flex-1">
+              <div className="order-2 xl:order-1 flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
                 <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main flex items-center justify-between gap-3">
                   <span>{t('appPages.statistics.groupTables')}</span>
                   <span className="text-[10px] font-bold text-faint">{t('ui.itemsCount', { count: groupCards.length })}</span>
@@ -386,7 +386,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
                 </div>
               </div>
 
-              <div className="order-1 xl:order-2 w-full xl:w-[420px] bg-card border-4 xl:border-0 border-main flex flex-col shadow-[3px_3px_0_var(--color-shadow)] xl:shadow-none">
+              <div className="order-1 xl:order-2 w-full xl:w-[420px] bg-card flex flex-col border-b-4 xl:border-b-0 border-main">
                 <PlayerLeaderTable
                   title={t('appPages.statistics.topScorers')}
                   icon={<Trophy size={18} strokeWidth={2.5} />}
