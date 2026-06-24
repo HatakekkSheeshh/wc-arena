@@ -208,19 +208,19 @@ function TeamFlag({ team }: { team?: TeamRow }) {
 
 function PlayerLeaderTable({ title, icon, rows, teamMap, metricLabel, getMetric, emptyLabel }: { title: string; icon: ReactNode; rows: PlayerLeaderRow[]; teamMap: Map<string, TeamRow>; metricLabel: string; getMetric: (row: PlayerLeaderRow) => number; emptyLabel: string }) {
   return (
-    <div className="border-b-4 border-main last:border-b-0">
-      <div className="bg-main text-inv font-black px-4 py-3 uppercase tracking-wide text-sm border-b-4 border-main flex items-center gap-2">
+    <div className="border-b-4 border-main last:border-b-0 bg-card">
+      <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main flex items-center gap-2">
         {icon} {title}
       </div>
-      <div className="max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-main/30 hover:[&::-webkit-scrollbar-thumb]:bg-main/50">
+      <div className="max-h-[318px] sm:max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-main/30 hover:[&::-webkit-scrollbar-thumb]:bg-main/50">
         {rows.map((row, index) => {
           const team = row.teamId ? teamMap.get(row.teamId) : undefined;
           return (
-            <div key={`${title}-${row.name}-${row.teamName}`} className="grid grid-cols-[38px_1fr_auto] items-center gap-3 p-3 border-b-2 border-line last:border-b-0 bg-card min-w-0">
-              <div className="font-black text-lg text-c2">#{index + 1}</div>
+            <div key={`${title}-${row.name}-${row.teamName}`} className="grid grid-cols-[32px_1fr_auto] sm:grid-cols-[38px_1fr_auto] items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 border-b-2 border-line last:border-b-0 bg-card min-w-0">
+              <div className="font-black text-base sm:text-lg text-c2">#{index + 1}</div>
               <div className="min-w-0">
-                <div className="font-black uppercase text-sm truncate">{row.name}</div>
-                <div className="font-bold uppercase text-[10px] text-subtle flex items-center gap-1.5 min-w-0">
+                <div className="font-black uppercase text-xs sm:text-sm truncate">{row.name}</div>
+                <div className="font-bold uppercase text-[9px] sm:text-[10px] text-subtle flex items-center gap-1.5 min-w-0">
                   <span className="w-5 h-4 border border-main rounded-sm overflow-hidden bg-muted shrink-0 flex items-center justify-center"><TeamFlag team={team} /></span>
                   <span className="truncate">{row.teamName}</span>
                 </div>
@@ -296,44 +296,49 @@ export default function Statistics({ themeControls }: StatisticsProps) {
   const topAssists = normalizedAssists.length ? normalizedAssists : sortTopAssists(fallbackPlayerLeaders);
   const topGoalContributions = normalizedGoalContributions.length ? normalizedGoalContributions : sortTopGoalContributions(fallbackPlayerLeaders);
   const topYellowCards = normalizedYellowCards.length ? normalizedYellowCards : sortTopYellowCards(fallbackPlayerLeaders);
+  const topScorerGoals = topScorers[0]?.goals ?? 0;
+  const topAssistCount = topAssists[0]?.assists ?? 0;
   const summaryMatches = coverage.normalizedMatches || matches.filter((match) => match.espn_summary_updated_at).length;
 
   return (
     <AppShell themeControls={themeControls}>
       <div className="relative z-10 flex flex-col p-3 sm:p-4 lg:p-6 gap-3 lg:gap-6 min-h-0">
-        <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)]">
+        <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 flex flex-col w-full xl:w-1/2 shadow-[4px_4px_0_0_var(--color-shadow)] sm:shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)]">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-1 text-main leading-none">
             {t('appPages.statistics.title')}
           </h1>
-          <p className="font-bold text-xs sm:text-sm text-subtle uppercase leading-snug max-w-2xl">
+          <p className="hidden sm:block font-bold text-xs sm:text-sm text-subtle uppercase leading-snug max-w-2xl">
             {t('appPages.statistics.description')}
           </p>
         </div>
 
-        <div className="bg-card border-4 border-main p-3 sm:p-4 lg:p-6 flex flex-col gap-3 lg:gap-6 shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
-          <div className="grid grid-cols-1 sm:grid-cols-3 border-b-4 border-main">
-            <div className="flex items-center gap-3 sm:gap-4 sm:border-r-4 border-b-4 sm:border-b-0 border-main p-3 sm:p-4 lg:p-5 bg-c1 text-main min-w-0">
-              <ListOrdered size={30} className="shrink-0" strokeWidth={2.5} />
+        <div className="bg-card border-4 border-main p-2.5 sm:p-4 lg:p-6 flex flex-col gap-3 lg:gap-6 shadow-[4px_4px_0_0_var(--color-shadow)] sm:shadow-[6px_6px_0_0_var(--color-shadow)] lg:shadow-[8px_8px_0_0_var(--color-shadow)] rounded-sm">
+          <div className="grid grid-cols-3 gap-2 lg:gap-0 lg:border-b-4 lg:border-main">
+            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 lg:border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c1 text-main min-w-0">
+              <ListOrdered size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
+              <ListOrdered size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.groupsTracked')}</div>
-                <div className="text-2xl sm:text-3xl font-black leading-none">{groups.length}</div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('ui.groupStandings')}</div>
+                <div className="text-[8px] sm:text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.groupsTracked')}</div>
+                <div className="text-xl sm:text-2xl lg:text-3xl font-black leading-none">{groups.length}</div>
+                <div className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase mt-0.5 lg:mt-1 truncate">{t('ui.groupStandings')}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 sm:border-r-4 border-b-4 sm:border-b-0 border-main p-3 sm:p-4 lg:p-5 bg-c2 text-inv min-w-0">
-              <Goal size={30} className="shrink-0" strokeWidth={2.5} />
+            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 lg:border-r-4 border-main p-2 sm:p-3 lg:p-5 bg-c2 text-inv min-w-0">
+              <Goal size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
+              <Goal size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.topScorers')}</div>
-                <div className="text-2xl sm:text-3xl font-black leading-none">{topScorers.length}</div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase mt-1 truncate">{normalizedScorers.length ? t('appPages.statistics.normalizedStats') : t('appPages.statistics.fromKeyEvents')}</div>
+                <div className="text-[8px] sm:text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.topScorers')}</div>
+                <div className="text-xl sm:text-2xl lg:text-3xl font-black leading-none">{topScorerGoals}</div>
+                <div className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase mt-0.5 lg:mt-1 truncate">{t('appPages.statistics.goals')}</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 border-main p-3 sm:p-4 lg:p-5 bg-c3 text-main min-w-0">
-              <Handshake size={30} className="shrink-0" strokeWidth={2.5} />
+            <div className="flex items-center gap-2 lg:gap-4 border-2 lg:border-0 border-main p-2 sm:p-3 lg:p-5 bg-c3 text-main min-w-0">
+              <Handshake size={18} className="shrink-0 lg:hidden" strokeWidth={2.5} />
+              <Handshake size={30} className="shrink-0 hidden lg:block" strokeWidth={2.5} />
               <div className="min-w-0">
-                <div className="text-[10px] sm:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.topAssists')}</div>
-                <div className="text-2xl sm:text-3xl font-black leading-none">{topAssists.length}</div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase mt-1 truncate">{t('appPages.statistics.goalsPlusAssists')}</div>
+                <div className="text-[8px] sm:text-[10px] lg:text-xs uppercase font-black tracking-widest leading-none mb-1 truncate">{t('appPages.statistics.topAssists')}</div>
+                <div className="text-xl sm:text-2xl lg:text-3xl font-black leading-none">{topAssistCount}</div>
+                <div className="text-[8px] sm:text-[9px] lg:text-[10px] font-bold uppercase mt-0.5 lg:mt-1 truncate">{t('appPages.statistics.assists')}</div>
               </div>
             </div>
           </div>
@@ -342,8 +347,8 @@ export default function Statistics({ themeControls }: StatisticsProps) {
           {error && <div className="p-6 bg-c5 text-main font-black uppercase text-sm border-b-4 border-main">{error}</div>}
 
           {!loading && !error && (
-            <div className="flex flex-col xl:flex-row flex-1">
-              <div className="flex-1 border-r-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0">
+            <div className="flex flex-col xl:flex-row flex-1 gap-3 xl:gap-0">
+              <div className="order-2 xl:order-1 flex-1 border-4 xl:border-0 xl:border-r-4 border-main flex flex-col bg-muted min-w-0 shadow-[3px_3px_0_var(--color-shadow)] xl:shadow-none">
                 <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main flex items-center justify-between gap-3">
                   <span>{t('appPages.statistics.groupTables')}</span>
                   <span className="text-[10px] font-bold text-faint">{t('ui.itemsCount', { count: groupCards.length })}</span>
@@ -381,7 +386,7 @@ export default function Statistics({ themeControls }: StatisticsProps) {
                 </div>
               </div>
 
-              <div className="w-full xl:w-[420px] bg-card flex flex-col">
+              <div className="order-1 xl:order-2 w-full xl:w-[420px] bg-card border-4 xl:border-0 border-main flex flex-col shadow-[3px_3px_0_var(--color-shadow)] xl:shadow-none">
                 <PlayerLeaderTable
                   title={t('appPages.statistics.topScorers')}
                   icon={<Trophy size={18} strokeWidth={2.5} />}
@@ -422,8 +427,8 @@ export default function Statistics({ themeControls }: StatisticsProps) {
             </div>
           )}
 
-          <div className="border-t-4 border-main bg-c1 text-main p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div className="font-black uppercase text-xs sm:text-sm flex items-center gap-2"><Users size={18} strokeWidth={2.5} /> {t('appPages.statistics.phaseOneNote')}</div>
+          <div className="border-t-4 border-main bg-c1 text-main p-2.5 sm:p-4 flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center sm:justify-between">
+            <div className="font-black uppercase text-[10px] sm:text-sm flex items-center gap-2"><Users size={16} className="shrink-0" strokeWidth={2.5} /> {t('appPages.statistics.phaseOneNote')}</div>
             <Link to="/matches" className="border-2 border-main bg-card px-3 py-2 font-black uppercase text-xs shadow-[3px_3px_0_var(--color-shadow)] hover:bg-muted text-center">
               {t('ui.backToMatches')}
             </Link>
