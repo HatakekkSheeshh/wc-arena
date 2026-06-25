@@ -12,14 +12,14 @@ export const mockEligibilityChecks: EligibilityCheck[] = [
   {
     id: 'eligibility-minimum-picks',
     label: 'Minimum predictions reached',
-    description: 'You have enough submitted picks to qualify for ranked sponsor rewards.',
+    description: 'You have enough submitted picks to appear in ranked recognition tiers.',
     status: 'passed',
     href: '/my-predictions',
   },
   {
     id: 'eligibility-rules-accepted',
     label: 'Public rules acknowledged',
-    description: 'Review scoring, tie-breakers, and prize eligibility before rewards are approved.',
+    description: 'Review scoring, tie-breakers, and fair-play rules before recognition is approved.',
     status: 'review',
     href: '/rules',
   },
@@ -31,8 +31,8 @@ export const mockEligibilityChecks: EligibilityCheck[] = [
   },
   {
     id: 'eligibility-contact-ready',
-    label: 'Winner contact ready',
-    description: 'Reward contact details are collected manually after approval. No wallet balance is stored in this MVP.',
+    label: 'Recognition profile ready',
+    description: 'Recognition details are reviewed manually after approval. Points stay virtual inside this game.',
     status: 'review',
     href: '/profile',
   },
@@ -46,11 +46,11 @@ export const mockRewards: RewardItem[] = [
     period: 'Group Stage Week 1',
     placement: '#124 global',
     amount: 0,
-    currency: 'USD',
-    source: 'sponsor',
+    currency: 'PTS',
+    source: 'community',
     status: 'pending',
     updatedAt: '2026-06-15T22:00:00Z',
-    note: 'Keep predicting to climb into the sponsor reward tiers.',
+    note: 'Keep predicting to climb into the community recognition tiers.',
   },
   {
     id: 'reward-community-thanks',
@@ -59,24 +59,24 @@ export const mockRewards: RewardItem[] = [
     period: 'Opening Round',
     placement: 'Qualified participant',
     amount: 0,
-    currency: 'USD',
+    currency: 'PTS',
     source: 'community',
     status: 'approved',
     updatedAt: '2026-06-14T18:30:00Z',
-    note: 'Eligible for non-cash community recognition and sponsor partner perks.',
+    note: 'Eligible for community recognition, badges, and bragging rights.',
   },
   {
     id: 'reward-grand-prize-track',
     userId: currentUserId,
-    title: 'Overall leaderboard prize track',
+    title: 'Overall leaderboard recognition track',
     period: 'Full Tournament',
-    placement: 'Outside paid tier',
+    placement: 'Outside top tier',
     amount: 0,
-    currency: 'USD',
-    source: 'sponsor',
+    currency: 'PTS',
+    source: 'community',
     status: 'ineligible',
     updatedAt: '2026-06-13T20:00:00Z',
-    note: 'Reach the published leaderboard tiers to enter manual reward review.',
+    note: 'Reach the published leaderboard tiers to enter fair-play recognition review.'
   },
 ];
 
@@ -84,12 +84,12 @@ export const mockRewardTrustNotes: RewardTrustNote[] = [
   {
     id: 'trust-free-entry',
     title: 'Free to enter',
-    description: 'Predictions are skill-contest entries. Players do not pay an entry fee to qualify.',
+    description: 'Predict 2026 is free to play. Points are virtual and cannot be exchanged.'
   },
   {
-    id: 'trust-sponsored-pool',
-    title: 'Sponsor and community backed',
-    description: 'Reward pools are funded by sponsors and optional community support, not by winner-takes-loser stakes.',
+    id: 'trust-virtual-points',
+    title: 'Virtual points only',
+    description: 'Points, badges, and ranks are for fun community recognition only.',
   },
   {
     id: 'trust-public-scoring',
@@ -98,7 +98,7 @@ export const mockRewardTrustNotes: RewardTrustNote[] = [
   },
   {
     id: 'trust-manual-review',
-    title: 'Manual winner review',
-    description: 'Potential winners are reviewed for eligibility and contacted manually before any payout is processed.',
+    title: 'Manual fair-play review',
+    description: 'Top players are reviewed for eligibility before public recognition is published.',
   },
 ];

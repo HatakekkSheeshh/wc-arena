@@ -256,6 +256,317 @@ export type Database = {
           },
         ]
       }
+      espn_match_event_participants: {
+        Row: {
+          event_key: string
+          match_id: string
+          player_id: string | null
+          player_name: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          event_key: string
+          match_id: string
+          player_id?: string | null
+          player_name: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          event_key?: string
+          match_id?: string
+          player_id?: string | null
+          player_name?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_match_event_participants_match_id_event_key_fkey"
+            columns: ["match_id", "event_key"]
+            isOneToOne: false
+            referencedRelation: "espn_match_events"
+            referencedColumns: ["match_id", "event_key"]
+          },
+          {
+            foreignKeyName: "espn_match_event_participants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "espn_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      espn_match_events: {
+        Row: {
+          away_score: number | null
+          clock: string | null
+          created_at: string
+          espn_event_id: string | null
+          event_index: number
+          event_key: string
+          event_type: string | null
+          home_score: number | null
+          match_id: string
+          minute: number | null
+          period: number | null
+          scoring_play: boolean
+          side: string | null
+          source_payload: Json | null
+          team_id: string | null
+          text: string | null
+          type_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          clock?: string | null
+          created_at?: string
+          espn_event_id?: string | null
+          event_index: number
+          event_key: string
+          event_type?: string | null
+          home_score?: number | null
+          match_id: string
+          minute?: number | null
+          period?: number | null
+          scoring_play?: boolean
+          side?: string | null
+          source_payload?: Json | null
+          team_id?: string | null
+          text?: string | null
+          type_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          clock?: string | null
+          created_at?: string
+          espn_event_id?: string | null
+          event_index?: number
+          event_key?: string
+          event_type?: string | null
+          home_score?: number | null
+          match_id?: string
+          minute?: number | null
+          period?: number | null
+          scoring_play?: boolean
+          side?: string | null
+          source_payload?: Json | null
+          team_id?: string | null
+          text?: string | null
+          type_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "espn_match_events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      espn_match_team_stats: {
+        Row: {
+          created_at: string
+          display_value: string
+          label: string
+          match_id: string
+          numeric_value: number | null
+          side: string
+          source_name: string | null
+          stat_key: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_value: string
+          label: string
+          match_id: string
+          numeric_value?: number | null
+          side: string
+          source_name?: string | null
+          stat_key: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_value?: string
+          label?: string
+          match_id?: string
+          numeric_value?: number | null
+          side?: string
+          source_name?: string | null
+          stat_key?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_match_team_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "espn_match_team_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      espn_player_tournament_stats: {
+        Row: {
+          assists: number
+          goals: number
+          latest_clock: string | null
+          latest_match_id: string | null
+          player_id: string
+          player_name: string
+          team_id: string
+          updated_at: string
+          yellow_cards: number
+        }
+        Insert: {
+          assists?: number
+          goals?: number
+          latest_clock?: string | null
+          latest_match_id?: string | null
+          player_id: string
+          player_name: string
+          team_id: string
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Update: {
+          assists?: number
+          goals?: number
+          latest_clock?: string | null
+          latest_match_id?: string | null
+          player_id?: string
+          player_name?: string
+          team_id?: string
+          updated_at?: string
+          yellow_cards?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_player_tournament_stats_latest_match_id_fkey"
+            columns: ["latest_match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "espn_player_tournament_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "espn_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "espn_player_tournament_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      espn_players: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          normalized_name: string
+          source: string
+          source_player_id: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id: string
+          normalized_name: string
+          source?: string
+          source_player_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          normalized_name?: string
+          source?: string
+          source_player_id?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      espn_team_tournament_stats: {
+        Row: {
+          average_numeric: number | null
+          label: string
+          matches_sampled: number
+          stat_key: string
+          team_id: string
+          total_numeric: number
+          updated_at: string
+        }
+        Insert: {
+          average_numeric?: number | null
+          label: string
+          matches_sampled?: number
+          stat_key: string
+          team_id: string
+          total_numeric?: number
+          updated_at?: string
+        }
+        Update: {
+          average_numeric?: number | null
+          label?: string
+          matches_sampled?: number
+          stat_key?: string
+          team_id?: string
+          total_numeric?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "espn_team_tournament_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard_entries: {
         Row: {
           accuracy: number
@@ -356,6 +667,8 @@ export type Database = {
           exact_scores: number
           payout: number
           payout_factor: number
+          point_split: number
+          point_split_factor: number
           points: number
           previous_rank: number | null
           rank: number
@@ -369,6 +682,8 @@ export type Database = {
           exact_scores?: number
           payout?: number
           payout_factor?: number
+          point_split?: number
+          point_split_factor?: number
           points?: number
           previous_rank?: number | null
           rank: number
@@ -382,6 +697,8 @@ export type Database = {
           exact_scores?: number
           payout?: number
           payout_factor?: number
+          point_split?: number
+          point_split_factor?: number
           points?: number
           previous_rank?: number | null
           rank?: number
@@ -455,7 +772,10 @@ export type Database = {
           name: string
           payout_config: Json
           payout_curve: string
+          point_split_config: Json
+          point_split_curve: string
           prize_pool: number
+          recognition_pool: number
           settled_at: string | null
           starts_at: string
           status: string
@@ -476,7 +796,10 @@ export type Database = {
           name: string
           payout_config?: Json
           payout_curve?: string
+          point_split_config?: Json
+          point_split_curve?: string
           prize_pool?: number
+          recognition_pool?: number
           settled_at?: string | null
           starts_at: string
           status?: string
@@ -497,7 +820,10 @@ export type Database = {
           name?: string
           payout_config?: Json
           payout_curve?: string
+          point_split_config?: Json
+          point_split_curve?: string
           prize_pool?: number
+          recognition_pool?: number
           settled_at?: string | null
           starts_at?: string
           status?: string
@@ -703,6 +1029,7 @@ export type Database = {
           espn_play_by_play_available: boolean | null
           espn_prediction_updated_at: string | null
           espn_state: string | null
+          espn_stats_normalized_at: string | null
           espn_status: string | null
           espn_status_detail: string | null
           espn_summary: Json | null
@@ -742,6 +1069,7 @@ export type Database = {
           espn_play_by_play_available?: boolean | null
           espn_prediction_updated_at?: string | null
           espn_state?: string | null
+          espn_stats_normalized_at?: string | null
           espn_status?: string | null
           espn_status_detail?: string | null
           espn_summary?: Json | null
@@ -781,6 +1109,7 @@ export type Database = {
           espn_play_by_play_available?: boolean | null
           espn_prediction_updated_at?: string | null
           espn_state?: string | null
+          espn_stats_normalized_at?: string | null
           espn_status?: string | null
           espn_status_detail?: string | null
           espn_summary?: Json | null
@@ -815,55 +1144,121 @@ export type Database = {
           },
         ]
       }
-      prediction_scores: {
+      player_provider_aliases: {
         Row: {
-          calculated_at: string
-          correct_outcome: number
-          exact_score: number
-          goal_difference_bonus: number
-          outcome: string
-          prediction_id: string
-          risk_multiplier: number
-          scoring_version: string
-          streak_bonus: number
-          team_score_bonus: number
-          total: number
-          underdog_bonus: number
+          alias: string
+          alias_key: string
+          confidence: number
+          created_at: string
+          id: string
+          normalized_alias: string
+          player_id: string
+          provider: string
+          provider_player_id: string | null
+          source: string
+          team_id: string | null
+          updated_at: string
         }
         Insert: {
-          calculated_at?: string
-          correct_outcome?: number
-          exact_score?: number
-          goal_difference_bonus?: number
-          outcome: string
-          prediction_id: string
-          risk_multiplier?: number
-          scoring_version: string
-          streak_bonus?: number
-          team_score_bonus?: number
-          total?: number
-          underdog_bonus?: number
+          alias: string
+          alias_key: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          normalized_alias: string
+          player_id: string
+          provider: string
+          provider_player_id?: string | null
+          source?: string
+          team_id?: string | null
+          updated_at?: string
         }
         Update: {
-          calculated_at?: string
-          correct_outcome?: number
-          exact_score?: number
-          goal_difference_bonus?: number
-          outcome?: string
-          prediction_id?: string
-          risk_multiplier?: number
-          scoring_version?: string
-          streak_bonus?: number
-          team_score_bonus?: number
-          total?: number
-          underdog_bonus?: number
+          alias?: string
+          alias_key?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          normalized_alias?: string
+          player_id?: string
+          provider?: string
+          provider_player_id?: string | null
+          source?: string
+          team_id?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "prediction_scores_prediction_id_fkey"
-            columns: ["prediction_id"]
-            isOneToOne: true
-            referencedRelation: "predictions"
+            foreignKeyName: "player_provider_aliases_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_provider_aliases_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          club: string | null
+          created_at: string
+          date_of_birth: string | null
+          display_name: string
+          id: string
+          image_url: string | null
+          normalized_name: string
+          primary_position: string | null
+          primary_team_id: string | null
+          slug: string
+          source: string
+          source_payload: Json | null
+          source_player_name: string
+          updated_at: string
+        }
+        Insert: {
+          club?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          display_name: string
+          id: string
+          image_url?: string | null
+          normalized_name: string
+          primary_position?: string | null
+          primary_team_id?: string | null
+          slug: string
+          source?: string
+          source_payload?: Json | null
+          source_player_name: string
+          updated_at?: string
+        }
+        Update: {
+          club?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          display_name?: string
+          id?: string
+          image_url?: string | null
+          normalized_name?: string
+          primary_position?: string | null
+          primary_team_id?: string | null
+          slug?: string
+          source?: string
+          source_payload?: Json | null
+          source_player_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_primary_team_id_fkey"
+            columns: ["primary_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -948,6 +1343,59 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_scores: {
+        Row: {
+          calculated_at: string
+          correct_outcome: number
+          exact_score: number
+          goal_difference_bonus: number
+          outcome: string
+          prediction_id: string
+          risk_multiplier: number
+          scoring_version: string
+          streak_bonus: number
+          team_score_bonus: number
+          total: number
+          underdog_bonus: number
+        }
+        Insert: {
+          calculated_at?: string
+          correct_outcome?: number
+          exact_score?: number
+          goal_difference_bonus?: number
+          outcome: string
+          prediction_id: string
+          risk_multiplier?: number
+          scoring_version: string
+          streak_bonus?: number
+          team_score_bonus?: number
+          total?: number
+          underdog_bonus?: number
+        }
+        Update: {
+          calculated_at?: string
+          correct_outcome?: number
+          exact_score?: number
+          goal_difference_bonus?: number
+          outcome?: string
+          prediction_id?: string
+          risk_multiplier?: number
+          scoring_version?: string
+          streak_bonus?: number
+          team_score_bonus?: number
+          total?: number
+          underdog_bonus?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_scores_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: true
+            referencedRelation: "predictions"
             referencedColumns: ["id"]
           },
         ]
@@ -1231,6 +1679,78 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_squad_players: {
+        Row: {
+          caps: number | null
+          captain: boolean
+          club: string | null
+          coach_name: string | null
+          created_at: string
+          group_code: string | null
+          international_goals: number | null
+          player_id: string
+          position: string
+          source: string
+          source_payload: Json | null
+          source_scraped_at: string | null
+          squad_number: number | null
+          team_id: string
+          tournament_id: string
+          updated_at: string
+        }
+        Insert: {
+          caps?: number | null
+          captain?: boolean
+          club?: string | null
+          coach_name?: string | null
+          created_at?: string
+          group_code?: string | null
+          international_goals?: number | null
+          player_id: string
+          position: string
+          source?: string
+          source_payload?: Json | null
+          source_scraped_at?: string | null
+          squad_number?: number | null
+          team_id: string
+          tournament_id?: string
+          updated_at?: string
+        }
+        Update: {
+          caps?: number | null
+          captain?: boolean
+          club?: string | null
+          coach_name?: string | null
+          created_at?: string
+          group_code?: string | null
+          international_goals?: number | null
+          player_id?: string
+          position?: string
+          source?: string
+          source_payload?: Json | null
+          source_scraped_at?: string | null
+          squad_number?: number | null
+          team_id?: string
+          tournament_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_squad_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_squad_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -1325,6 +1845,7 @@ export type Database = {
           weekday: number
         }[]
       }
+      cleanup_old_operational_data: { Args: never; Returns: Json }
       get_match_prediction_outcome_summary: {
         Args: { target_match_id: string }
         Returns: {
@@ -1335,7 +1856,70 @@ export type Database = {
           total_predictions: number
         }[]
       }
+      get_public_user_prediction_history: {
+        Args: { row_limit?: number; target_user_id: string }
+        Returns: {
+          match_away_score: number
+          match_away_team_id: string
+          match_city: string
+          match_espn_display_clock: string
+          match_espn_state: string
+          match_espn_status: string
+          match_espn_status_detail: string
+          match_group_code: string
+          match_home_score: number
+          match_home_team_id: string
+          match_kickoff_at: string
+          match_lock_at: string
+          match_matchday: number
+          match_result_updated_at: string
+          match_stadium: string
+          match_stage: string
+          match_status: string
+          prediction_away_score: number
+          prediction_confidence: number
+          prediction_created_at: string
+          prediction_home_score: number
+          prediction_id: string
+          prediction_is_risk_pick: boolean
+          prediction_locked_at: string
+          prediction_match_id: string
+          prediction_predicted_outcome: string
+          prediction_revision: number
+          prediction_status: string
+          prediction_type: string
+          prediction_updated_at: string
+          profile_accuracy: number
+          profile_avatar_url: string
+          profile_best_streak: number
+          profile_country_code: string
+          profile_created_at: string
+          profile_current_streak: number
+          profile_display_name: string
+          profile_exact_scores: number
+          profile_fan_club_team_id: string
+          profile_id: string
+          profile_points: number
+          profile_rank: number
+          profile_username: string
+          score_calculated_at: string
+          score_correct_outcome: number
+          score_exact_score: number
+          score_goal_difference_bonus: number
+          score_outcome: string
+          score_risk_multiplier: number
+          score_scoring_version: string
+          score_streak_bonus: number
+          score_team_score_bonus: number
+          score_total: number
+          score_underdog_bonus: number
+        }[]
+      }
       refresh_global_leaderboard_entries: { Args: never; Returns: undefined }
+      refresh_league_member_count: {
+        Args: { target_league_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

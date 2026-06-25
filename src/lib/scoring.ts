@@ -35,10 +35,10 @@ export function calculatePredictionScore(prediction: Prediction, matchResult: Ma
   const actualGoalDifference = matchResult.homeScore - matchResult.awayScore;
   const goalDifferenceBonus = canScoreBonuses && actualOutcome !== 'draw' && predictedGoalDifference === actualGoalDifference ? 1 : 0;
   const teamScoreBonus = canScoreBonuses && (prediction.homeScore === matchResult.homeScore || prediction.awayScore === matchResult.awayScore) ? 1 : 0;
-  const streakBonus = options.streakBonus ?? 0;
-  const riskMultiplier = options.riskMultiplier ?? 1;
-  const underdogBonus = options.underdogBonus ?? 0;
-  const baseTotal = exactScore + correctOutcome + goalDifferenceBonus + teamScoreBonus + streakBonus + underdogBonus;
+  const streakBonus = outcome === 'missed' ? 0 : options.streakBonus ?? 0;
+  const riskMultiplier = prediction.isRiskPick ? options.riskMultiplier ?? 1 : 1;
+  const underdogBonus = outcome === 'missed' ? 0 : options.underdogBonus ?? 0;
+  const preMultiplierTotal = exactScore + correctOutcome + goalDifferenceBonus + teamScoreBonus + streakBonus + underdogBonus;
 
   return {
     predictionId: prediction.id,
@@ -49,8 +49,8 @@ export function calculatePredictionScore(prediction: Prediction, matchResult: Ma
     streakBonus,
     riskMultiplier,
     underdogBonus,
-    total: baseTotal * riskMultiplier,
-    scoringVersion: 'smart-2026-06-19',
+    total: outcome === 'missed' ? 0 : Math.round(preMultiplierTotal * riskMultiplier),
+    scoringVersion: 'smart-2026-06-23-bonuses',
     calculatedAt: options.calculatedAt ?? new Date().toISOString(),
   };
 }

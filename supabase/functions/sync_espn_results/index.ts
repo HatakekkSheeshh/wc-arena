@@ -1,6 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireSyncSecret } from '../_shared/authGuards.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
 import { refreshLeagueEventLeaderboards } from '../_shared/leagueEvents.ts';
+import { acquireLock, releaseLock } from '../_shared/redis.ts';
+import { buildCommunityDistributions, calculatePredictionScores, type CalculatedScore, type PredictionScoringRow, type TeamSignalRow } from '../_shared/scoringRules.ts';
+import { buildNormalizedStatistics, buildPlayerTournamentStats, buildTeamTournamentStats, type EspnSummaryPayload, type NormalizedEventParticipant, type NormalizedMatchEvent, type NormalizedMatchTeamStat, type StatisticsTeamRow } from '../_shared/espnStatistics.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +13,7 @@ const corsHeaders = {
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const ESPN_SUMMARY_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary';
 const ESPN_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world';
+const SELECT_PAGE_SIZE = 1000;
 
 const fifaAliases: Record<string, string[]> = {
   BIH: ['bosnia-herzegovina', 'bosnia-and-herzegovina'],
@@ -42,10 +47,6 @@ const neutralTextBlocklist = [
   'disclaimer',
 ];
 
-type PredictionOutcome = 'home' | 'draw' | 'away';
-type PredictionType = 'exact_score' | 'outcome_only';
-type ScoreOutcome = 'exact' | 'correct' | 'missed';
-type Score = { home_score: number; away_score: number };
 type TeamRow = { id: string; name: string; short_name: string; country_code: string };
 type MatchRow = {
   id: string;
@@ -136,33 +137,6 @@ type EspnCandidate = {
   homeLabel: string;
   awayLabel: string;
 };
-type PredictionRow = {
-  id: string;
-  user_id: string;
-  prediction_type: PredictionType | null;
-  home_score: number | null;
-  away_score: number | null;
-  predicted_outcome: PredictionOutcome | null;
-  is_risk_pick: boolean;
-  matches: Score & { kickoff_at: string };
-};
-type CalculatedScore = {
-  prediction_id: string;
-  user_id: string;
-  match_kickoff_at: string;
-  outcome: ScoreOutcome;
-  exact_score: number;
-  correct_outcome: number;
-  goal_difference_bonus: number;
-  team_score_bonus: number;
-  streak_bonus: number;
-  risk_multiplier: number;
-  underdog_bonus: number;
-  total: number;
-  scoring_version: string;
-  calculated_at: string;
-};
-
 type UserAggregate = {
   userId: string;
   predictionPoints: number;
@@ -186,7 +160,7 @@ type PointTransactionRow = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function normalize(value?: string | null) {
@@ -601,7 +575,8 @@ function sanitizeParticipants(value: unknown) {
     const athlete = isRecord(participant.athlete) ? participant.athlete : undefined;
     const type = isRecord(participant.type) ? neutralText(participant.type.displayName ?? participant.type.name) : neutralText(participant.type);
     const name = neutralText(athlete?.displayName ?? participant.displayName ?? participant.name);
-    const entry = { name, type };
+    const sourcePlayerId = neutralText(athlete?.id ?? participant.athleteId ?? participant.id);
+    const entry = { name, type, sourcePlayerId };
     return Object.values(entry).some(Boolean) ? [entry] : [];
   }).slice(0, 6);
 }
@@ -745,59 +720,6 @@ async function enrichPlansWithSummaries(plans: { candidate: EspnCandidate; updat
   }));
 }
 
-function getOutcome(score: Score): PredictionOutcome {
-  if (score.home_score > score.away_score) return 'home';
-  if (score.home_score < score.away_score) return 'away';
-  return 'draw';
-}
-
-function getPredictionOutcome(prediction: PredictionRow): ScoreOutcome {
-  const actualOutcome = getOutcome(prediction.matches);
-  const predictedOutcome = prediction.predicted_outcome;
-  const predictionType = prediction.prediction_type ?? 'exact_score';
-  const hasExactScores = typeof prediction.home_score === 'number' && typeof prediction.away_score === 'number';
-  const exact = predictionType === 'exact_score'
-    && hasExactScores
-    && prediction.home_score === prediction.matches.home_score
-    && prediction.away_score === prediction.matches.away_score;
-
-  if (exact) return 'exact';
-  return predictedOutcome === actualOutcome ? 'correct' : 'missed';
-}
-
-function calculateScore(prediction: PredictionRow): CalculatedScore {
-  const outcome = getPredictionOutcome(prediction);
-  const predictionType = prediction.prediction_type ?? 'exact_score';
-  const actualOutcome = getOutcome(prediction.matches);
-  const hasExactScores = typeof prediction.home_score === 'number' && typeof prediction.away_score === 'number';
-  const exactScore = outcome === 'exact' ? 5 : 0;
-  const correctOutcome = outcome === 'correct' ? 2 : 0;
-  const canScoreBonuses = predictionType === 'exact_score' && hasExactScores && outcome === 'correct';
-  const predictedGoalDifference = hasExactScores ? prediction.home_score - prediction.away_score : null;
-  const actualGoalDifference = prediction.matches.home_score - prediction.matches.away_score;
-  const goalDifferenceBonus = canScoreBonuses && actualOutcome !== 'draw' && predictedGoalDifference === actualGoalDifference ? 1 : 0;
-  const teamScoreBonus = canScoreBonuses && (prediction.home_score === prediction.matches.home_score || prediction.away_score === prediction.matches.away_score) ? 1 : 0;
-  const riskMultiplier = prediction.is_risk_pick ? 1 : 1;
-  const baseTotal = exactScore + correctOutcome + goalDifferenceBonus + teamScoreBonus;
-
-  return {
-    prediction_id: prediction.id,
-    user_id: prediction.user_id,
-    match_kickoff_at: prediction.matches.kickoff_at,
-    outcome,
-    exact_score: exactScore,
-    correct_outcome: correctOutcome,
-    goal_difference_bonus: goalDifferenceBonus,
-    team_score_bonus: teamScoreBonus,
-    streak_bonus: 0,
-    risk_multiplier: riskMultiplier,
-    underdog_bonus: 0,
-    total: baseTotal * riskMultiplier,
-    scoring_version: 'smart-2026-06-19',
-    calculated_at: new Date().toISOString(),
-  };
-}
-
 function getCurrentStreak(scores: CalculatedScore[]) {
   let streak = 0;
   for (const score of [...scores].sort((a, b) => a.match_kickoff_at.localeCompare(b.match_kickoff_at)).reverse()) {
@@ -819,6 +741,149 @@ function getBestStreak(scores: CalculatedScore[]) {
     best = Math.max(best, current);
   }
   return best;
+}
+
+type NormalizationCounters = {
+  normalizedMatches: number;
+  normalizedEvents: number;
+  normalizedParticipants: number;
+  normalizedTeamStats: number;
+  playerAggregateRows: number;
+  teamAggregateRows: number;
+};
+
+function emptyNormalizationCounters(): NormalizationCounters {
+  return {
+    normalizedMatches: 0,
+    normalizedEvents: 0,
+    normalizedParticipants: 0,
+    normalizedTeamStats: 0,
+    playerAggregateRows: 0,
+    teamAggregateRows: 0,
+  };
+}
+
+async function loadAggregateEvents(supabase: ReturnType<typeof createClient>) {
+  const rows: NormalizedMatchEvent[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_events')
+      .select('match_id, event_key, espn_event_id, event_index, team_id, side, event_type, type_text, clock, period, minute, text, scoring_play, home_score, away_score, source_payload, updated_at')
+      .order('match_id')
+      .order('event_index')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchEvent[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateParticipants(supabase: ReturnType<typeof createClient>) {
+  const rows: NormalizedEventParticipant[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_event_participants')
+      .select('match_id, event_key, role, sort_order, player_id, player_name')
+      .order('match_id')
+      .order('event_key')
+      .order('sort_order')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedEventParticipant[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateTeamStats(supabase: ReturnType<typeof createClient>) {
+  const rows: NormalizedMatchTeamStat[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_team_stats')
+      .select('match_id, team_id, side, stat_key, label, source_name, display_value, numeric_value, updated_at')
+      .order('match_id')
+      .order('team_id')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchTeamStat[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function normalizeMatchStatistics(supabase: ReturnType<typeof createClient>, match: MatchRow, summary: Json, teamMap: Map<string, StatisticsTeamRow>) {
+  const now = new Date().toISOString();
+  const normalized = buildNormalizedStatistics(match, summary as EspnSummaryPayload, teamMap, now);
+
+  if (normalized.players.length) {
+    const { error } = await supabase.from('espn_players').upsert(normalized.players, { onConflict: 'id' });
+    if (error) throw error;
+  }
+
+  const { error: deleteParticipantsError } = await supabase.from('espn_match_event_participants').delete().eq('match_id', match.id);
+  if (deleteParticipantsError) throw deleteParticipantsError;
+  const { error: deleteEventsError } = await supabase.from('espn_match_events').delete().eq('match_id', match.id);
+  if (deleteEventsError) throw deleteEventsError;
+  const { error: deleteTeamStatsError } = await supabase.from('espn_match_team_stats').delete().eq('match_id', match.id);
+  if (deleteTeamStatsError) throw deleteTeamStatsError;
+
+  if (normalized.events.length) {
+    const { error } = await supabase.from('espn_match_events').insert(normalized.events);
+    if (error) throw error;
+  }
+
+  if (normalized.participants.length) {
+    const { error } = await supabase.from('espn_match_event_participants').insert(normalized.participants);
+    if (error) throw error;
+  }
+
+  if (normalized.teamStats.length) {
+    const { error } = await supabase.from('espn_match_team_stats').insert(normalized.teamStats);
+    if (error) throw error;
+  }
+
+  const { error: markerError } = await supabase
+    .from('matches')
+    .update({ espn_stats_normalized_at: now })
+    .eq('id', match.id);
+  if (markerError) throw markerError;
+
+  return {
+    normalizedMatches: 1,
+    normalizedEvents: normalized.events.length,
+    normalizedParticipants: normalized.participants.length,
+    normalizedTeamStats: normalized.teamStats.length,
+  };
+}
+
+async function rebuildStatisticsAggregates(supabase: ReturnType<typeof createClient>) {
+  const [events, participants, teamStats] = await Promise.all([
+    loadAggregateEvents(supabase),
+    loadAggregateParticipants(supabase),
+    loadAggregateTeamStats(supabase),
+  ]);
+
+  const now = new Date().toISOString();
+  const playerAggregates = buildPlayerTournamentStats(events, participants, now);
+  const teamAggregates = buildTeamTournamentStats(teamStats, now);
+
+  const { error: deletePlayerError } = await supabase.from('espn_player_tournament_stats').delete().neq('player_id', '');
+  if (deletePlayerError) throw deletePlayerError;
+  const { error: deleteTeamError } = await supabase.from('espn_team_tournament_stats').delete().neq('team_id', '');
+  if (deleteTeamError) throw deleteTeamError;
+
+  if (playerAggregates.length) {
+    const { error } = await supabase.from('espn_player_tournament_stats').insert(playerAggregates);
+    if (error) throw error;
+  }
+
+  if (teamAggregates.length) {
+    const { error } = await supabase.from('espn_team_tournament_stats').insert(teamAggregates);
+    if (error) throw error;
+  }
+
+  return { playerAggregateRows: playerAggregates.length, teamAggregateRows: teamAggregates.length };
 }
 
 function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<string, number>, pointAdjustmentsByUser: Map<string, number>): UserAggregate[] {
@@ -857,12 +922,20 @@ function buildAggregates(scores: CalculatedScore[], rewardPointsByUser: Map<stri
 async function recalculateScores(supabase: ReturnType<typeof createClient>) {
   const { data: predictions, error: predictionsError } = await supabase
     .from('predictions')
-    .select('id, user_id, prediction_type, home_score, away_score, predicted_outcome, is_risk_pick, matches!inner(home_score, away_score, kickoff_at)')
+    .select('id, user_id, match_id, prediction_type, home_score, away_score, predicted_outcome, is_risk_pick, matches!inner(home_score, away_score, kickoff_at, home_team_id, away_team_id, espn_home_win_pct, espn_draw_pct, espn_away_win_pct)')
     .eq('matches.status', 'finished');
 
   if (predictionsError) throw predictionsError;
 
-  const calculatedScores = ((predictions ?? []) as PredictionRow[]).map(calculateScore);
+  const { data: teams, error: teamsError } = await supabase
+    .from('teams')
+    .select('id, fifa_rank');
+
+  if (teamsError) throw teamsError;
+
+  const predictionRows = (predictions ?? []) as PredictionScoringRow[];
+  const teamMap = new Map((teams ?? []).map((team: TeamSignalRow) => [team.id, team]));
+  const calculatedScores = calculatePredictionScores(predictionRows, { teams: teamMap, community: buildCommunityDistributions(predictionRows) });
   for (const score of calculatedScores) {
     const { user_id: _userId, match_kickoff_at: _matchKickoffAt, ...scoreValues } = score;
     const { error } = await supabase.from('prediction_scores').upsert(scoreValues);
@@ -883,7 +956,7 @@ async function recalculateScores(supabase: ReturnType<typeof createClient>) {
   const { data: pointTransactions, error: pointTransactionsError } = await supabase
     .from('point_transactions')
     .select('user_id, amount')
-    .in('type', ['stake', 'payout', 'refund']);
+    .in('type', ['stake', 'payout', 'point_split', 'refund']);
 
   if (pointTransactionsError) throw pointTransactionsError;
 
@@ -950,16 +1023,39 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
   const body = await req.json().catch(() => ({})) as { dates?: unknown; daysBack?: unknown; daysForward?: unknown };
-  const syncSecret = Deno.env.get('ESPN_SYNC_SECRET');
-  if (syncSecret && req.headers.get('x-sync-secret') !== syncSecret) {
-    return jsonResponse({ error: 'Forbidden' }, 403);
-  }
+  const secretError = requireSyncSecret(req, corsHeaders, 'ESPN_SYNC_SECRET');
+  if (secretError) return secretError;
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: 'Missing Supabase server config' }, 500);
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  let lockAcquired = false;
+  try {
+    lockAcquired = await acquireLock('wc26:lock:sync_espn_results', 600);
+  } catch (error) {
+    await supabase.from('admin_audit_logs').insert({
+      action: 'espn_result_sync_lock_unavailable',
+      entity_type: 'system',
+      entity_id: 'espn-result-sync',
+      description: `ESPN sync lock unavailable: ${error instanceof Error ? error.message : String(error)}. Continuing without lock.`,
+      severity: 'warning',
+    });
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    await supabase.from('admin_audit_logs').insert({
+      action: 'sync_espn_results_already_running',
+      entity_type: 'system',
+      entity_id: 'espn-result-sync',
+      description: 'Skipped ESPN sync because another run is already active.',
+      severity: 'warning',
+    });
+    return jsonResponse({ alreadyRunning: true });
+  }
 
   try {
     const dates = getDateWindow(body);
@@ -984,6 +1080,7 @@ Deno.serve(async (req) => {
     let updatedMatches = 0;
     let finishedMatches = 0;
     let signalUpdates = 0;
+    const normalization = emptyNormalizationCounters();
 
     for (const plan of plans) {
       const { error } = await supabase.from('matches').update(plan.update).eq('id', plan.match.id);
@@ -991,6 +1088,20 @@ Deno.serve(async (req) => {
       updatedMatches += 1;
       if (plan.candidate.predictionSignal) signalUpdates += 1;
       if (plan.willFinish) finishedMatches += 1;
+
+      if (plan.update.espn_summary) {
+        const counts = await normalizeMatchStatistics(supabase, plan.match, plan.update.espn_summary, teamMap);
+        normalization.normalizedMatches += counts.normalizedMatches;
+        normalization.normalizedEvents += counts.normalizedEvents;
+        normalization.normalizedParticipants += counts.normalizedParticipants;
+        normalization.normalizedTeamStats += counts.normalizedTeamStats;
+      }
+    }
+
+    if (normalization.normalizedMatches > 0) {
+      const aggregateCounts = await rebuildStatisticsAggregates(supabase);
+      normalization.playerAggregateRows = aggregateCounts.playerAggregateRows;
+      normalization.teamAggregateRows = aggregateCounts.teamAggregateRows;
     }
 
     const scoring = finishedMatches > 0 ? await recalculateScores(supabase) : { predictionScores: 0, leaderboardEntries: 0 };
@@ -1013,12 +1124,12 @@ Deno.serve(async (req) => {
         action: 'espn_result_sync_completed',
         entity_type: 'system',
         entity_id: 'espn-result-sync',
-        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, recalculated ${scoring.predictionScores} prediction scores and ${scoring.leagueLeaderboardEntries} league leaderboard entries.`,
+        description: `Synced ${updatedMatches} ESPN match updates, ${signalUpdates} signal updates, finished ${finishedMatches} matches, normalized ${normalization.normalizedMatches} matches with ${normalization.normalizedEvents} events and ${normalization.normalizedTeamStats} team stat rows, rebuilt ${normalization.playerAggregateRows} player aggregate rows and ${normalization.teamAggregateRows} team aggregate rows, recalculated ${scoring.predictionScores} prediction scores and ${scoring.leagueLeaderboardEntries} league leaderboard entries.`,
         severity: 'info',
       });
     }
 
-    return jsonResponse({ updatedMatches, signalUpdates, finishedMatches, ...scoring, diagnostic });
+    return jsonResponse({ updatedMatches, signalUpdates, finishedMatches, ...normalization, ...scoring, diagnostic });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await supabase.from('admin_audit_logs').insert({
@@ -1029,5 +1140,9 @@ Deno.serve(async (req) => {
       severity: 'warning',
     });
     return jsonResponse({ error: message }, 500);
+  } finally {
+    await releaseLock('wc26:lock:sync_espn_results').catch((error) => {
+      console.warn(`Failed to release ESPN sync lock: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 });

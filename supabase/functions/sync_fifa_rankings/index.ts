@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireSyncSecret } from '../_shared/authGuards.ts';
+import { acquireLock, releaseLock } from '../_shared/redis.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,7 +42,7 @@ type TeamUpdate = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function normalize(value?: string | null) {
@@ -150,10 +152,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  const syncSecret = Deno.env.get('FIFA_RANKING_SYNC_SECRET');
-  if (syncSecret && req.headers.get('x-sync-secret') !== syncSecret) {
-    return jsonResponse({ error: 'Forbidden' }, 403);
-  }
+  const secretError = requireSyncSecret(req, corsHeaders, 'FIFA_RANKING_SYNC_SECRET');
+  if (secretError) return secretError;
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -162,6 +162,19 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  let lockAcquired = false;
+  try {
+    lockAcquired = await acquireLock('wc26:lock:sync_fifa_rankings', 3600);
+  } catch (error) {
+    await insertAuditLog(supabase, 'fifa_ranking_sync_lock_unavailable', `FIFA ranking sync lock unavailable: ${error instanceof Error ? error.message : String(error)}. Continuing without lock.`, 'warning');
+    lockAcquired = true;
+  }
+
+  if (!lockAcquired) {
+    await insertAuditLog(supabase, 'sync_fifa_rankings_already_running', 'Skipped FIFA ranking sync because another run is already active.', 'warning');
+    return jsonResponse({ alreadyRunning: true });
+  }
 
   try {
     const rankingResponse = await fetch(FIFA_RANKINGS_URL, {
@@ -221,5 +234,9 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : 'Unknown FIFA ranking sync error';
     await insertAuditLog(supabase, 'fifa_ranking_sync_failed', message, 'warning');
     return jsonResponse({ error: message }, 500);
+  } finally {
+    await releaseLock('wc26:lock:sync_fifa_rankings').catch((error) => {
+      console.warn(`Failed to release FIFA ranking sync lock: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 });

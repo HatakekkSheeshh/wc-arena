@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireAuthenticatedUser } from '../_shared/authGuards.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,10 +20,7 @@ type SubmitPredictionBody = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function getScoreOutcome(homeScore: number, awayScore: number): PredictionOutcome {
@@ -59,22 +57,18 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return jsonResponse({ error: 'Missing authorization header' }, 401);
-  }
+  const auth = await requireAuthenticatedUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { supabase, user } = auth;
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: 'Missing Supabase server config' }, 500);
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
+  const rateLimit = await checkRateLimit({
+    key: user.id,
+    action: 'submit_prediction',
+    windowSeconds: 300,
+    maxCount: 60,
+  });
+  if (!rateLimit.allowed) {
+    return jsonResponse({ error: 'Too many requests. Please wait a minute and try again.', resetAt: rateLimit.resetAt }, 429);
   }
 
   let body: SubmitPredictionBody;
@@ -121,9 +115,9 @@ Deno.serve(async (req) => {
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert({
-      id: userData.user.id,
-      username: getProfileUsername(userData.user),
-      email: userData.user.email,
+      id: user.id,
+      username: getProfileUsername(user),
+      email: user.email,
       role: 'user',
     }, { onConflict: 'id', ignoreDuplicates: true });
 
@@ -134,7 +128,7 @@ Deno.serve(async (req) => {
   const { data: existing, error: existingError } = await supabase
     .from('predictions')
     .select('id, revision')
-    .eq('user_id', userData.user.id)
+    .eq('user_id', user.id)
     .eq('match_id', body.matchId)
     .maybeSingle();
 
@@ -143,14 +137,14 @@ Deno.serve(async (req) => {
   }
 
   const predictionValues = {
-    user_id: userData.user.id,
+    user_id: user.id,
     match_id: body.matchId,
     prediction_type: body.predictionType,
     home_score: homeScore,
     away_score: awayScore,
     predicted_outcome: body.predictedOutcome,
     confidence: body.confidence ?? 50,
-    is_risk_pick: body.isRiskPick ?? false,
+    is_risk_pick: body.isRiskPick ?? true,
     status: 'submitted',
     revision: existing ? existing.revision + 1 : 1,
     updated_at: new Date().toISOString(),
@@ -170,7 +164,7 @@ Deno.serve(async (req) => {
     type: 'prediction_locked',
     title: existing ? 'Prediction updated' : 'Prediction submitted',
     description: `Prediction saved for match ${body.matchId}.`,
-    user_id: userData.user.id,
+    user_id: user.id,
     match_id: body.matchId,
     prediction_id: prediction.id,
     href: '/my-predictions',

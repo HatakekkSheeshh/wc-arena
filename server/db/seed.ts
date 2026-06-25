@@ -5,7 +5,7 @@ import { mockLeaderboard } from '../../src/data/mockLeaderboard';
 import { mockLeagues } from '../../src/data/mockLeagues';
 import { mockMatches } from '../../src/data/mockMatches';
 import { mockPredictions } from '../../src/data/mockPredictions';
-import { mockPrizePoolSummary, mockPrizeTiers } from '../../src/data/mockPrizePool';
+import { mockPointsGuideSummary, mockRecognitionTiers } from '../../src/data/mockPointsGuide';
 import { mockEligibilityChecks, mockRewards, mockRewardTrustNotes } from '../../src/data/mockRewards';
 import { mockTeams } from '../../src/data/mockTeams';
 import { mockUsers } from '../../src/data/mockUsers';
@@ -21,8 +21,8 @@ export function createSeedDb(): PredictDb {
     leaderboardEntries: structuredClone(mockLeaderboard),
     leagues: structuredClone(mockLeagues),
     activity: structuredClone(mockActivity),
-    prizePoolSummary: structuredClone(mockPrizePoolSummary),
-    prizeTiers: structuredClone(mockPrizeTiers),
+    pointsGuideSummary: structuredClone(mockPointsGuideSummary),
+    recognitionTiers: structuredClone(mockRecognitionTiers),
     eligibilityChecks: structuredClone(mockEligibilityChecks),
     rewards: structuredClone(mockRewards),
     rewardTrustNotes: structuredClone(mockRewardTrustNotes),

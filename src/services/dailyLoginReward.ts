@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { invalidateCache } from './cache';
 
 export type ClaimDailyLoginRewardResponse = {
   claimed: boolean;
@@ -28,6 +29,7 @@ export async function claimDailyLoginReward() {
 
   if (error) throw error;
   if (!data) throw new Error('Daily check-in response was empty.');
+  invalidateCache('leaderboard:');
   return data;
 }
 

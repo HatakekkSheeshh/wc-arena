@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Database } from '../types/supabase';
+import { cached } from './cache';
 
 export type BadgeRow = Database['public']['Tables']['badges']['Row'];
 export type UserBadgeRow = Database['public']['Tables']['user_badges']['Row'];
@@ -7,21 +8,28 @@ export type UserBadgeWithBadge = UserBadgeRow & {
   badges: BadgeRow | null;
 };
 
-export async function listBadgeCatalog() {
-  const { data, error } = await supabase
-    .from('badges')
-    .select('*')
-    .order('category');
+const BADGE_FIELDS = 'id, name, description, category, rarity, icon_path, progress_target';
+const USER_BADGE_FIELDS = `badge_id, user_id, unlocked_at, progress_current, badges(${BADGE_FIELDS})`;
 
-  if (error) throw error;
-  return data as BadgeRow[];
+export async function listBadgeCatalog() {
+  return cached('badges:catalog', 86_400_000, async () => {
+    const { data, error } = await supabase
+      .from('badges')
+      .select(BADGE_FIELDS)
+      .order('category')
+      .limit(100);
+
+    if (error) throw error;
+    return data as BadgeRow[];
+  });
 }
 
 export async function listCurrentUserBadges() {
   const { data, error } = await supabase
     .from('user_badges')
-    .select('*, badges(*)')
-    .order('unlocked_at', { ascending: false, nullsFirst: false });
+    .select(USER_BADGE_FIELDS)
+    .order('unlocked_at', { ascending: false, nullsFirst: false })
+    .limit(100);
 
   if (error) throw error;
   return data as UserBadgeWithBadge[];

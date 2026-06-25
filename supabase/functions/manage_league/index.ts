@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireAuthenticatedUser } from '../_shared/authGuards.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 import { refreshLeagueLeaderboards } from '../_shared/leagueLeaderboards.ts';
-import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PayoutCurve } from '../_shared/leagueEvents.ts';
+import { cancelLeagueEvent, ensureFutureMatchdayEvents, ensureWeeklyLeagueEvents, refreshLeagueEventLeaderboards, settleLeagueEvent, type PointSplitCurve } from '../_shared/leagueEvents.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,17 +41,15 @@ type Body = {
   matchday?: number;
   minStake?: number;
   maxStake?: number;
-  payoutCurve?: PayoutCurve;
+  payoutCurve?: PointSplitCurve;
+  pointSplitCurve?: PointSplitCurve;
   rankShares?: number[];
   matchIds?: string[];
   archiveReason?: string;
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function normalizeSlug(value: string) {
@@ -116,14 +116,14 @@ function assertStakeBounds(minStakeValue: unknown, maxStakeValue: unknown) {
   return { minStake: minStake as number, maxStake: maxStake as number };
 }
 
-function assertPayoutCurve(value: unknown): PayoutCurve {
+function assertPointSplitCurve(value: unknown): PointSplitCurve {
   if (value === undefined || value === null) return 'balanced_top3';
   if (value === 'balanced_top3' || value === 'winner_take_all' || value === 'flat_top3' || value === 'custom_top3') return value;
-  throw new Error('Invalid payout curve.');
+  throw new Error('Invalid point split curve.');
 }
 
-function assertRankShares(payoutCurve: PayoutCurve, value: unknown) {
-  if (payoutCurve !== 'custom_top3') return { rankShares: [50, 30, 20] };
+function assertRankShares(pointSplitCurve: PointSplitCurve, value: unknown) {
+  if (pointSplitCurve !== 'custom_top3') return { rankShares: [50, 30, 20] };
   const validShares = Array.isArray(value)
     && value.length === 3
     && value.every((share) => Number.isInteger(share) && share >= 0)
@@ -417,22 +417,179 @@ async function updateLeague(supabase: ReturnType<typeof createClient>, userId: s
   return { league };
 }
 
+type LeagueMembershipRow = {
+  role: 'owner' | 'member';
+};
+
+type RemovableEventRow = {
+  id: string;
+  name: string;
+  status: 'open' | 'locked' | 'settled' | 'cancelled';
+  starts_at: string;
+  prize_pool: number;
+  recognition_pool?: number | null;
+};
+
+type RemovableEventEntry = {
+  event: RemovableEventRow;
+  stake: number;
+};
+
+async function getLeagueMembership(supabase: ReturnType<typeof createClient>, leagueId: string, targetUserId: string) {
+  const { data, error } = await supabase
+    .from('league_members')
+    .select('role')
+    .eq('league_id', leagueId)
+    .eq('user_id', targetUserId)
+    .single();
+
+  if (error || !data) throw new Error('This user is not a league member.');
+  return data as LeagueMembershipRow;
+}
+
+async function listRemovableEventEntries(supabase: ReturnType<typeof createClient>, leagueId: string, targetUserId: string) {
+  const { data: events, error: eventsError } = await supabase
+    .from('league_events')
+    .select('id, name, status, starts_at, prize_pool, recognition_pool')
+    .eq('league_id', leagueId)
+    .in('status', ['open', 'locked']);
+
+  if (eventsError) throw eventsError;
+  const eventRows = (events ?? []) as RemovableEventRow[];
+  if (eventRows.length === 0) return [];
+
+  const { data: entries, error: entriesError } = await supabase
+    .from('league_event_entries')
+    .select('event_id, stake')
+    .eq('user_id', targetUserId)
+    .in('event_id', eventRows.map((event) => event.id));
+
+  if (entriesError) throw entriesError;
+  const eventsById = new Map(eventRows.map((event) => [event.id, event]));
+  return (entries ?? [])
+    .map((entry: { event_id: string; stake: number }) => ({ event: eventsById.get(entry.event_id), stake: entry.stake }))
+    .filter((entry): entry is RemovableEventEntry => Boolean(entry.event));
+}
+
+function assertNoUnsafePoolEntries(entries: RemovableEventEntry[], now: string) {
+  const hasUnsafeEntries = entries.some(({ event }) => event.status === 'locked' || event.starts_at <= now);
+  if (hasUnsafeEntries) throw new Error('This member has locked pool entries. Wait for those pools to settle or cancel them first.');
+}
+
+async function refundOpenPoolEntriesForUser(supabase: ReturnType<typeof createClient>, leagueId: string, targetUserId: string, entries: RemovableEventEntry[], now: string) {
+  const openEntries = entries.filter(({ event }) => event.status === 'open' && event.starts_at > now);
+  const affectedEventIds = new Set<string>();
+  let refunds = 0;
+  let refundedPoints = 0;
+  let latestPoints: number | null = null;
+
+  for (const { event, stake } of openEntries) {
+    affectedEventIds.add(event.id);
+
+    const { data: existingTransaction, error: existingTransactionError } = await supabase
+      .from('point_transactions')
+      .select('id')
+      .eq('user_id', targetUserId)
+      .eq('event_id', event.id)
+      .eq('type', 'refund')
+      .maybeSingle();
+
+    if (existingTransactionError) throw existingTransactionError;
+
+    if (!existingTransaction) {
+      const currentPoints = await getUserPoints(supabase, targetUserId);
+      const pointsAfterRefund = currentPoints + stake;
+      await updateDisplayedPoints(supabase, targetUserId, pointsAfterRefund);
+
+      const { error: transactionError } = await supabase.from('point_transactions').insert({
+        user_id: targetUserId,
+        league_id: leagueId,
+        event_id: event.id,
+        type: 'refund',
+        amount: stake,
+        balance_after: pointsAfterRefund,
+        description: `Refunded ${event.name} before league removal`,
+      });
+      if (transactionError) throw transactionError;
+      refunds += 1;
+      refundedPoints += stake;
+      latestPoints = pointsAfterRefund;
+    }
+
+    const { error: entryError } = await supabase
+      .from('league_event_entries')
+      .delete()
+      .eq('event_id', event.id)
+      .eq('user_id', targetUserId);
+
+    if (entryError) throw entryError;
+
+    const recognitionPool = event.recognition_pool ?? event.prize_pool ?? 0;
+    const nextPool = Math.max(0, recognitionPool - stake);
+    const { error: poolError } = await supabase
+      .from('league_events')
+      .update({ prize_pool: nextPool, recognition_pool: nextPool, updated_at: new Date().toISOString() })
+      .eq('id', event.id);
+
+    if (poolError) throw poolError;
+  }
+
+  if (affectedEventIds.size > 0) await refreshLeagueEventLeaderboards(supabase, [...affectedEventIds]);
+  return { refunds, refundedPoints, points: latestPoints };
+}
+
+async function removeLeagueMemberSafely(supabase: ReturnType<typeof createClient>, leagueId: string, targetUserId: string, reason: 'leave' | 'kick') {
+  await requireActiveLeague(supabase, leagueId);
+  const membership = await getLeagueMembership(supabase, leagueId, targetUserId);
+  if (membership.role === 'owner') throw new Error('Owners cannot leave or be removed from a league. Archive the league or transfer ownership first.');
+
+  const now = new Date().toISOString();
+  const entries = await listRemovableEventEntries(supabase, leagueId, targetUserId);
+  assertNoUnsafePoolEntries(entries, now);
+  const refundResult = await refundOpenPoolEntriesForUser(supabase, leagueId, targetUserId, entries, now);
+
+  const { error: memberError } = await supabase
+    .from('league_members')
+    .delete()
+    .eq('league_id', leagueId)
+    .eq('user_id', targetUserId)
+    .eq('role', 'member');
+
+  if (memberError) throw memberError;
+
+  const { error: requestError } = await supabase
+    .from('league_join_requests')
+    .delete()
+    .eq('league_id', leagueId)
+    .eq('user_id', targetUserId)
+    .eq('status', 'pending');
+
+  if (requestError) throw requestError;
+
+  const { data: league } = await supabase.from('leagues').select('name, slug').eq('id', leagueId).single();
+  await supabase.from('activity_events').insert({
+    type: 'league_joined',
+    title: reason === 'leave' ? `Left ${league?.name ?? 'league'}` : `Removed from ${league?.name ?? 'league'}`,
+    description: reason === 'leave' ? 'You left this league. Future open pool stakes were refunded first.' : 'A league owner removed this member safely. Future open pool stakes were refunded first.',
+    user_id: targetUserId,
+    league_id: leagueId,
+    href: `/leagues/${league?.slug ?? leagueId}`,
+  });
+
+  await refreshLeagueLeaderboards(supabase, [leagueId]);
+  return { status: 'removed', ...refundResult };
+}
+
 async function kickLeagueMember(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
   if (!body.leagueId || !body.userId) throw new Error('League and user are required.');
   if (body.userId === userId) throw new Error('Owner cannot kick themselves.');
   await requireOwner(supabase, body.leagueId, userId);
-  await requireActiveLeague(supabase, body.leagueId);
+  return removeLeagueMemberSafely(supabase, body.leagueId, body.userId, 'kick');
+}
 
-  const { error } = await supabase
-    .from('league_members')
-    .delete()
-    .eq('league_id', body.leagueId)
-    .eq('user_id', body.userId)
-    .eq('role', 'member');
-
-  if (error) throw error;
-  await refreshLeagueLeaderboards(supabase, [body.leagueId]);
-  return { status: 'removed' };
+async function leaveLeague(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
+  if (!body.leagueId) throw new Error('League is required.');
+  return removeLeagueMemberSafely(supabase, body.leagueId, userId, 'leave');
 }
 
 async function createLeagueEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
@@ -443,8 +600,8 @@ async function createLeagueEvent(supabase: ReturnType<typeof createClient>, user
   const name = assertEventName(body.name);
   const matchIds = assertMatchIds(body.matchIds);
   const { minStake, maxStake } = assertStakeBounds(body.minStake, body.maxStake);
-  const payoutCurve = assertPayoutCurve(body.payoutCurve);
-  const payoutConfig = assertRankShares(payoutCurve, body.rankShares);
+  const pointSplitCurve = assertPointSplitCurve(body.pointSplitCurve ?? body.payoutCurve);
+  const pointSplitConfig = assertRankShares(pointSplitCurve, body.rankShares);
   const eventType = body.eventType ?? 'custom';
   if (eventType !== 'custom') throw new Error('Only custom events can be created here.');
 
@@ -484,8 +641,11 @@ async function createLeagueEvent(supabase: ReturnType<typeof createClient>, user
       status: 'open',
       min_stake: minStake,
       max_stake: maxStake,
-      payout_curve: payoutCurve,
-      payout_config: payoutConfig,
+      payout_curve: pointSplitCurve,
+      payout_config: pointSplitConfig,
+      point_split_curve: pointSplitCurve,
+      point_split_config: pointSplitConfig,
+      recognition_pool: 0,
       metadata: matchIds.length > 0 ? { createdBy: userId, scope: 'selected_matches', matchIds } : { createdBy: userId },
     })
     .select('*')
@@ -546,9 +706,11 @@ async function enterLeagueEvent(supabase: ReturnType<typeof createClient>, userI
   if (transactionError) throw transactionError;
   await updateDisplayedPoints(supabase, userId, pointsAfterStake);
 
+  const currentPool = event.recognition_pool ?? event.prize_pool ?? 0;
+  const nextPool = currentPool + stake;
   const { error: poolError } = await supabase
     .from('league_events')
-    .update({ prize_pool: event.prize_pool + stake, updated_at: new Date().toISOString() })
+    .update({ prize_pool: nextPool, recognition_pool: nextPool, updated_at: new Date().toISOString() })
     .eq('id', event.id);
 
   if (poolError) throw poolError;
@@ -566,7 +728,8 @@ async function settleEvent(supabase: ReturnType<typeof createClient>, userId: st
   if (event.status === 'cancelled') throw new Error('This event is cancelled.');
 
   const result = await settleLeagueEvent(supabase, event.id);
-  return { status: 'settled', ...result };
+  const points = await getUserPoints(supabase, userId);
+  return { status: 'settled', ...result, points };
 }
 
 async function cancelEvent(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
@@ -622,35 +785,72 @@ async function archiveLeague(supabase: ReturnType<typeof createClient>, userId: 
   return { league: archivedLeague, status: 'archived', cancelledEvents: activeEvents?.length ?? 0, refunds };
 }
 
+async function deleteArchivedLeague(supabase: ReturnType<typeof createClient>, userId: string, body: Body) {
+  if (!body.leagueId) throw new Error('League is required.');
+  await requireOwner(supabase, body.leagueId, userId);
+
+  const { data: league, error: leagueError } = await supabase
+    .from('leagues')
+    .select('id, status')
+    .eq('id', body.leagueId)
+    .single();
+
+  if (leagueError) throw leagueError;
+  if (league.status !== 'archived') throw new Error('Only archived leagues can be permanently deleted.');
+
+  const { data: unsafeEvents, error: eventsError } = await supabase
+    .from('league_events')
+    .select('id')
+    .eq('league_id', body.leagueId)
+    .in('status', ['open', 'locked']);
+
+  if (eventsError) throw eventsError;
+  if ((unsafeEvents ?? []).length > 0) throw new Error('Cancel or archive open pools before deleting this league.');
+
+  const { data: deletedLeague, error: deleteError } = await supabase
+    .from('leagues')
+    .delete()
+    .eq('id', body.leagueId)
+    .select('id')
+    .single();
+
+  if (deleteError) throw deleteError;
+  return { status: 'deleted', leagueId: deletedLeague.id };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return jsonResponse({ error: 'Missing authorization header' }, 401);
+  const auth = await requireAuthenticatedUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { supabase, user } = auth;
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: 'Missing Supabase server config' }, 500);
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const token = authHeader.replace('Bearer ', '');
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) return jsonResponse({ error: 'Unauthorized' }, 401);
+  const rateLimit = await checkRateLimit({
+    key: user.id,
+    action: 'manage_league',
+    windowSeconds: 300,
+    maxCount: 80,
+  });
+  if (!rateLimit.allowed) {
+    return jsonResponse({ error: 'Too many requests. Please wait a minute and try again.', resetAt: rateLimit.resetAt }, 429);
+  }
 
   try {
     const body = await req.json() as Body;
-    if (body.action === 'createLeague') return jsonResponse(await createLeague(supabase, userData.user.id, body));
-    if (body.action === 'joinLeague') return jsonResponse(await joinLeague(supabase, userData.user.id, body));
-    if (body.action === 'approveJoinRequest') return jsonResponse(await approveJoinRequest(supabase, userData.user.id, body));
-    if (body.action === 'rejectJoinRequest') return jsonResponse(await rejectJoinRequest(supabase, userData.user.id, body));
-    if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, userData.user.id, body));
-    if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, userData.user.id, body));
-    if (body.action === 'archiveLeague') return jsonResponse(await archiveLeague(supabase, userData.user.id, body));
-    if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, userData.user.id, body));
-    if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, userData.user.id, body));
-    if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, userData.user.id, body));
-    if (body.action === 'cancelLeagueEvent') return jsonResponse(await cancelEvent(supabase, userData.user.id, body));
+    if (body.action === 'createLeague') return jsonResponse(await createLeague(supabase, user.id, body));
+    if (body.action === 'joinLeague') return jsonResponse(await joinLeague(supabase, user.id, body));
+    if (body.action === 'approveJoinRequest') return jsonResponse(await approveJoinRequest(supabase, user.id, body));
+    if (body.action === 'rejectJoinRequest') return jsonResponse(await rejectJoinRequest(supabase, user.id, body));
+    if (body.action === 'updateLeague') return jsonResponse(await updateLeague(supabase, user.id, body));
+    if (body.action === 'kickLeagueMember') return jsonResponse(await kickLeagueMember(supabase, user.id, body));
+    if (body.action === 'leaveLeague') return jsonResponse(await leaveLeague(supabase, user.id, body));
+    if (body.action === 'archiveLeague') return jsonResponse(await archiveLeague(supabase, user.id, body));
+    if (body.action === 'deleteArchivedLeague') return jsonResponse(await deleteArchivedLeague(supabase, user.id, body));
+    if (body.action === 'createLeagueEvent') return jsonResponse(await createLeagueEvent(supabase, user.id, body));
+    if (body.action === 'enterLeagueEvent') return jsonResponse(await enterLeagueEvent(supabase, user.id, body));
+    if (body.action === 'settleLeagueEvent') return jsonResponse(await settleEvent(supabase, user.id, body));
+    if (body.action === 'cancelLeagueEvent') return jsonResponse(await cancelEvent(supabase, user.id, body));
     return jsonResponse({ error: 'Unknown action.' }, 400);
   } catch (error) {
     if (error instanceof Response) return error;

@@ -3,12 +3,26 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { buildNormalizedStatistics, buildPlayerTournamentStats, buildTeamTournamentStats, type EspnSummaryPayload, type NormalizedEventParticipant, type NormalizedMatchEvent, type NormalizedMatchTeamStat, type StatisticsTeamRow } from '../supabase/functions/_shared/espnStatistics';
 import type { Database, Json } from '../src/types/supabase';
 
+type Supabase = SupabaseClient<Database>;
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 type MatchUpdate = Database['public']['Tables']['matches']['Update'];
 type TeamRow = Database['public']['Tables']['teams']['Row'];
 type JsonRecord = Record<string, unknown>;
+
+type NormalizationCounters = {
+  normalizedMatches: number;
+  normalizedEvents: number;
+  normalizedParticipants: number;
+  normalizedTeamStats: number;
+  playerAggregateRows: number;
+  teamAggregateRows: number;
+};
+
+type EspnMatchEventInsert = Database['public']['Tables']['espn_match_events']['Insert'];
 
 type EspnScoreboard = {
   events?: EspnEvent[];
@@ -104,6 +118,7 @@ const ESPN_SUMMARY_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/f
 const ESPN_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world';
 const args = process.argv.slice(2);
 const shouldApply = args.includes('--apply');
+const shouldNormalizeExisting = args.includes('--normalize-existing');
 const dateArg = getArgValue('--date');
 const sqlOutputPath = getArgValue('--sql-out');
 
@@ -547,7 +562,8 @@ function sanitizeParticipants(value: unknown) {
     const athlete = isRecord(participant.athlete) ? participant.athlete : undefined;
     const type = isRecord(participant.type) ? neutralText(participant.type.displayName ?? participant.type.name) : neutralText(participant.type);
     const name = neutralText(athlete?.displayName ?? participant.displayName ?? participant.name);
-    const entry = { name, type };
+    const sourcePlayerId = neutralText(athlete?.id ?? participant.athleteId ?? participant.id);
+    const entry = { name, type, sourcePlayerId };
     return Object.values(entry).some(Boolean) ? [entry] : [];
   }).slice(0, 6);
 }
@@ -714,11 +730,64 @@ async function enrichPlansWithSummaries(plans: MatchUpdatePlan[]) {
   }));
 }
 
+const MATCH_FIELDS = 'id, home_team_id, away_team_id, kickoff_at, lock_at, status, home_score, away_score, espn_attendance, espn_away_color, espn_away_logo, espn_away_record, espn_away_win_pct, espn_away_winner, espn_competition_id, espn_display_clock, espn_draw_pct, espn_event_id, espn_home_color, espn_home_logo, espn_home_record, espn_home_win_pct, espn_home_winner, espn_play_by_play_available, espn_prediction_updated_at, espn_state, espn_status, espn_status_detail, espn_summary, espn_stats_normalized_at, espn_summary_updated_at, espn_updated_at, group_code, matchday, result_updated_at, stage, stadium, city';
+const TEAM_FIELDS = 'id, name, short_name, country_code, fifa_rank, group_code';
+const SELECT_PAGE_SIZE = 1000;
+
+async function loadAggregateEvents(supabase: Supabase) {
+  const rows: NormalizedMatchEvent[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_events')
+      .select('match_id, event_key, espn_event_id, event_index, team_id, side, event_type, type_text, clock, period, minute, text, scoring_play, home_score, away_score, source_payload, updated_at')
+      .order('match_id')
+      .order('event_index')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchEvent[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateParticipants(supabase: Supabase) {
+  const rows: NormalizedEventParticipant[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_event_participants')
+      .select('match_id, event_key, role, sort_order, player_id, player_name')
+      .order('match_id')
+      .order('event_key')
+      .order('sort_order')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedEventParticipant[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
+async function loadAggregateTeamStats(supabase: Supabase) {
+  const rows: NormalizedMatchTeamStat[] = [];
+
+  for (let from = 0; ; from += SELECT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('espn_match_team_stats')
+      .select('match_id, team_id, side, stat_key, label, source_name, display_value, numeric_value, updated_at')
+      .order('match_id')
+      .order('team_id')
+      .range(from, from + SELECT_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as NormalizedMatchTeamStat[]));
+    if (!data || data.length < SELECT_PAGE_SIZE) return rows;
+  }
+}
+
 async function loadSupabaseData() {
   const supabase = getSupabase();
   const [matchesResult, teamsResult] = await Promise.all([
-    supabase.from('matches').select('*').like('id', 'wc2026-%').order('kickoff_at', { ascending: true }),
-    supabase.from('teams').select('*'),
+    supabase.from('matches').select(MATCH_FIELDS).like('id', 'wc2026-%').order('kickoff_at', { ascending: true }),
+    supabase.from('teams').select(TEAM_FIELDS).order('name'),
   ]);
 
   if (matchesResult.error) throw matchesResult.error;
@@ -752,6 +821,133 @@ function buildUpdateSql(plans: MatchUpdatePlan[]) {
   return ['begin;', ...statements, 'commit;', ''].join('\n\n');
 }
 
+function emptyNormalizationCounters(): NormalizationCounters {
+  return {
+    normalizedMatches: 0,
+    normalizedEvents: 0,
+    normalizedParticipants: 0,
+    normalizedTeamStats: 0,
+    playerAggregateRows: 0,
+    teamAggregateRows: 0,
+  };
+}
+
+async function normalizeMatchStatistics(supabase: Supabase, match: MatchRow, teamMap: Map<string, TeamRow>) {
+  if (!match.espn_summary) return { normalizedMatches: 0, normalizedEvents: 0, normalizedParticipants: 0, normalizedTeamStats: 0 };
+
+  const now = new Date().toISOString();
+  const normalized = buildNormalizedStatistics(match, match.espn_summary as EspnSummaryPayload, teamMap as Map<string, StatisticsTeamRow>, now);
+
+  if (normalized.players.length) {
+    const { error } = await supabase.from('espn_players').upsert(normalized.players, { onConflict: 'id' });
+    if (error) throw error;
+  }
+
+  const { error: deleteParticipantsError } = await supabase.from('espn_match_event_participants').delete().eq('match_id', match.id);
+  if (deleteParticipantsError) throw deleteParticipantsError;
+  const { error: deleteEventsError } = await supabase.from('espn_match_events').delete().eq('match_id', match.id);
+  if (deleteEventsError) throw deleteEventsError;
+  const { error: deleteTeamStatsError } = await supabase.from('espn_match_team_stats').delete().eq('match_id', match.id);
+  if (deleteTeamStatsError) throw deleteTeamStatsError;
+
+  if (normalized.events.length) {
+    const events = normalized.events.map((event) => ({ ...event, source_payload: event.source_payload as Json })) satisfies EspnMatchEventInsert[];
+    const { error } = await supabase.from('espn_match_events').insert(events);
+    if (error) throw error;
+  }
+
+  if (normalized.participants.length) {
+    const { error } = await supabase.from('espn_match_event_participants').insert(normalized.participants);
+    if (error) throw error;
+  }
+
+  if (normalized.teamStats.length) {
+    const { error } = await supabase.from('espn_match_team_stats').insert(normalized.teamStats);
+    if (error) throw error;
+  }
+
+  const { error: markerError } = await supabase
+    .from('matches')
+    .update({ espn_stats_normalized_at: now })
+    .eq('id', match.id);
+  if (markerError) throw markerError;
+
+  return {
+    normalizedMatches: 1,
+    normalizedEvents: normalized.events.length,
+    normalizedParticipants: normalized.participants.length,
+    normalizedTeamStats: normalized.teamStats.length,
+  };
+}
+
+async function rebuildStatisticsAggregates(supabase: Supabase) {
+  const [events, participants, teamStats] = await Promise.all([
+    loadAggregateEvents(supabase),
+    loadAggregateParticipants(supabase),
+    loadAggregateTeamStats(supabase),
+  ]);
+
+  const now = new Date().toISOString();
+  const playerAggregates = buildPlayerTournamentStats(events, participants, now);
+  const teamAggregates = buildTeamTournamentStats(teamStats, now);
+
+  const { error: deletePlayerError } = await supabase.from('espn_player_tournament_stats').delete().neq('player_id', '');
+  if (deletePlayerError) throw deletePlayerError;
+  const { error: deleteTeamError } = await supabase.from('espn_team_tournament_stats').delete().neq('team_id', '');
+  if (deleteTeamError) throw deleteTeamError;
+
+  if (playerAggregates.length) {
+    const { error } = await supabase.from('espn_player_tournament_stats').insert(playerAggregates);
+    if (error) throw error;
+  }
+
+  if (teamAggregates.length) {
+    const { error } = await supabase.from('espn_team_tournament_stats').insert(teamAggregates);
+    if (error) throw error;
+  }
+
+  return { playerAggregateRows: playerAggregates.length, teamAggregateRows: teamAggregates.length };
+}
+
+function countNormalizedMatches(matches: MatchRow[], teamMap: Map<string, TeamRow>) {
+  const counts = emptyNormalizationCounters();
+  const now = new Date().toISOString();
+
+  for (const match of matches) {
+    if (!match.espn_summary) continue;
+    const normalized = buildNormalizedStatistics(match, match.espn_summary as EspnSummaryPayload, teamMap as Map<string, StatisticsTeamRow>, now);
+    counts.normalizedMatches += 1;
+    counts.normalizedEvents += normalized.events.length;
+    counts.normalizedParticipants += normalized.participants.length;
+    counts.normalizedTeamStats += normalized.teamStats.length;
+  }
+
+  return counts;
+}
+
+async function normalizeExistingSummaries(supabase: Supabase, matches: MatchRow[], teamMap: Map<string, TeamRow>) {
+  const matchesWithSummaries = matches.filter((match) => match.espn_summary);
+  const counts = emptyNormalizationCounters();
+
+  if (!shouldApply) return countNormalizedMatches(matchesWithSummaries, teamMap);
+
+  for (const match of matchesWithSummaries) {
+    const nextCounts = await normalizeMatchStatistics(supabase, match, teamMap);
+    counts.normalizedMatches += nextCounts.normalizedMatches;
+    counts.normalizedEvents += nextCounts.normalizedEvents;
+    counts.normalizedParticipants += nextCounts.normalizedParticipants;
+    counts.normalizedTeamStats += nextCounts.normalizedTeamStats;
+  }
+
+  if (counts.normalizedMatches > 0) {
+    const aggregateCounts = await rebuildStatisticsAggregates(supabase);
+    counts.playerAggregateRows = aggregateCounts.playerAggregateRows;
+    counts.teamAggregateRows = aggregateCounts.teamAggregateRows;
+  }
+
+  return counts;
+}
+
 async function applyPlans(plans: MatchUpdatePlan[]) {
   const supabase = getSupabase();
 
@@ -766,7 +962,21 @@ async function applyPlans(plans: MatchUpdatePlan[]) {
 }
 
 async function main() {
-  const [scoreboard, { matches, teamMap }] = await Promise.all([fetchScoreboard(), loadSupabaseData()]);
+  const { matches, teamMap, supabase } = await loadSupabaseData();
+
+  if (shouldNormalizeExisting) {
+    const counts = await normalizeExistingSummaries(supabase, matches, teamMap);
+    console.log(`Normalized matches: ${counts.normalizedMatches}`);
+    console.log(`Normalized events: ${counts.normalizedEvents}`);
+    console.log(`Normalized participants: ${counts.normalizedParticipants}`);
+    console.log(`Normalized team stats: ${counts.normalizedTeamStats}`);
+    console.log(`Player aggregate rows: ${counts.playerAggregateRows}`);
+    console.log(`Team aggregate rows: ${counts.teamAggregateRows}`);
+    if (!shouldApply) console.log('Dry run only. Re-run with --normalize-existing --apply and SUPABASE_SERVICE_ROLE_KEY to write normalized statistics.');
+    return;
+  }
+
+  const scoreboard = await fetchScoreboard();
   const candidates = buildCandidates(scoreboard);
   const plans = buildUpdatePlan(matches, candidates, teamMap);
   await enrichPlansWithOdds(plans);

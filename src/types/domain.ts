@@ -107,13 +107,13 @@ export type Badge = {
   progressTarget?: number;
 };
 
-export type PrizeTier = {
+export type RecognitionTier = {
   id: string;
   label: string;
   amount: number;
   rankStart: number;
   rankEnd: number;
-  sponsorFunded: boolean;
+  communityBacked: boolean;
 };
 
 export type League = {
@@ -125,7 +125,7 @@ export type League = {
   inviteCode: string;
   memberCount: number;
   scoringMode: 'global' | 'custom';
-  prizeMode: 'none' | 'symbolic' | 'sponsor' | 'manual';
+  recognitionMode: 'none' | 'symbolic' | 'community' | 'manual';
   createdAt: string;
 };
 
@@ -143,7 +143,7 @@ export type ActivityItem = {
   href?: string;
 };
 
-export type RewardStatus = 'pending' | 'approved' | 'paid' | 'ineligible';
+export type RewardStatus = 'pending' | 'approved' | 'recognized' | 'ineligible';
 export type EligibilityStatus = 'passed' | 'review' | 'blocked';
 
 export type EligibilityCheck = {
@@ -162,7 +162,7 @@ export type RewardItem = {
   placement: string;
   amount: number;
   currency: string;
-  source: 'sponsor' | 'community' | 'manual';
+  source: 'community' | 'manual';
   status: RewardStatus;
   updatedAt: string;
   note: string;

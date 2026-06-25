@@ -6,7 +6,7 @@ const Landing = lazy(() => import('./Landing'));
 const Picks = lazy(() => import('./Picks'));
 const Leaderboard = lazy(() => import('./Leaderboard'));
 const Rules = lazy(() => import('./Rules'));
-const PrizePool = lazy(() => import('./PrizePool'));
+const PointsGuide = lazy(() => import('./PointsGuide'));
 const Login = lazy(() => import('./Login'));
 const Register = lazy(() => import('./Register'));
 const ResetPassword = lazy(() => import('./ResetPassword'));
@@ -26,7 +26,10 @@ const MatchDetail = lazy(() => import('./pages/MatchDetail'));
 const MyPredictions = lazy(() => import('./pages/MyPredictions'));
 const PredictionBreakdown = lazy(() => import('./pages/PredictionBreakdown'));
 const Profile = lazy(() => import('./pages/Profile'));
+const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const Rewards = lazy(() => import('./pages/Rewards'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const SquadGallery = lazy(() => import('./pages/SquadGallery'));
 
 export type ThemeControls = {
   isVintage: boolean;
@@ -115,11 +118,15 @@ export default function App() {
           <Route path="/my-predictions" element={<MyPredictions themeControls={themeControls} />} />
           <Route path="/leaderboard" element={<LegacyRoute Component={Leaderboard} themeControls={themeControls} />} />
           <Route path="/rules" element={<LegacyRoute Component={Rules} themeControls={themeControls} />} />
-          <Route path="/prize-pool" element={<LegacyRoute Component={PrizePool} themeControls={themeControls} />} />
+          <Route path="/points-guide" element={<LegacyRoute Component={PointsGuide} themeControls={themeControls} />} />
+          <Route path="/prize-pool" element={<Navigate to="/points-guide" replace />} />
           <Route path="/profile" element={<Profile themeControls={themeControls} />} />
+          <Route path="/users/:userId" element={<PublicProfile themeControls={themeControls} />} />
           <Route path="/badges" element={<Badges themeControls={themeControls} />} />
           <Route path="/achievements" element={<Achievements themeControls={themeControls} />} />
           <Route path="/leagues" element={<Leagues themeControls={themeControls} />} />
+          <Route path="/stats" element={<Statistics themeControls={themeControls} />} />
+          <Route path="/squad-gallery" element={<SquadGallery themeControls={themeControls} />} />
           <Route path="/leagues/create" element={<LeagueCreate themeControls={themeControls} />} />
           <Route path="/leagues/join/:inviteCode" element={<JoinLeague themeControls={themeControls} />} />
           <Route path="/leagues/:leagueId" element={<LeagueDetail themeControls={themeControls} />} />

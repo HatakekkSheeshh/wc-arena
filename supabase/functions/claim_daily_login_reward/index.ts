@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireAuthenticatedUser } from '../_shared/authGuards.ts';
+import { checkRateLimit } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,10 +17,7 @@ type ClaimDailyLoginRewardRow = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 function getProfileUsername(user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) {
@@ -38,30 +36,26 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return jsonResponse({ error: 'Missing authorization header' }, 401);
-  }
+  const auth = await requireAuthenticatedUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { supabase, user } = auth;
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: 'Missing Supabase server config' }, 500);
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
+  const rateLimit = await checkRateLimit({
+    key: user.id,
+    action: 'claim_daily_login_reward',
+    windowSeconds: 300,
+    maxCount: 20,
+  });
+  if (!rateLimit.allowed) {
+    return jsonResponse({ error: 'Too many requests. Please wait a minute and try again.', resetAt: rateLimit.resetAt }, 429);
   }
 
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert({
-      id: userData.user.id,
-      username: getProfileUsername(userData.user),
-      email: userData.user.email,
+      id: user.id,
+      username: getProfileUsername(user),
+      email: user.email,
       role: 'user',
     }, { onConflict: 'id', ignoreDuplicates: true });
 
@@ -70,7 +64,7 @@ Deno.serve(async (req) => {
   }
 
   const { data, error } = await supabase.rpc('claim_daily_login_reward', {
-    target_user_id: userData.user.id,
+    target_user_id: user.id,
   });
 
   if (error) {

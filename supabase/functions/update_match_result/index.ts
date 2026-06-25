@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jsonResponse as sharedJsonResponse, requireAdminUser } from '../_shared/authGuards.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +12,7 @@ type UpdateMatchResultBody = {
 };
 
 function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return sharedJsonResponse(corsHeaders, body, status);
 }
 
 Deno.serve(async (req) => {
@@ -27,33 +24,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return jsonResponse({ error: 'Missing authorization header' }, 401);
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: 'Missing Supabase server config' }, 500);
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) {
-    return jsonResponse({ error: 'Unauthorized' }, 401);
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userData.user.id)
-    .single();
-
-  if (profileError || profile?.role !== 'admin') {
-    return jsonResponse({ error: 'Forbidden' }, 403);
-  }
+  const auth = await requireAdminUser(req, corsHeaders);
+  if (auth instanceof Response) return auth;
+  const { supabase, user } = auth;
 
   let body: UpdateMatchResultBody;
   try {
@@ -83,7 +56,7 @@ Deno.serve(async (req) => {
   }
 
   await supabase.from('admin_audit_logs').insert({
-    actor_id: userData.user.id,
+    actor_id: user.id,
     action: 'match_result_imported',
     entity_type: 'match',
     entity_id: body.matchId,

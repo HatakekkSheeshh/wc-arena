@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Activity, ArrowLeft, Check, Copy, UserMinus, X } from 'lucide-react';
 import AppShell from '../components/layout/AppShell';
 import RankBadge from '../components/ui/RankBadge';
@@ -8,8 +8,8 @@ import StreakBadge from '../components/ui/StreakBadge';
 import { useAuth } from '../lib/auth';
 import { listLeagueActivity, type ActivityEventRow } from '../services/activity';
 import { listLeagueLeaderboard, type LeaderboardEntryWithProfile } from '../services/leaderboard';
-import { approveJoinRequest, archiveLeague, getLeague, joinLeague, kickLeagueMember, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
-import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEventMatches, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventMatchRow, type LeagueEventRow, type PayoutCurve } from '../services/leagueEvents';
+import { approveJoinRequest, archiveLeague, deleteArchivedLeague, getLeague, joinLeague, kickLeagueMember, leaveLeague, listLeagueJoinRequests, listLeagueMembers, rejectJoinRequest, updateLeague, type LeagueJoinRequestRow, type LeagueMemberRow, type LeagueRow } from '../services/leagues';
+import { cancelLeagueEvent, createLeagueEvent, enterLeagueEvent, listLeagueEventLeaderboard, listLeagueEventMatches, listLeagueEvents, settleLeagueEvent, type LeagueEventLeaderboardEntryWithProfile, type LeagueEventMatchRow, type LeagueEventRow, type PointSplitCurve } from '../services/leagueEvents';
 import { getErrorMessage } from '../services/serviceTypes';
 import { listMatches, type MatchRow } from '../services/matches';
 import { getCurrentProfile, type ProfileRow } from '../services/profile';
@@ -31,7 +31,7 @@ type EventFormState = {
   endsAt: string;
   minStake: string;
   maxStake: string;
-  payoutCurve: PayoutCurve;
+  pointSplitCurve: PointSplitCurve;
   rankShares: [string, string, string];
   scopeMode: EventScopeMode;
   matchIds: string[];
@@ -45,7 +45,7 @@ const defaultEventForm: EventFormState = {
   endsAt: '',
   minStake: '1',
   maxStake: '100',
-  payoutCurve: 'balanced_top3',
+  pointSplitCurve: 'balanced_top3',
   rankShares: ['50', '30', '20'],
   scopeMode: 'selected_matches',
   matchIds: [],
@@ -73,11 +73,23 @@ function getEventDisplayName(event: LeagueEventRow, t: (key: string, options?: R
   return event.name;
 }
 
-function getPayoutCurveLabel(curve: string, t: (key: string) => string) {
+function getPointSplitCurveLabel(curve: string, t: (key: string) => string) {
   if (curve === 'winner_take_all') return t('ui.winnerTakeAll');
   if (curve === 'flat_top3') return t('ui.flatTop3');
   if (curve === 'custom_top3') return t('ui.customTop3');
   return t('ui.balancedTop3');
+}
+
+function getEventRecognitionPool(event: LeagueEventRow) {
+  return event.recognition_pool ?? event.prize_pool ?? 0;
+}
+
+function getEventPointSplitCurve(event: LeagueEventRow) {
+  return event.point_split_curve ?? event.payout_curve ?? 'balanced_top3';
+}
+
+function getLeaderboardPointSplit(row: LeagueEventLeaderboardEntryWithProfile) {
+  return row.point_split ?? row.payout ?? 0;
 }
 
 function getEventPhase(event: LeagueEventRow) {
@@ -144,6 +156,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { leagueId } = useParams();
+  const navigate = useNavigate();
   const [league, setLeague] = useState<LeagueRow | null>(null);
   const [creator, setCreator] = useState<ProfileRow | null>(null);
   const [standings, setStandings] = useState<LeaderboardEntryWithProfile[]>([]);
@@ -170,11 +183,14 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
   const [saving, setSaving] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [leavingLeague, setLeavingLeague] = useState(false);
   const [enteringEventId, setEnteringEventId] = useState<string | null>(null);
   const [settlingEventId, setSettlingEventId] = useState<string | null>(null);
   const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
   const [archivingLeague, setArchivingLeague] = useState(false);
+  const [deletingLeague, setDeletingLeague] = useState(false);
   const [archiveConfirmName, setArchiveConfirmName] = useState('');
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const currentMembership = useMemo(() => members.find((member) => member.user_id === user?.id) ?? null, [members, user?.id]);
@@ -344,7 +360,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     event.preventDefault();
     if (!league) return;
     const rankShares = eventForm.rankShares.map((share) => Number(share));
-    if (eventForm.payoutCurve === 'custom_top3' && rankShares.reduce((sum, share) => sum + share, 0) !== 100) {
+    if (eventForm.pointSplitCurve === 'custom_top3' && rankShares.reduce((sum, share) => sum + share, 0) !== 100) {
       setError(t('ui.sharesMustTotal100'));
       return;
     }
@@ -363,7 +379,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
         endsAt: eventForm.scopeMode === 'date_range' ? new Date(eventForm.endsAt).toISOString() : undefined,
         minStake: Number(eventForm.minStake),
         maxStake: Number(eventForm.maxStake),
-        payoutCurve: eventForm.payoutCurve,
+        pointSplitCurve: eventForm.pointSplitCurve,
         rankShares,
         matchIds: eventForm.scopeMode === 'selected_matches' ? eventForm.matchIds : undefined,
       });
@@ -401,6 +417,24 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     }
   }
 
+  async function handleLeaveLeague() {
+    if (!league || !currentMembership) return;
+    setLeavingLeague(true);
+    setError(null);
+    try {
+      const result = await leaveLeague({ leagueId: league.id });
+      if (typeof result.points === 'number') {
+        window.dispatchEvent(new CustomEvent('wc26:profile-points-changed', { detail: { points: result.points } }));
+        setAvailablePoints(result.points);
+      }
+      navigate('/leagues');
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setLeavingLeague(false);
+    }
+  }
+
   async function handleEnterEvent(event: LeagueEventRow) {
     const stake = Number(stakeByEventId[event.id] || event.min_stake);
     setEnteringEventId(event.id);
@@ -421,7 +455,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     setSettlingEventId(eventId);
     setError(null);
     try {
-      await settleLeagueEvent({ eventId });
+      const result = await settleLeagueEvent({ eventId });
+      window.dispatchEvent(new CustomEvent('wc26:profile-points-changed', { detail: { points: result.points } }));
+      setAvailablePoints(result.points);
       loadLeague();
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -458,6 +494,21 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
     }
   }
 
+  async function handleDeleteArchivedLeague() {
+    if (!league || deleteConfirmName !== league.name) return;
+    setDeletingLeague(true);
+    setError(null);
+    try {
+      await deleteArchivedLeague({ leagueId: league.id });
+      setDeleteConfirmName('');
+      navigate('/leagues');
+    } catch (nextError) {
+      setError(getErrorMessage(nextError));
+    } finally {
+      setDeletingLeague(false);
+    }
+  }
+
   function toggleEventMatch(matchId: string) {
     setEventForm((value) => ({
       ...value,
@@ -487,9 +538,9 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
             <div className={`${phaseClass} border-2 border-main px-2 py-1 font-black uppercase text-[10px] whitespace-nowrap`}>{getEventPhaseLabel(phase, t)}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs font-bold">
-            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.prizePoolPoints')}</div>{event.prize_pool} {t('ui.pointsShort')}</div>
+            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.recognitionPoolPoints')}</div>{getEventRecognitionPool(event)} {t('ui.pointsShort')}</div>
             <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.stakePoints')}</div>{event.min_stake}-{event.max_stake}</div>
-            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.payoutCurve')}</div>{getPayoutCurveLabel(event.payout_curve, t)}</div>
+            <div className="border-2 border-main bg-page p-2 rounded-sm"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.pointSplitCurve')}</div>{getPointSplitCurveLabel(getEventPointSplitCurve(event), t)}</div>
           </div>
         </div>
         {eventMatchRows.length > 0 && (
@@ -540,8 +591,17 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
           {rows.slice(0, 3).map((row) => (
             <div key={row.user_id} className="grid grid-cols-[44px_1fr_auto] items-center gap-2 p-3 border-b-2 border-line last:border-b-0 text-xs font-bold">
               <div className="font-black text-base">#{row.rank}</div>
-              <div className="min-w-0"><div className="font-black uppercase truncate">{getPublicDisplayName(row.profiles, row.user_id)}</div><div className="text-[10px] text-subtle uppercase">{row.stake} {t('ui.pointsShort')} · {row.points} {t('ui.pointsShort')}</div></div>
-              <div className="font-black text-right">+{row.payout || 0}</div>
+              <div className="min-w-0 flex flex-col gap-1">
+                <div className="font-black uppercase truncate">{getPublicDisplayName(row.profiles, row.user_id)}</div>
+                <div className="flex flex-wrap gap-1.5 text-[9px] uppercase">
+                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle rounded-sm">{t('ui.stakePoints')}: {row.stake} {t('ui.pointsShort')}</span>
+                  <span className="border border-line bg-page px-1.5 py-0.5 font-black text-subtle rounded-sm">{t('ui.poolScorePoints')}: {row.points} {t('ui.pointsShort')}</span>
+                </div>
+              </div>
+              <div className="font-black text-right flex flex-col items-end leading-tight">
+                <span className="text-[9px] uppercase text-subtle">{t('ui.poolPointsReceived')}</span>
+                <span className="text-sm">+{getLeaderboardPointSplit(row)} {t('ui.pointsShort')}</span>
+              </div>
             </div>
           ))}
           {rows.length === 0 && <div className="p-3 font-black uppercase text-xs">{phase === 'joinable' ? t('ui.noPoolEntriesYet') : t('ui.noPoolStandingsYet')}</div>}
@@ -650,7 +710,7 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
               <div className="grid grid-cols-2 sm:grid-cols-4 border-2 border-main text-xs font-bold rounded-sm overflow-hidden">
                 <div className="p-2.5 border-r-2 border-b-2 sm:border-b-0 border-main bg-c1"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.members')}</div>{league.member_count.toLocaleString()}</div>
                 <div className="p-2.5 border-b-2 sm:border-b-0 sm:border-r-2 border-main bg-c2 text-inv"><div className="font-black uppercase text-[9px] opacity-80">{t('ui.scoring')}</div>{t('ui.postJoinScoring')}</div>
-                <div className="p-2.5 border-r-2 border-main bg-c3"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.prizeMode')}</div>{t('ui.noCashPrize')}</div>
+                <div className="p-2.5 border-r-2 border-main bg-c3"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.recognitionMode')}</div>{t('ui.noCashPrize')}</div>
                 <div className="p-2.5 bg-c4"><div className="font-black uppercase text-[9px] text-subtle">{t('ui.creator')}</div><span className="truncate block">{getPublicDisplayName(creator)}</span></div>
               </div>
               {!user && !isMember && (
@@ -663,7 +723,16 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                   {joining ? t('ui.joiningLeague') : league.join_policy === 'approval' ? t('ui.requestToJoin') : t('ui.joinLeague')}
                 </button>
               )}
-              {isMember && !isOwner && <div className="bg-c3 border-2 border-main px-4 py-3 font-black uppercase text-sm text-center rounded-sm">{t('ui.joined')}</div>}
+              {isMember && !isOwner && !isArchived && (
+                <div className="bg-c3 border-2 border-main p-3 flex flex-col gap-2 rounded-sm">
+                  <div className="font-black uppercase text-sm text-center">{t('ui.joined')}</div>
+                  <div className="font-bold text-[10px] uppercase text-subtle leading-snug">{t('ui.leaveLeagueBody')}</div>
+                  <button type="button" onClick={handleLeaveLeague} disabled={leavingLeague} className="bg-c5 border-2 border-main px-4 py-2.5 font-black uppercase text-xs shadow-[3px_3px_0_var(--color-shadow)] disabled:opacity-60 rounded-sm">
+                    {leavingLeague ? t('ui.leavingLeague') : t('ui.leaveLeague')}
+                  </button>
+                </div>
+              )}
+              {isMember && !isOwner && isArchived && <div className="bg-c3 border-2 border-main px-4 py-3 font-black uppercase text-sm text-center rounded-sm">{t('ui.joined')}</div>}
               {isOwner && (
                 <button onClick={handleCopyInvite} className="bg-c1 border-2 border-main px-4 py-3 font-black uppercase inline-flex items-center justify-center gap-2 text-sm shadow-[3px_3px_0_var(--color-shadow)] rounded-sm">
                   <Copy size={16} /> {copied ? t('ui.inviteLinkCopied') : t('ui.copyInviteLink')}
@@ -730,13 +799,13 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                       )}
                       <input required type="number" min={1} value={eventForm.minStake} onChange={(item) => setEventForm((value) => ({ ...value, minStake: item.target.value }))} placeholder={t('ui.minStake')} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" />
                       <input required type="number" min={1} value={eventForm.maxStake} onChange={(item) => setEventForm((value) => ({ ...value, maxStake: item.target.value }))} placeholder={t('ui.maxStake')} className="bg-card border-2 border-main p-2.5 font-bold rounded-sm" />
-                      <select value={eventForm.payoutCurve} onChange={(item) => setEventForm((value) => ({ ...value, payoutCurve: item.target.value as PayoutCurve }))} className="bg-card border-2 border-main p-2.5 font-black rounded-sm md:col-span-2">
+                      <select value={eventForm.pointSplitCurve} onChange={(item) => setEventForm((value) => ({ ...value, pointSplitCurve: item.target.value as PointSplitCurve }))} className="bg-card border-2 border-main p-2.5 font-black rounded-sm md:col-span-2">
                         <option value="balanced_top3">{t('ui.balancedTop3')}</option>
                         <option value="winner_take_all">{t('ui.winnerTakeAll')}</option>
                         <option value="flat_top3">{t('ui.flatTop3')}</option>
                         <option value="custom_top3">{t('ui.customTop3')}</option>
                       </select>
-                      {eventForm.payoutCurve === 'custom_top3' && eventForm.rankShares.map((share, index) => (
+                      {eventForm.pointSplitCurve === 'custom_top3' && eventForm.rankShares.map((share, index) => (
                         <input key={index} required type="number" min={0} max={100} value={share} onChange={(item) => setEventForm((value) => {
                           const rankShares = [...value.rankShares] as [string, string, string];
                           rankShares[index] = item.target.value;
@@ -815,12 +884,22 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
 
             <div className="flex flex-col gap-3 lg:gap-4 min-w-0">
               <div className="border-4 border-main bg-card rounded-sm overflow-hidden">
-                <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main">{t('ui.membersPreview')}</div>
+                <div className="bg-main text-inv font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main flex items-center justify-between gap-3">
+                  <span>{t('ui.membersList')}</span>
+                  <span className="bg-c1 text-main border-2 border-main px-2 py-0.5 text-[10px]">{members.length}/{league.member_count}</span>
+                </div>
                 <div className="bg-card flex flex-col">
                   {members.map((member) => (
                     <div key={member.user_id} className="p-3 border-b-2 border-line last:border-b-0 grid grid-cols-[1fr_auto] items-center gap-3 font-bold text-xs sm:text-sm">
-                      <div className="min-w-0"><div className="font-black uppercase truncate">{getPublicDisplayName(member.profiles, member.user_id)} {member.role === 'owner' ? `· ${t('ui.owner')}` : ''}</div><div className="text-[10px] text-subtle uppercase">{member.profiles?.points ?? 0} {t('ui.pointsShort')}</div></div>
-                      {isOwner && !isArchived && member.role !== 'owner' && <button onClick={() => handleKickMember(member.user_id)} className="bg-c5 border-2 border-main p-2 rounded-sm"><UserMinus size={14} /></button>}
+                      <div className="min-w-0">
+                        <div className="font-black uppercase truncate">{getPublicDisplayName(member.profiles, member.user_id)}</div>
+                        <div className="text-[10px] text-subtle uppercase flex flex-wrap items-center gap-1.5">
+                          <span>{member.role === 'owner' ? t('ui.owner') : t('ui.member')}</span>
+                          <span>·</span>
+                          <span>{member.profiles?.points ?? 0} {t('ui.pointsShort')}</span>
+                        </div>
+                      </div>
+                      {isOwner && !isArchived && member.role !== 'owner' && <button onClick={() => handleKickMember(member.user_id)} className="bg-c5 border-2 border-main p-2 rounded-sm" aria-label={t('ui.safeRemoveMember')}><UserMinus size={14} /></button>}
                     </div>
                   ))}
                   {members.length === 0 && <div className="p-3 font-black uppercase text-xs">{t('ui.noMembers')}</div>}
@@ -846,6 +925,19 @@ export default function LeagueDetail({ themeControls }: LeagueDetailProps) {
                     <input value={archiveConfirmName} onChange={(event) => setArchiveConfirmName(event.target.value)} placeholder={league.name} className="bg-page border-2 border-main p-2.5 font-bold text-sm rounded-sm" />
                     <button type="button" onClick={handleArchiveLeague} disabled={archiveConfirmName !== league.name || archivingLeague} className="bg-c5 border-2 border-main px-3 py-2.5 font-black uppercase disabled:opacity-60 rounded-sm">
                       {archivingLeague ? t('ui.saving') : t('ui.archiveLeague')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isOwner && isArchived && (
+                <div className="border-4 border-main bg-card rounded-sm overflow-hidden flex flex-col">
+                  <div className="bg-c5 font-black px-3 sm:px-4 py-2.5 sm:py-3 uppercase tracking-wide text-xs sm:text-sm border-b-4 border-main">{t('ui.deleteLeagueTitle')}</div>
+                  <div className="p-3 flex flex-col gap-3">
+                    <div className="font-bold text-xs text-subtle uppercase leading-snug">{t('ui.deleteLeagueBody')}</div>
+                    <input value={deleteConfirmName} onChange={(event) => setDeleteConfirmName(event.target.value)} placeholder={league.name} className="bg-page border-2 border-main p-2.5 font-bold text-sm rounded-sm" />
+                    <button type="button" onClick={handleDeleteArchivedLeague} disabled={deleteConfirmName !== league.name || deletingLeague} className="bg-c5 border-2 border-main px-3 py-2.5 font-black uppercase disabled:opacity-60 rounded-sm">
+                      {deletingLeague ? t('ui.deletingLeague') : t('ui.deleteLeague')}
                     </button>
                   </div>
                 </div>

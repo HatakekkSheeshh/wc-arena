@@ -5,7 +5,7 @@ export * from './mockLeaderboard';
 export * from './mockLeagues';
 export * from './mockMatches';
 export * from './mockPredictions';
-export * from './mockPrizePool';
+export * from './mockPointsGuide';
 export * from './mockRewards';
 export * from './mockTeams';
 export * from './mockUsers';

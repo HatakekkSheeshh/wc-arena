@@ -151,7 +151,7 @@ export default function Leagues({ themeControls }: LeaguesProps) {
                           <div className="p-2.5 sm:p-3 border-r-2 border-b-2 lg:border-b-0 border-main"><div className="font-black uppercase text-[9px] sm:text-[10px] text-subtle">{t('ui.members')}</div>{league.member_count.toLocaleString()}</div>
                           <div className="p-2.5 sm:p-3 lg:border-r-2 border-b-2 lg:border-b-0 border-main"><div className="font-black uppercase text-[9px] sm:text-[10px] text-subtle">{t('ui.scoring')}</div>{t('ui.postJoinScoring')}</div>
                           <div className="p-2.5 sm:p-3 border-r-2 border-main"><div className="font-black uppercase text-[9px] sm:text-[10px] text-subtle">{t('ui.joinPolicy')}</div>{league.join_policy}</div>
-                          <div className="p-2.5 sm:p-3"><div className="font-black uppercase text-[9px] sm:text-[10px] text-subtle">{t('ui.prizeMode')}</div>{t('ui.noCashPrize')}</div>
+                          <div className="p-2.5 sm:p-3"><div className="font-black uppercase text-[9px] sm:text-[10px] text-subtle">{t('ui.recognitionMode')}</div>{t('ui.noCashPrize')}</div>
                         </div>
                       </div>
                       <div className="p-3 sm:p-4 lg:p-5 flex lg:flex-col justify-center gap-3 bg-muted">
